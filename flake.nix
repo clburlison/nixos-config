@@ -11,16 +11,22 @@
   let
     # platform this configuration will be used on.
     system = "aarch64-darwin";
+    # This is not pure Nix, https://blog.kubukoz.com/flakes-first-steps/
+    # system = builtins.currentSystem;
 
     # Import pkgs for the current system
     pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
 
-    # Import apps.nix with pkgs and the system type
-    apps = import ./apps/darwin.nix { inherit pkgs; };
+    # Dynamically select apps based on the system
+    appFile = if pkgs.system == "aarch64-darwin" then ./apps/darwin.nix
+               else if pkgs.system == "x86_64-linux" then ./apps/linux.nix
+               else if pkgs.system == "x86_64-windows" then ./apps/windows.nix
+               else throw "Unsupported system: ${pkgs.system}";
+    apps = import appFile { inherit pkgs; };
 
     configuration = { pkgs, ... }: {
       # Apply darwinPackages
-      environment.systemPackages = apps.darwinPackages;
+      environment.systemPackages = apps.packages;
 
       # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
@@ -33,7 +39,7 @@
       system.stateVersion = 5;
 
       # The platform the configuration will be used on.
-      nixpkgs.hostPlatform = "aarch64-darwin";
+      nixpkgs.hostPlatform = system;
     };
   in
   {

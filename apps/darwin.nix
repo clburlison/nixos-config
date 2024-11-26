@@ -4,7 +4,7 @@
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
   # https://search.nixos.org/packages
-  darwinPackages = [
+  packages = [
     pkgs.azure-cli
     pkgs.bun
     pkgs.ffmpeg_7-full

@@ -9,21 +9,16 @@
 
   outputs = inputs@{ self, nix-darwin, nixpkgs }:
   let
-    # Define systems based on hostname
-    system = if builtins.getEnv "HOSTNAME" == "clayton-1AXM" then "aarch64-darwin"
-             else if builtins.getEnv "HOSTNAME" == "clayton-7HYM" then "aarch64-darwin"
-             else "x86_64-linux";
+    # platform this configuration will be used on.
+    system = "aarch64-darwin";
 
     # Import pkgs for the current system
-    pkgs = import nixpkgs { inherit system; };
+    pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
 
     # Import apps.nix with pkgs and the system type
-    apps = import ./apps.nix { inherit pkgs system; };
+    apps = import ./apps/darwin.nix { inherit pkgs; };
 
     configuration = { pkgs, ... }: {
-      # Enable unfree packages
-      nixpkgs.config.allowUnfree = true;
-
       # Apply darwinPackages
       environment.systemPackages = apps.darwinPackages;
 

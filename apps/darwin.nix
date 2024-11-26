@@ -1,9 +1,10 @@
-{ pkgs, system }:
+{ pkgs }:
 
 {
   # List packages installed in system profile. To search by name, run:
   # $ nix-env -qaP | grep wget
-  darwinPackages = if system == "x86_64-darwin" || system == "aarch64-darwin" then [
+  # https://search.nixos.org/packages
+  darwinPackages = [
     pkgs.azure-cli
     pkgs.bun
     pkgs.ffmpeg_7-full
@@ -24,16 +25,5 @@
     pkgs.wget
     pkgs.yt-dlp # youtube-dl replacement
     pkgs.zsh-z
-  ] else [];
-
-  linuxPackages = if system == "x86_64-linux" then [
-    pkgs.curl
-    pkgs.git
-    pkgs.htop
-  ] else [];
-
-  wslPackages = if system == "x86_64-linux" && builtins.getEnv "WSL_DISTRO_NAME" != null then [
-    pkgs.wsl-open
-    pkgs.wsl-setup
-  ] else [];
+  ];
 }

@@ -1,33 +1,62 @@
+# nixOS Configuration
 
-# Install Nix
+Nix configurations for my systems. Getting into Nix is not beginner friendly and this repo isn't intended to guide you, however it might be useful for examples. I borrowed many ideas from [Mitchell Hashimoto](https://github.com/mitchellh/nixos-config).
 
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
-  sh -s -- install
+## Usage
 
-# Nix-darwin
+1. Install Apple command line tools for Darwin based systems. Open Terminal.app and run `git` to trigger the installation process.
+2. Clone this repo
 
-Unsure if I want to use this.
+   ```sh
+   mkdir -p src/$HOME/
+   cd src/$HOME
+   git clone https://github.com/clburlison/nixos-config
+   cd nixos-config
+   ```
 
-## Install Nix-darwin
+3. Install Nix
 
-mkdir -p ~/.config/nix
-cd ~/.config/nix
-nix flake init -t nix-darwin
-sed -i '' "s/simple/$(scutil --get LocalHostName)/" flake.nix
+   ```sh
+   make install
+   # or
+   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+     sh -s -- install
+   ```
 
-## install nix-darwin
+4. Run nix switch to configure the system
 
-nix run nix-darwin -- switch --flake ~/.config/nix
+   ```sh
+   make switch
+   ```
 
-## using nix-darwin
+## Other
 
-darwin-rebuild switch --flake ~/.config/nix
+### Nix taking up to much space?
 
-# References
+The following article goes into much greater details [https://nixos.wiki/wiki/Storage_optimization](https://nixos.wiki/wiki/Storage_optimization). However if you just want the easy options run the following.
 
+```sh
+# optimise can take a really long time
+nix-store --optimise
+sudo nix-collect-garbage -d
+```
+
+### Uninstall
+
+If you have had enough of nix...
+
+```sh
+nix --extra-experimental-features "nix-command flakes" run nix-darwin#darwin-uninstaller
+/nix/nix-installer uninstall
+```
+
+## References
+
+-
 - https://davi.sh/til/nix/nix-macos-setup/
 - https://gist.github.com/niranjanaryan/8ab9105bdd66d7e0ebcba72126044964
 - https://github.com/DeterminateSystems/nix-installer
 - https://github.com/LnL7/nix-darwin
 - https://github.com/nix-community/home-manager
 - https://zero-to-nix.com/start/install
+- https://github.com/zhaofengli/attic (self hosted caching)

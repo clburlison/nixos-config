@@ -2,54 +2,59 @@
   description = "Clayton's nix configuration";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    nix-darwin.url = "github:LnL7/nix-darwin";
-    nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    # Pin our primary nixpkgs repository. This is the main nixpkgs repository
+    # we'll use for our configurations. Be very careful changing this because
+    # it'll impact your entire system. Using "unstable" is an option
+    # https://github.com/NixOS/nixpkgs/branches/all?query=nixos-
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+
+    # We use the unstable nixpkgs repo for some packages.
+    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+    # Build a custom WSL installer
+    nixos-wsl.url = "github:nix-community/NixOS-WSL";
+    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
+
+    # https://github.com/nix-community/home-manager/branches/all?query=release
+    home-manager.url = "github:nix-community/home-manager/release-24.11";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    darwin.url = "github:LnL7/nix-darwin";
+    darwin.inputs.nixpkgs.follows = "nixpkgs";
+
   };
 
-  outputs = inputs@{ self, nix-darwin, nixpkgs }:
-  let
-    # platform this configuration will be used on.
-    system = "aarch64-darwin";
-    # This is not pure Nix, https://blog.kubukoz.com/flakes-first-steps/
-    # system = builtins.currentSystem;
-
-    # Import pkgs for the current system
-    pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
-
-    # Dynamically select apps based on the system
-    appFile = if pkgs.system == "aarch64-darwin" then ./apps/darwin.nix
-               else if pkgs.system == "x86_64-linux" then ./apps/linux.nix
-               else if pkgs.system == "x86_64-windows" then ./apps/windows.nix
-               else throw "Unsupported system: ${pkgs.system}";
-    apps = import appFile { inherit pkgs; };
-
-    configuration = { pkgs, ... }: {
-      # Apply darwinPackages
-      environment.systemPackages = apps.packages;
-
-      # Necessary for using flakes on this system.
-      nix.settings.experimental-features = "nix-command flakes";
-
-      # Set Git commit hash for darwin-version.
-      system.configurationRevision = self.rev or self.dirtyRev or null;
-
-      # Used for backwards compatibility, please read the changelog before changing.
-      # $ darwin-rebuild changelog
-      system.stateVersion = 5;
-
-      # The platform the configuration will be used on.
-      nixpkgs.hostPlatform = system;
+  outputs = { self, nixpkgs, home-manager, darwin, ... }@inputs: let
+    mkSystem = import ./lib/mksystem.nix {
+      inherit nixpkgs inputs;
     };
-  in
-  {
-    # Build darwin flake using:
-    # $ darwin-rebuild build --flake .#clayton-1AXM
-    darwinConfigurations."clayton-1AXM" = nix-darwin.lib.darwinSystem {
-      modules = [ configuration ];
+  in {
+    # nixosConfigurations.vm-aarch64 = mkSystem "vm-aarch64" {
+    #   system = "aarch64-linux";
+    #   user   = "clburlison";
+    # };
+
+    # nixosConfigurations.vm-intel = mkSystem "vm-intel" rec {
+    #   system = "x86_64-linux";
+    #   user   = "clburlison";
+    # };
+
+    nixosConfigurations.wsl = mkSystem "wsl" {
+      system = "x86_64-linux";
+      user   = "clburlison";
+      wsl    = true;
     };
-    darwinConfigurations."clayton-7HYM" = nix-darwin.lib.darwinSystem {
-      modules = [ configuration ];
+
+    darwinConfigurations."clayton-1AXM" = mkSystem "darwin-default" {
+      system = "aarch64-darwin";
+      user   = "clayton";
+      darwin = true;
+    };
+
+    darwinConfigurations."clayton-7HYM" = mkSystem "darwin-default" {
+      system = "aarch64-darwin";
+      user   = "clayton";
+      darwin = true;
     };
   };
 }

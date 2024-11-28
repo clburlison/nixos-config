@@ -60,3 +60,4 @@ nix --extra-experimental-features "nix-command flakes" run nix-darwin#darwin-uni
 - https://github.com/nix-community/home-manager
 - https://zero-to-nix.com/start/install
 - https://github.com/zhaofengli/attic (self hosted caching)
+- https://github.com/jacobbednarz/j

@@ -1,6 +1,22 @@
-{ inputs, pkgs, currentSystemUser, ... }:
+{ config, inputs, pkgs, currentSystemUser, ... }:
 
 {
+  #---------------------------------------------------------------------
+  # Preferences
+  #---------------------------------------------------------------------
+  system.defaults.NSGlobalDomain.AppleShowAllExtensions = true;
+  system.defaults.finder.AppleShowAllExtensions = true;
+  system.defaults.finder.FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
+  system.defaults.finder.ShowPathbar = true;
+  system.defaults.finder.FXPreferredViewStyle = "Nlsv"; # List view
+  system.defaults.finder.FXRemoveOldTrashItems = true; # Remove items from trash after 30 days
+  system.defaults.finder.NewWindowTarget = "Home";
+  system.defaults.ActivityMonitor.ShowCategory = 100; # Show all processes
+  # Keyboard remapping currently does not work
+  # system.keyboard.enableKeyMapping = true;
+  # system.keyboard.remapCapsLockToEscape = true;
+
+
   # nixpkgs.overlays = import ../../lib/overlays.nix ++ [
   #   (import ./vim.nix { inherit inputs; })
   # ];

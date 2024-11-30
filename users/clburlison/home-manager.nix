@@ -127,6 +127,28 @@ in {
     # };
   };
 
+  programs.zsh = {
+    enable = true;
+    syntaxHighlighting.enable = true;
+    autosuggestion.enable = true;
+    oh-my-zsh = {
+      enable = true;
+      theme = "agnoster";
+      plugins = [
+        "git"
+        "z"
+      ];
+    };
+    # initExtra = ''
+    #   autoload -U promptinit; promptinit
+    #   prompt pure
+    # '';
+    shellAliases = {
+      e = "exit";
+      c = "clear";
+    };
+  };
+
   # programs.direnv= {
   #   enable = true;
 

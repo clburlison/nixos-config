@@ -29,20 +29,26 @@
       inherit nixpkgs inputs;
     };
   in {
-    # nixosConfigurations.vm-aarch64 = mkSystem "vm-aarch64" {
+    # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
     #   system = "aarch64-linux";
     #   user   = "clburlison";
     # };
 
-    # nixosConfigurations.vm-intel = mkSystem "vm-intel" rec {
+    # nixosConfigurations."vm-intel" = mkSystem "vm-intel" rec {
     #   system = "x86_64-linux";
     #   user   = "clburlison";
     # };
 
-    nixosConfigurations.wsl = mkSystem "wsl" {
+    nixosConfigurations."wsl" = mkSystem "wsl" {
       system = "x86_64-linux";
       user   = "clburlison";
       wsl    = true;
+    };
+
+    darwinConfigurations."vm-clayton-mac" = mkSystem "darwin-default" {
+      system = "aarch64-darwin";
+      user   = "clburlison";
+      darwin = true;
     };
 
     darwinConfigurations."clayton-1AXM" = mkSystem "darwin-default" {

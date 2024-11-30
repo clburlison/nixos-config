@@ -36,6 +36,7 @@ in {
     pkgs.go
     pkgs.htop
     pkgs.jq
+    pkgs.meslo-lgs-nf-unstable # Meslo Nerd Font
     pkgs.python312
     pkgs.ripgrep-all
     pkgs.terraform

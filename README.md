@@ -8,8 +8,8 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
 2. Clone this repo
 
    ```sh
-   mkdir -p $HOME/src
-   cd $HOME/src
+   mkdir -p $HOME/src/clburlison
+   cd $HOME/src/clburlison
    git clone https://github.com/clburlison/nixos-config
    cd nixos-config
    ```

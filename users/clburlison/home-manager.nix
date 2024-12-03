@@ -38,7 +38,6 @@ in {
     pkgs.go
     pkgs.htop
     pkgs.jq
-    pkgs.oh-my-zsh
     pkgs.python312
     pkgs.ripgrep-all
     pkgs.terraform
@@ -136,14 +135,42 @@ in {
     autosuggestion.enable = true;
     oh-my-zsh = {
       enable = true;
-      # Theme is directly managed in zshrc file ATM
-      # theme = "powerlevel10k/powerlevel10k"; # "agnoster"; # old theme
+      theme = "powerlevel10k/powerlevel10k"; # "agnoster"; # old theme
       plugins = [
         "git"
+        "terraform"
+        "kubectl"
         "z"
       ];
     };
-    initExtra = builtins.readFile ./dotfiles/zshrc;
+    # initExtra = builtins.readFile ./dotfiles/zshrc;
+    initExtraFirst = ''
+      # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+      # Initialization code that may require console input (password prompts, [y/n]
+      # confirmations, etc.) must go above this block; everything else may go below.
+      if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+        source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+      fi
+    '';
+    extraConfig = ''
+      zstyle ':omz:plugins:nvm' lazy yes
+      zstyle ':omz:update' mode disabled
+
+      # Load the shell dotfiles, and then some:
+      # * ~/.path can be used to extend `$PATH`.
+      # * ~/.extra can be used for other settings you don’t want to commit.
+      for file in ~/.{path,aliases,functions,extra}; do
+          [ -r "$file" ] && [ -f "$file" ] && source "$file";
+      done;
+      unset file;
+
+      # bun completions
+      [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+      # bun
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
+    '';
   };
 
   # programs.direnv= {

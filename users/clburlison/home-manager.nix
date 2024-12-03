@@ -91,9 +91,10 @@ in {
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
     ".vimrc".source = ./dotfiles/vimrc;
-  } // (if isDarwin then {
-    "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
-  } else {});
+  };
+  # } // (if isDarwin then {
+  #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
+  # } else {});
 
   # xdg.configFile = {
   #   "i3/config".text = builtins.readFile ./i3;

@@ -28,6 +28,7 @@ in {
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
+    (pkgs.nerdfonts.override { fonts = [ "CascadiaMono" "Go-Mono" "Hack" "Meslo"]; })
     pkgs.bun
     pkgs.curl
     pkgs.gh
@@ -36,7 +37,6 @@ in {
     pkgs.go
     pkgs.htop
     pkgs.jq
-    pkgs.meslo-lgs-nf-unstable # Meslo Nerd Font
     pkgs.python312
     pkgs.ripgrep-all
     pkgs.terraform

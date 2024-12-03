@@ -137,7 +137,6 @@ in {
     promptInit = "source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme";
     oh-my-zsh = {
       enable = true;
-      theme = "powerlevel10k/powerlevel10k"; # "agnoster"; # old theme
       plugins = [
         "git"
         "terraform"
@@ -169,6 +168,7 @@ in {
     };
     # initExtra = builtins.readFile ./dotfiles/zshrc;
     initExtraFirst = ''
+      source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
       # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
       # Initialization code that may require console input (password prompts, [y/n]
       # confirmations, etc.) must go above this block; everything else may go below.

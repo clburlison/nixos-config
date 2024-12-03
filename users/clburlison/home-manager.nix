@@ -38,6 +38,7 @@ in {
     pkgs.go
     pkgs.htop
     pkgs.jq
+    pkgs.oh-my-zsh
     pkgs.python312
     pkgs.ripgrep-all
     pkgs.terraform

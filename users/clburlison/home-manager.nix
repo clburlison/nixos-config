@@ -84,7 +84,7 @@ in {
     ".aliases".source = ./dotfiles/aliases;
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
-    ".git-commit-template".source = ./dotfiles/git-commit-template;
+    ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;
     ".gitconfig".source = ./dotfiles/gitconfig;
     ".gitignore".source = ./dotfiles/gitignore;
     ".inputrc".source = ./dotfiles/inputrc;

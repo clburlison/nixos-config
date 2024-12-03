@@ -1,0 +1,78 @@
+# EditorConfig is awesome: http://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+# Defaults for all file types
+[*]
+#charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = false
+indent_style = space
+indent_size = 4
+
+
+# Property lists, Munki and AutoPkg
+[*.{plist,recipe,pkginfo,adtmpl}]
+mode = XML
+indent_style = tab
+indent_size = 4
+x-show-invisibles = 1
+x-show-spaces = 1
+
+
+# Python
+[*.py]
+mode = Python
+indent_style = space
+indent_size = 4
+
+# Ruby
+[*.{rb,rb.erb}]
+mode = Ruby
+indent_style = space
+indent_size = 2
+
+# Terraform
+[*.{tf,tfvars}]
+indent_style = space
+indent_size = 2
+
+# Yaml
+[*.{yaml,yml,sls}]
+mode = Yaml
+indent_style = space
+indent_size = 2
+
+# Shell
+[*.{sh,bash,command}]
+mode = Shell
+indent_style = space
+indent_size = 2
+
+# Javascript
+[*.{js,ts,jsx,mjs,cjs}]
+mode = Javascript
+indent_style = space
+indent_size = 2
+
+# Makefile
+[Makefile]
+indent_style = tab
+
+# Go
+[.go]
+indent_style = tab
+indent_size = 4
+
+# Markdown
+[*.{md,markdown}]
+indent_style = space
+indent_size = 2
+
+# Puppet .pp files
+[*.pp]
+mode = Ruby
+indent_style = space
+indent_size = 2

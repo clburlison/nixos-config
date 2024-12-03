@@ -34,6 +34,7 @@ in {
     pkgs.gh
     pkgs.git
     pkgs.git-lfs
+    pkgs.git-town
     pkgs.go
     pkgs.htop
     pkgs.jq
@@ -71,17 +72,28 @@ in {
     LANG = "en_US.UTF-8";
     LC_CTYPE = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
-    EDITOR = "nvim";
+    EDITOR = "vi"; # nvim in the future?
+    VISUAL = "code";
     PAGER = "less -FirSwX";
     # MANPAGER = "${manpager}/bin/manpager";
+    # Set default blocksize for ls, df, du: http://hints.macworld.com/comment.php?mode=view&cid=24491
+    BLOCKSIZE = "1k";
   };
 
-  # home.file = {
-  #   ".gdbinit".source = ./gdbinit;
-  #   ".inputrc".source = ./inputrc;
-  # } // (if isDarwin then {
-  #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
-  # } else {});
+  home.file = {
+    ".aliases".source = ./dotfiles/aliases;
+    ".editorconfig".source = ./dotfiles/editorconfig;
+    ".functions".source = ./dotfiles/functions;
+    ".git-commit-template".source = ./dotfiles/git-commit-template;
+    ".gitconfig".source = ./dotfiles/gitconfig;
+    ".gitignore".source = ./dotfiles/gitignore;
+    ".inputrc".source = ./dotfiles/inputrc;
+    ".p10k.zsh".source = ./dotfiles/p10k.zsh;
+    ".path".source = ./dotfiles/path;
+    ".vimrc".source = ./dotfiles/vimrc;
+  } // (if isDarwin then {
+    "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
+  } else {});
 
   # xdg.configFile = {
   #   "i3/config".text = builtins.readFile ./i3;
@@ -114,18 +126,6 @@ in {
     shellOptions = [];
     historyControl = [ "ignoredups" "ignorespace" ];
     initExtra = builtins.readFile ./dotfiles/bashrc;
-
-    # shellAliases = {
-    #   ga = "git add";
-    #   gc = "git commit";
-    #   gco = "git checkout";
-    #   gcp = "git cherry-pick";
-    #   gdiff = "git diff";
-    #   gl = "git prettylog";
-    #   gp = "git push";
-    #   gs = "git status";
-    #   gt = "git tag";
-    # };
   };
 
   programs.zsh = {
@@ -134,20 +134,14 @@ in {
     autosuggestion.enable = true;
     oh-my-zsh = {
       enable = true;
-      theme = "agnoster";
+      # Theme is directly managed in zshrc file ATM
+      # theme = "powerlevel10k/powerlevel10k"; # "agnoster"; # old theme
       plugins = [
         "git"
         "z"
       ];
     };
-    # initExtra = ''
-    #   autoload -U promptinit; promptinit
-    #   prompt pure
-    # '';
-    shellAliases = {
-      e = "exit";
-      c = "clear";
-    };
+    initExtra = builtins.readFile ./dotfiles/zshrc;
   };
 
   # programs.direnv= {
@@ -232,7 +226,7 @@ in {
 
   programs.go = {
     enable = true;
-    goPath = "code/go";
+    goPath = "src/go";
     goPrivate = [ "github.com/clburlison" ];
   };
 

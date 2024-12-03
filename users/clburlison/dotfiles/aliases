@@ -1,0 +1,126 @@
+#  ---------------------------------------------------------------------------
+#
+#  Description:  This file holds all my aliases
+#
+#  Sections:
+#  1.   Make Terminal Better
+#  2.   File and Folder Management
+#  3.   Searching
+#  4.   Networking
+#  5.   System Operations & Information
+#  6.   Web Development
+#  7.   References & Notes
+#
+#  ---------------------------------------------------------------------------
+
+
+#   -----------------------------
+#   1.  MAKE TERMINAL BETTER
+#   -----------------------------
+
+alias cp='cp -iv'                           # Preferred 'cp' implementation
+alias mv='mv -iv'                           # Preferred 'mv' implementation
+alias mkdir='mkdir -pv'                     # Preferred 'mkdir' implementation
+alias ll='ls -FGlhp'                        # Preferred 'ls' implementation
+alias less='less -FSRXc'                    # Preferred 'less' implementation
+alias pwd='pwd -P'                          # Preferred 'pwd' implementation
+alias g='git'                               # Preferred 'git' implementation
+alias f='open -a Finder ./'                 # f:            Opens current directory in MacOS Finder
+alias c='clear'                             # c:            Clear terminal display
+alias path='echo -e ${PATH//:/\\n}'         # path:         Echo all executable Paths
+alias show_options='shopt'                  # Show_options: display bash options settings
+alias fix_stty='stty sane'                  # fix_stty:     Restore terminal settings when screwed up
+alias cic='set completion-ignore-case On'   # cic:          Make tab-completion case-insensitive
+alias DT='tee ~/Desktop/terminalOut.txt'    # DT:           Pipe content to file on MacOS Desktop
+alias "largest"="du -ck | sort -n | tail"   # Show largest file in current directory
+alias sudo='sudo '                          # Enable aliases to be sudo’ed
+alias sha='shasum -a256 '                   # Eaiser sha256 check
+alias week='date +%V'                       # Get week number
+alias spotoff="sudo mdutil -a -i off"       # Disable Spotlight
+alias spoton="sudo mdutil -a -i on"         #  Enable Spotlight
+alias vi="vim"
+alias e="code"
+#alias e="zed"
+alias lsregister_fix="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user"
+alias randompass="openssl rand -base64 32"
+
+# Docker aliases
+alias docker-ip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+alias docker-kill='docker kill `docker ps -q`'
+alias docker-rm='docker rm `docker ps -a -q`'
+alias docker-rmi='docker rmi `docker images -f "dangling=true" -q`'
+alias docker-rmi-all='docker rmi -f `docker images -q`'
+alias docker-rmi-none="docker images | gsed 's/\s\+/ /g' | grep '<none>' | cut -d ' ' -f 3 | xargs docker rmi"
+function docker-rmr() {
+  docker images | grep $1 | gsed 's/\s\+/ /g' | cut -d " " -f 1-2 | gsed 's/\s/:/' | xargs docker rmi
+}
+
+# kubectl aliases
+alias kubeprd="export KUBECONFIG=~/.kube/kubeconfig.prd"
+alias kubestg="export KUBECONFIG=~/.kube/kubeconfig.stg"
+alias kubetest="export KUBECONFIG=~/.kube/kubeconfig.test"
+alias kubeall="kubectl get pods,ingress,secrets,deployment.apps,services,frontendconfigs.networking.gke.io,configmaps,pvc"
+
+
+#   -------------------------------
+#   2.  FILE AND FOLDER MANAGEMENT
+#   -------------------------------
+
+alias numFiles='echo $(ls -1 | wc -l)'      # numFiles:     Count of non-hidden files in current dir
+alias make1mb='mkfile 1m ./1MB.dat'         # make1mb:      Creates a file of 1mb size (all zeros)
+alias make5mb='mkfile 5m ./5MB.dat'         # make5mb:      Creates a file of 5mb size (all zeros)
+alias make10mb='mkfile 10m ./10MB.dat'      # make10mb:     Creates a file of 10mb size (all zeros)
+
+
+#   ----------------------------------------
+#   3.  SEARCHING -- More under ./functions
+#   ----------------------------------------
+
+alias qfind="find . -name "                 # qfind:    Quickly search for file
+
+
+#   ---------------------------
+#   4.  NETWORKING
+#   ---------------------------
+
+alias netCons='lsof -i'                             # netCons:      Show all open TCP/IP sockets
+alias lsock='sudo /usr/sbin/lsof -i -P'             # lsock:        Display open sockets
+alias lsockU='sudo /usr/sbin/lsof -nP | grep UDP'   # lsockU:       Display only open UDP sockets
+alias lsockT='sudo /usr/sbin/lsof -nP | grep TCP'   # lsockT:       Display only open TCP sockets
+alias ipInfo0='ipconfig getpacket en0'              # ipInfo0:      Get info on connections for en0
+alias ipInfo1='ipconfig getpacket en1'              # ipInfo1:      Get info on connections for en1
+alias openPorts='sudo lsof -i | grep LISTEN'        # openPorts:    All listening connections
+alias showBlocked='sudo ipfw list'                  # showBlocked:  All ipfw rules inc/ blocked IPs
+alias ping='ping -c 3'                              # ping:         Stop after sending 3 packets
+
+
+#   ---------------------------------------
+#   5.  SYSTEMS OPERATIONS & INFORMATION
+#   ---------------------------------------
+
+#   cleanupDS:  Recursively delete .DS_Store files
+#   -------------------------------------------------------------------
+alias cleanupDS="find . -type f -name '*.DS_Store' -ls -delete"
+
+#   finderShowHidden:   Show hidden files in Finder
+#   finderHideHidden:   Hide hidden files in Finder
+#   -------------------------------------------------------------------
+    alias finderShowHidden='defaults write com.apple.finder AppleShowAllFiles -bool TRUE; killall Finder'
+    alias finderHideHidden='defaults write com.apple.finder AppleShowAllFiles -bool FALSE; killall Finder'
+
+#   desktopShow:   Show desktop icons
+#   desktopHide:   Hide desktop icons
+#   -------------------------------------------------------------------
+    alias desktopShow='defaults write com.apple.finder CreateDesktop -bool true; killall Finder'
+    alias desktopHide='defaults write com.apple.finder CreateDesktop -bool false; killall Finder'
+
+#   cleanupLS:  Clean up LaunchServices to remove duplicates in the "Open With" menu
+#   -----------------------------------------------------------------------------------
+alias cleanupLS="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
+
+#   ---------------------------------------
+#   7.   References & Notes
+#   ---------------------------------------
+
+# Much of this profile was copied from http://natelandau.com/my-mac-osx-bash_profile/
+# Additional awesomeness https://github.com/mathiasbynens/dotfiles

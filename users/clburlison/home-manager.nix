@@ -45,6 +45,7 @@ in {
     pkgs.tree
     pkgs.vim
     pkgs.wget
+    pkgs.zsh-powerlevel10k
     pkgs.zsh-z
     # Node is required for Copilot.vim
     # pkgs.nodejs

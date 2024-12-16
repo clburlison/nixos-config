@@ -40,7 +40,7 @@ in {
     pkgs.jq
     pkgs.python312
     pkgs.ripgrep-all
-    pkgs.terraform
+    # pkgs.terraform
     pkgs.tmux
     pkgs.tree
     pkgs.vim
@@ -138,7 +138,7 @@ in {
       enable = true;
       plugins = [
         "git"
-        "terraform"
+        # "terraform"
         "kubectl"
         "z"
       ];

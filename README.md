@@ -4,8 +4,17 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
 
 ## Usage
 
-1. Install Apple command line tools for Darwin based systems. Open Terminal.app and run `git` to trigger the installation process.
-2. Clone this repo
+<details><summary>Installation macOS</summary>
+<p>
+
+1. Open `Terminal.app`
+2. Run `git` to trigger the Apple command line tools installation.
+
+   ```sh
+   git
+   ```
+
+3. Clone this repo
 
    ```sh
    mkdir -p $HOME/src/clburlison
@@ -14,7 +23,7 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
    cd nixos-config
    ```
 
-3. Install Nix
+4. Install Nix
 
    ```sh
    make install
@@ -23,11 +32,33 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
      sh -s -- install
    ```
 
-4. Run nix switch to configure the system
+5. Run nix switch to configure the system
 
    ```sh
    make switch
    ```
+
+</p>
+</details>
+
+<details><summary>Installation Windows Subsystem for Linux (WSL)</summary>
+<p>
+
+Coming soon...
+
+</p>
+</details>
+
+</p>
+</details>
+
+<details><summary>Installation Linux</summary>
+<p>
+
+Coming soon...
+
+</p>
+</details>
 
 ## Other
 

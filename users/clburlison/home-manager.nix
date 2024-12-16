@@ -91,11 +91,11 @@ in {
     ".gitconfig".source = ./dotfiles/gitconfig;
     ".gitignore".source = ./dotfiles/gitignore;
     ".inputrc".source = ./dotfiles/inputrc;
+    ".kube/switch-config.yaml".source = ./dotfiles/kube/switch-config.yaml;
+    ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
     ".vimrc".source = ./dotfiles/vimrc;
-    ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
-    ".kube/switch-config.yaml".source = ./dotfiles/kube/switch-config.yaml;
   };
   # } // (if isDarwin then {
   #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
@@ -167,6 +167,11 @@ in {
         # bun
         export BUN_INSTALL="$HOME/.bun"
         export PATH="$BUN_INSTALL/bin:$PATH"
+
+        # kubeswitch
+        # https://github.com/danielfoehrKn/kubeswitch/blob/master/docs/installation.md
+        source <(switcher init zsh)
+        source <(switch completion zsh)
       '';
     };
     # initExtra = builtins.readFile ./dotfiles/zshrc;

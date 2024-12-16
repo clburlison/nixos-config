@@ -105,3 +105,8 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+# kubeswitch
+# https://github.com/danielfoehrKn/kubeswitch/blob/master/docs/installation.md
+source <(switcher init zsh)
+source <(switch completion zsh)

@@ -38,6 +38,8 @@ in {
     pkgs.go
     pkgs.htop
     pkgs.jq
+    pkgs.kubectl
+    pkgs.kubeswitch
     pkgs.python312
     pkgs.ripgrep-all
     # pkgs.terraform

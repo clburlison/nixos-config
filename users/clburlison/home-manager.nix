@@ -94,6 +94,8 @@ in {
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
     ".vimrc".source = ./dotfiles/vimrc;
+    ".kube/switch-state/switch-state.alias".source = ./dotfiles/.kube/switch-state/switch.alias;
+    ".kube/switch-config.yaml".source = ./dotfiles/.kube/switch-config.yaml;
   };
   # } // (if isDarwin then {
   #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;

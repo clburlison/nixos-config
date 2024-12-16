@@ -1,0 +1,7 @@
+contextToAliasMapping:
+  .kube/it-iam-services_prd: iam-prd
+  .kube/it-iam-services_stg: iam-stg
+  .kube/it-iam-services_test: iam-test
+  .kube/it-cpe-services_prd: cpe-prd
+  .kube/it-cpe-services_stg: cpe-stg
+  .kube/it-cpe-services_test: cpe-test

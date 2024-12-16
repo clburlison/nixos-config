@@ -38,6 +38,17 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
    make switch
    ```
 
+<details><summary>Extra</summary>
+<p>
+
+```sh
+open users/clburlison/dotfiles/Solarized\ Dark.terminal
+# Open Terminal preferences > Profile > Set Solarized Dark as default
+```
+
+</p>
+</details>
+
 </p>
 </details>
 

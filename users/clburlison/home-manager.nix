@@ -75,8 +75,8 @@ in {
     LANG = "en_US.UTF-8";
     LC_CTYPE = "en_US.UTF-8";
     LC_ALL = "en_US.UTF-8";
-    EDITOR = "vi"; # nvim in the future?
-    VISUAL = "code";
+    EDITOR = "nvim";
+    VISUAL = "nvim";
     PAGER = "less -FirSwX";
     # MANPAGER = "${manpager}/bin/manpager";
     # Set default blocksize for ls, df, du: http://hints.macworld.com/comment.php?mode=view&cid=24491
@@ -95,7 +95,7 @@ in {
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
-    ".vimrc".source = ./dotfiles/vimrc;
+    # ".vimrc".source = ./dotfiles/vimrc; # legacy to delete once fully migrated to nvim
   };
   # } // (if isDarwin then {
   #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;

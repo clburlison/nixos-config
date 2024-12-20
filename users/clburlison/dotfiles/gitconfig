@@ -70,10 +70,8 @@
 		git remote update origin --prune; \
 		}; f"
 
-	# Pull a PR locally. Only tested on Github for now. h/t @groob
-	pr = "!f() { \
-		git fetch origin pull/\"$1\"/head:pr && git checkout pr; \
-	}; f"
+	# Pull a PR locally
+	pr = !"gh pr checkout $1"
 
 	# List contributors with number of commits
 	contributors = shortlog --summary --numbered

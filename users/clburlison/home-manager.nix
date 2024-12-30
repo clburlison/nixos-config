@@ -301,45 +301,6 @@ in {
   #   '';
   # };
 
-  # programs.alacritty = {
-  #   enable = !isWSL;
-
-  #   settings = {
-  #     env.TERM = "xterm-256color";
-
-  #     key_bindings = [
-  #       { key = "K"; mods = "Command"; chars = "ClearHistory"; }
-  #       { key = "V"; mods = "Command"; action = "Paste"; }
-  #       { key = "C"; mods = "Command"; action = "Copy"; }
-  #       { key = "Key0"; mods = "Command"; action = "ResetFontSize"; }
-  #       { key = "Equals"; mods = "Command"; action = "IncreaseFontSize"; }
-  #       { key = "Subtract"; mods = "Command"; action = "DecreaseFontSize"; }
-  #     ];
-  #   };
-  # };
-
-  # programs.kitty = {
-  #   enable = !isWSL;
-  #   extraConfig = builtins.readFile ./kitty;
-  # };
-
-  # programs.i3status = {
-  #   enable = isLinux && !isWSL;
-
-  #   general = {
-  #     colors = true;
-  #     color_good = "#8C9440";
-  #     color_bad = "#A54242";
-  #     color_degraded = "#DE935F";
-  #   };
-
-  #   modules = {
-  #     ipv6.enable = false;
-  #     "wireless _first_".enable = false;
-  #     "battery all".enable = false;
-  #   };
-  # };
-
   # programs.neovim = {
   #   enable = true;
   #   package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;

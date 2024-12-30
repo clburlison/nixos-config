@@ -40,6 +40,7 @@ in {
     pkgs.jq
     pkgs.kubectl
     pkgs.kubeswitch
+    pkgs.neovim
     pkgs.python312
     pkgs.ripgrep-all
     # pkgs.terraform

@@ -42,6 +42,7 @@ in {
     pkgs.kubeswitch
     pkgs.neovim
     pkgs.python312
+    pkgs.ripgrep
     pkgs.ripgrep-all
     # pkgs.terraform
     pkgs.tmux

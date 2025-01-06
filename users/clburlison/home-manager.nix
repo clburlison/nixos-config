@@ -47,6 +47,7 @@ in {
     # pkgs.terraform
     pkgs.tmux
     pkgs.tree
+    pkgs.mysql84
     pkgs.vim
     pkgs.wget
     pkgs.zsh-powerlevel10k

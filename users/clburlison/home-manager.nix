@@ -98,7 +98,7 @@ in {
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
-    # ".vimrc".source = ./dotfiles/vimrc; # legacy to delete once fully migrated to nvim
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/src/clburlison/nixos-config/users/clburlison/dotfiles/config/nvim";
   };
   # } // (if isDarwin then {
   #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;

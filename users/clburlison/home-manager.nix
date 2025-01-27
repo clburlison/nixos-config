@@ -100,29 +100,6 @@ in {
     ".path".source = ./dotfiles/path;
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/src/clburlison/nixos-config/users/clburlison/dotfiles/config/nvim";
   };
-  # } // (if isDarwin then {
-  #   "Library/Application Support/jj/config.toml".source = ./jujutsu.toml;
-  # } else {});
-
-  # xdg.configFile = {
-  #   "i3/config".text = builtins.readFile ./i3;
-  #   "rofi/config.rasi".text = builtins.readFile ./rofi;
-
-  #   # tree-sitter parsers
-  #   "nvim/parser/proto.so".source = "${pkgs.tree-sitter-proto}/parser";
-  #   "nvim/queries/proto/folds.scm".source =
-  #     "${sources.tree-sitter-proto}/queries/folds.scm";
-  #   "nvim/queries/proto/highlights.scm".source =
-  #     "${sources.tree-sitter-proto}/queries/highlights.scm";
-  #   "nvim/queries/proto/textobjects.scm".source =
-  #     ./textobjects.scm;
-  # } // (if isDarwin then {
-  #   # Rectangle.app. This has to be imported manually using the app.
-  #   "rectangle/RectangleConfig.json".text = builtins.readFile ./RectangleConfig.json;
-  # } else {}) // (if isLinux then {
-  #   "ghostty/config".text = builtins.readFile ./ghostty.linux;
-  #   "jj/config.toml".source = ./jujutsu.toml;
-  # } else {});
 
   #---------------------------------------------------------------------
   # Programs
@@ -204,47 +181,6 @@ in {
   #   };
   # };
 
-  # programs.fish = {
-  #   enable = true;
-  #   interactiveShellInit = lib.strings.concatStrings (lib.strings.intersperse "\n" ([
-  #     "source ${sources.theme-bobthefish}/functions/fish_prompt.fish"
-  #     "source ${sources.theme-bobthefish}/functions/fish_right_prompt.fish"
-  #     "source ${sources.theme-bobthefish}/functions/fish_title.fish"
-  #     (builtins.readFile ./config.fish)
-  #     "set -g SHELL ${pkgs.fish}/bin/fish"
-  #   ]));
-
-  #   shellAliases = {
-  #     ga = "git add";
-  #     gc = "git commit";
-  #     gco = "git checkout";
-  #     gcp = "git cherry-pick";
-  #     gdiff = "git diff";
-  #     gl = "git prettylog";
-  #     gp = "git push";
-  #     gs = "git status";
-  #     gt = "git tag";
-
-  #     jf = "jj git fetch";
-  #     jn = "jj new";
-  #     js = "jj st";
-  #   } // (if isLinux then {
-  #     # Two decades of using a Mac has made this such a strong memory
-  #     # that I'm just going to keep it consistent.
-  #     pbcopy = "xclip";
-  #     pbpaste = "xclip -o";
-  #   } else {});
-
-  #   plugins = map (n: {
-  #     name = n;
-  #     src  = sources.${n};
-  #   }) [
-  #     "fish-fzf"
-  #     "fish-foreign-env"
-  #     "theme-bobthefish"
-  #   ];
-  # };
-
   programs.git = {
     enable = true;
     userName = "Clayton Burlison";
@@ -303,53 +239,6 @@ in {
   #   '';
   # };
 
-  # programs.neovim = {
-  #   enable = true;
-  #   package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
-
-  #   withPython3 = true;
-
-  #   plugins = with pkgs; [
-  #     customVim.vim-copilot
-  #     customVim.vim-cue
-  #     customVim.vim-fish
-  #     customVim.vim-glsl
-  #     customVim.vim-misc
-  #     customVim.vim-pgsql
-  #     customVim.vim-tla
-  #     customVim.vim-zig
-  #     customVim.pigeon
-  #     customVim.AfterColors
-
-  #     customVim.vim-nord
-  #     customVim.nvim-comment
-  #     customVim.nvim-conform
-  #     customVim.nvim-dressing
-  #     customVim.nvim-gitsigns
-  #     customVim.nvim-lualine
-  #     customVim.nvim-lspconfig
-  #     customVim.nvim-nui
-  #     customVim.nvim-plenary # required for telescope
-  #     customVim.nvim-telescope
-  #     customVim.nvim-treesitter
-  #     customVim.nvim-treesitter-playground
-  #     customVim.nvim-treesitter-textobjects
-
-  #     vimPlugins.vim-eunuch
-  #     vimPlugins.vim-markdown
-  #     vimPlugins.vim-nix
-  #     vimPlugins.typescript-vim
-  #     vimPlugins.nvim-treesitter-parsers.elixir
-  #   ] ++ (lib.optionals (!isWSL) [
-  #     # This is causing a segfaulting while building our installer
-  #     # for WSL so just disable it for now. This is a pretty
-  #     # unimportant plugin anyway.
-  #     customVim.nvim-web-devicons
-  #   ]);
-
-  #   extraConfig = (import ./vim-config.nix) { inherit sources; };
-  # };
-
   # services.gpg-agent = {
   #   enable = isLinux;
   #   pinentryPackage = pkgs.pinentry-tty;
@@ -358,8 +247,6 @@ in {
   #   defaultCacheTtl = 31536000;
   #   maxCacheTtl = 31536000;
   # };
-
-  # xresources.extraConfig = builtins.readFile ./Xresources;
 
   # Make cursor not tiny on HiDPI screens
   home.pointerCursor = lib.mkIf (isLinux && !isWSL) {

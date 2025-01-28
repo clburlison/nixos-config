@@ -9,3 +9,7 @@ apis
 stdpath
 treesitter
 config
+github
+env
+api
+JSON

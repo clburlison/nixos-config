@@ -9,10 +9,11 @@
 # Example: Github issue #23
 
 # --- COMMIT END ---
-# Type can be 
+# Type can be
 #    feat     (new feature)
 #    fix      (bug fix)
 #    refactor (refactoring production code)
+#    release  (releasing a tagged change)
 #    style    (formatting, missing semi colons, etc; no code change)
 #    docs     (changes to documentation)
 #    test     (adding or refactoring tests; no production code change)

@@ -40,6 +40,7 @@ in {
     pkgs.jq
     pkgs.kubectl
     pkgs.kubeswitch
+    pkgs.lazygit
     pkgs.neovim
     pkgs.python312
     pkgs.ripgrep

@@ -32,6 +32,7 @@ in {
     pkgs.bun
     pkgs.curl
     pkgs.gh
+    pkgs.gh-dash
     pkgs.git
     pkgs.git-lfs
     pkgs.git-town

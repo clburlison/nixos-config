@@ -17,8 +17,8 @@ Nix configurations for my systems. Getting into Nix is not beginner friendly and
 3. Clone this repo
 
    ```sh
-   mkdir -p $HOME/src/clburlison
-   cd $HOME/src/clburlison
+   mkdir -p $HOME/dev/me
+   cd $HOME/dev/me
    git clone https://github.com/clburlison/nixos-config
    cd nixos-config
    ```

@@ -100,7 +100,7 @@ in {
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/src/clburlison/nixos-config/users/clburlison/dotfiles/config/nvim";
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/users/clburlison/dotfiles/config/nvim";
   };
 
   #---------------------------------------------------------------------

@@ -4,7 +4,6 @@
 # Logs and databases #
 ######################
 *.log
-*.sql
 *.sqlite
 
 # VS Code files #

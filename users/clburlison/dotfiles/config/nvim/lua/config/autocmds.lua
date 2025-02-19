@@ -43,3 +43,20 @@ vim.api.nvim_create_autocmd('BufReadPost', {
     end
   end,
 })
+
+-- Function to show diagnostics in a floating window
+local function show_diagnostics_float()
+  vim.diagnostic.open_float(nil, {
+    focusable = false,
+    scope = 'cursor',
+    border = 'rounded',
+    source = 'always',
+    prefix = '',
+  })
+end
+
+-- CursorHold to show diagnostics
+vim.api.nvim_create_autocmd('CursorHold', {
+  callback = show_diagnostics_float,
+  desc = 'Show floating diagnostics when cursor is held',
+})

@@ -35,3 +35,25 @@ set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Toggle true/false
+vim.fn.setreg('t', '^f:wye ciw' .. string.char(18) .. '=@"=~"true"?"false":"true"' .. string.char(27) .. string.char(27))
+set('n', '<leader>tt', '@t', { noremap = true, desc = 'Toggle true/false' })
+
+-- Add quotes around selected text
+set('v', '<leader>tq', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2"/g<CR>', { desc = 'Add double quotes around text' })
+
+-- Function to toggle diagnostic virtual text
+local function toggle_virtual_text()
+  local current_config = vim.diagnostic.config()
+  local virtual_text_enabled = current_config.virtual_text or false
+  -- Toggle the state
+  virtual_text_enabled = not virtual_text_enabled
+  vim.diagnostic.config {
+    virtual_text = virtual_text_enabled,
+  }
+  vim.notify('Diagnostic Virtual Text ' .. (virtual_text_enabled and 'Enabled' or 'Disabled'), vim.log.levels.INFO)
+end
+
+-- Toggle virtual_text with <leader>tv
+set('n', '<leader>tv', toggle_virtual_text, { desc = 'Toggle Diagnostic Virtual Text' })

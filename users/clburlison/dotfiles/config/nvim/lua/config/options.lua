@@ -73,3 +73,9 @@ vim.opt.scrolloff = 10
 vim.opt.spelllang = 'en_us'
 vim.opt.spell = true
 vim.opt.spelloptions = 'camel'
+
+-- Set virtual text to disabled by default
+vim.diagnostic.config { virtual_text = false }
+
+-- Adjust updatetime for responsiveness
+vim.o.updatetime = 1000 -- Set to 1 second

@@ -209,7 +209,7 @@ in {
 
   programs.go = {
     enable = true;
-    goPath = "src/go";
+    goPath = "dev/go";
     goPrivate = [ "github.com/clburlison" ];
   };
 

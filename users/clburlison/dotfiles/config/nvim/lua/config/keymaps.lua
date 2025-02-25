@@ -39,13 +39,13 @@ set('n', '<leader>wW', '<C-W>s', { desc = 'Split Window Below', remap = true })
 set('n', '<leader>wd', '<C-W>c', { desc = 'Delete Window', remap = true })
 
 -- tabs
-set('n', '<leader><tab>l', '<cmd>tablast<cr>', { desc = 'Last Tab' })
+set('n', '<leader><tab><tab>', '<cmd>tabnew<cr>', { desc = 'New Tab' })
 set('n', '<leader><tab>o', '<cmd>tabonly<cr>', { desc = 'Close Other Tabs' })
 set('n', '<leader><tab>f', '<cmd>tabfirst<cr>', { desc = 'First Tab' })
-set('n', '<leader><tab><tab>', '<cmd>tabnew<cr>', { desc = 'New Tab' })
-set('n', '<leader><tab>]', '<cmd>tabnext<cr>', { desc = 'Next Tab' })
+set('n', '<leader><tab>l', '<cmd>tablast<cr>', { desc = 'Last Tab' })
+set('n', '<leader><tab>n', '<cmd>tabnext<cr>', { desc = 'Next Tab' })
+set('n', '<leader><tab>p', '<cmd>tabprevious<cr>', { desc = 'Previous Tab' })
 set('n', '<leader><tab>d', '<cmd>tabclose<cr>', { desc = 'Close Tab' })
-set('n', '<leader><tab>[', '<cmd>tabprevious<cr>', { desc = 'Previous Tab' })
 
 -- Move Lines
 set('n', '<A-j>', "<cmd>execute 'move .+' . v:count1<cr>==", { desc = 'Move Down' })
@@ -70,7 +70,7 @@ vim.fn.setreg('t', '^f:wye ciw' .. string.char(18) .. '=@"=~"true"?"false":"true
 set('n', '<leader>tt', '@t', { noremap = true, desc = 'Toggle true/false' })
 
 -- Add quotes around selected text
-set('v', '<leader>tq', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2"/g<CR>', { desc = 'Add double quotes around text' })
+set('v', '<leader>tq', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2",/g<CR>', { desc = 'Add double quotes & comma around text' })
 
 -- Function to toggle diagnostic virtual text
 local function toggle_virtual_text()

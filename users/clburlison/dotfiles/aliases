@@ -33,7 +33,7 @@ alias sudo='sudo '                          # Enable aliases to be sudo’ed
 alias sha='shasum -a256 '                   # Eaiser sha256 check
 alias week='date +%V'                       # Get week number
 alias spotoff="sudo mdutil -a -i off"       # Disable Spotlight
-alias spoton="sudo mdutil -a -i on"         #  Enable Spotlight
+alias spoton="sudo mdutil -a -i on"         # Enable Spotlight
 alias lg="lazygit"                          # Easier lazygit
 #alias vi="vim"
 alias e="$EDITOR"
@@ -53,11 +53,7 @@ function docker-rmr() {
 }
 
 # kubectl aliases
-alias kubeprd="export KUBECONFIG=~/.kube/kubeconfig.prd"
-alias kubestg="export KUBECONFIG=~/.kube/kubeconfig.stg"
-alias kubetest="export KUBECONFIG=~/.kube/kubeconfig.test"
 alias kubeall="kubectl get pods,ingress,secrets,deployment.apps,services,frontendconfigs.networking.gke.io,configmaps,pvc"
-
 
 #   ----------------------------------------
 #   3.  SEARCHING -- More under ./functions

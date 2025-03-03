@@ -6,6 +6,7 @@ vim.g.maplocalleader = ' '
 require 'config.options'
 require 'config.keymaps'
 require 'config.autocmds'
+require 'config.functions'
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --  To check the current status of your plugins, run

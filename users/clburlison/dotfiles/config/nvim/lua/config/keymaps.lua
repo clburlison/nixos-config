@@ -61,28 +61,20 @@ set('n', '<leader>fn', '<cmd>enew<cr>', { desc = 'New File' })
 -- quit
 set('n', '<leader>qq', '<cmd>qa<cr>', { desc = 'Quit All' })
 
---
--- Functions below here
---
-
 -- Toggle true/false
 vim.fn.setreg('t', '^f:wye ciw' .. string.char(18) .. '=@"=~"true"?"false":"true"' .. string.char(27) .. string.char(27))
 set('n', '<leader>tt', '@t', { noremap = true, desc = 'Toggle true/false' })
+-- set({ 'n', 'v' }, '<leader>tt', ':ToggleBoolean<CR>', { desc = 'Toogle true/false' }) -- WIP
 
 -- Add quotes around selected text
 set('v', '<leader>tq', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2",/g<CR>', { desc = 'Add double quotes & comma around text' })
 
--- Function to toggle diagnostic virtual text
-local function toggle_virtual_text()
-  local current_config = vim.diagnostic.config() or {}
-  local virtual_text_enabled = current_config.virtual_text or false
-  -- Toggle the state
-  virtual_text_enabled = not virtual_text_enabled
-  vim.diagnostic.config {
-    virtual_text = virtual_text_enabled,
-  }
-  vim.notify('Diagnostic Virtual Text ' .. (virtual_text_enabled and 'Enabled' or 'Disabled'), vim.log.levels.INFO)
-end
+-- Toggle virtual_text
+set('n', '<leader>tv', ':ToggleVirtualText<CR>', { desc = 'Toggle Diagnostic Virtual Text' })
 
--- Toggle virtual_text with <leader>tv
-set('n', '<leader>tv', toggle_virtual_text, { desc = 'Toggle Diagnostic Virtual Text' })
+-- Remove duplicate lines
+set('v', '<leader>rl', ':RemoveDuplicateLines<CR>', {
+  noremap = true,
+  silent = true,
+  desc = 'Remove duplicates with feedback',
+})

@@ -39,8 +39,8 @@ let
 
   # The config files for this system.
   machineConfig = ../machines/${name}.nix;
-  userOSConfig = ../users/${nixConfigUser}/${if darwin then "darwin" else "nixos" }.nix;
-  userHMConfig = ../users/${nixConfigUser}/home-manager.nix;
+  userOSConfig = ../${if darwin then "darwin" else "nixos" }.nix;
+  userHMConfig = ../home-manager.nix;
 
   # NixOS vs nix-darwin functions
   systemFunc = if darwin then inputs.darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;

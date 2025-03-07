@@ -34,10 +34,7 @@ alias sha='shasum -a256 '                   # Eaiser sha256 check
 alias week='date +%V'                       # Get week number
 alias spotoff="sudo mdutil -a -i off"       # Disable Spotlight
 alias spoton="sudo mdutil -a -i on"         # Enable Spotlight
-alias lg="lazygit"                          # Easier lazygit
-#alias vi="vim"
 alias e="$EDITOR"
-#alias e="zed"
 alias lsregister_fix="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user"
 alias randompass="openssl rand -base64 32"
 
@@ -54,6 +51,16 @@ function docker-rmr() {
 
 # kubectl aliases
 alias kubeall="kubectl get pods,ingress,secrets,deployment.apps,services,frontendconfigs.networking.gke.io,configmaps,pvc"
+
+# Lazygit
+function lg() {
+    export LAZYGIT_NEW_DIR_FILE=~/.lazygit/newdir
+    lazygit "$@"
+    if [ -f $LAZYGIT_NEW_DIR_FILE ]; then
+            cd "$(cat $LAZYGIT_NEW_DIR_FILE)"
+            rm -f $LAZYGIT_NEW_DIR_FILE > /dev/null
+    fi
+}
 
 #   ----------------------------------------
 #   3.  SEARCHING -- More under ./functions

@@ -46,10 +46,11 @@ in {
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
+    pkgs.mysql84
     # pkgs.terraform
     pkgs.tmux
     pkgs.tree
-    pkgs.mysql84
+    pkgs.tree-sitter
     pkgs.vim
     pkgs.wget
     pkgs.zsh-powerlevel10k

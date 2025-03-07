@@ -91,6 +91,8 @@ in {
 
   home.file = {
     ".aliases".source = ./dotfiles/aliases;
+    ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles/config/lazygit";
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles/config/nvim";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;
@@ -101,7 +103,6 @@ in {
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles/config/nvim";
   };
 
   #---------------------------------------------------------------------

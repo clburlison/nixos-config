@@ -21,12 +21,11 @@
 
     darwin.url = "github:LnL7/nix-darwin/nix-darwin-24.11";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
-
   };
 
-  outputs = { self, nixpkgs, home-manager, darwin, ... }@inputs: let
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, darwin, ... }@inputs: let
     mkSystem = import ./lib/mksystem.nix {
-      inherit nixpkgs inputs;
+      inherit nixpkgs nixpkgs-unstable inputs;
     };
   in {
     # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {

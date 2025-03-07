@@ -22,7 +22,7 @@
 # https://github.com/mitchellh/nixos-config
 # This function creates a NixOS system based on our VM setup for a
 # particular architecture.
-{ nixpkgs, inputs }:
+{ nixpkgs, nixpkgs-unstable, inputs }:
 
 name:
 {
@@ -68,6 +68,7 @@ in systemFunc rec {
       home-manager.users.${user} = import userHMConfig {
         isWSL = isWSL;
         inputs = inputs;
+        pkgsUnstable = nixpkgs-unstable.legacyPackages.${system};
       };
     }
 

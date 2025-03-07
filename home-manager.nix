@@ -1,4 +1,4 @@
-{ isWSL, inputs, ... }:
+{ isWSL, inputs, pkgsUnstable, ... }:
 
 { config, lib, pkgs, ... }:
 
@@ -39,13 +39,13 @@ in {
     pkgs.jq
     pkgs.kubectl
     pkgs.kubeswitch
-    pkgs.lazygit
+    pkgs.mysql84
     pkgs.neovim
+    pkgs.nodejs_22 # Node is required for Copilot.vim
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
-    pkgs.mysql84
-    # pkgs.terraform
+    pkgs.terraform
     pkgs.tmux
     pkgs.tree
     pkgs.tree-sitter
@@ -53,8 +53,7 @@ in {
     pkgs.wget
     pkgs.zsh-powerlevel10k
     pkgs.zsh-z
-    # Node is required for Copilot.vim
-    # pkgs.nodejs
+    pkgsUnstable.lazygit
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
     pkgs._1password-cli

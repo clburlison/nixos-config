@@ -26,6 +26,9 @@ endif
 install:
 	curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
+update:
+	nix flake update
+
 clean:
 	nix-store --optimise
 	sudo nix-collect-garbage -d

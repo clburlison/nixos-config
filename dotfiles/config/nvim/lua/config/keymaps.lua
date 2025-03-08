@@ -55,6 +55,13 @@ set('i', '<A-k>', '<esc><cmd>m .-2<cr>==gi', { desc = 'Move Up' })
 set('v', '<A-j>', ":<C-u>execute \"'<,'>move '>+\" . v:count1<cr>gv=gv", { desc = 'Move Down' })
 set('v', '<A-k>', ":<C-u>execute \"'<,'>move '<-\" . (v:count1 + 1)<cr>gv=gv", { desc = 'Move Up' })
 
+-- buffers
+set('n', '<S-h>', '<cmd>bprevious<cr>', { desc = 'Prev Buffer' })
+set('n', '<S-l>', '<cmd>bnext<cr>', { desc = 'Next Buffer' })
+set('n', '<leader>bb', '<cmd>e #<cr>', { desc = 'Switch to Other Buffer' })
+set('n', '<leader>`', '<cmd>e #<cr>', { desc = 'Switch to Other Buffer' })
+set('n', '<leader>bd', '<cmd>bd<cr>', { desc = 'Delete Buffer' })
+
 -- new file
 set('n', '<leader>fn', '<cmd>enew<cr>', { desc = 'New File' })
 

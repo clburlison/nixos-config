@@ -1,22 +1,3 @@
--- Toggle the boolean word (true/false) under the cursor
-vim.api.nvim_create_user_command('ToggleBoolean', function(opts)
-  -- Helper function that toggles booleans in a given line using a replacement function.
-  local function toggle_line(line)
-    return line:gsub('(%f[%a])(true|false)(%f[%A])', function(left, word, right)
-      return left .. (word == 'true' and 'false' or 'true') .. right
-    end)
-  end
-
-  -- Retrieve the lines in the specified range.
-  local lines = vim.api.nvim_buf_get_lines(0, opts.line1 - 1, opts.line2, false)
-  for idx, line in ipairs(lines) do
-    lines[idx] = toggle_line(line)
-  end
-  -- Update the buffer with the toggled lines.
-  vim.api.nvim_buf_set_lines(0, opts.line1 - 1, opts.line2, false, lines)
-  vim.notify('Toggled booleans in selected line(s).', vim.log.levels.INFO)
-end, { range = true, desc = 'Toggle all occurrences of true/false in current or selected line(s)' })
-
 -- Function to toggle diagnostic virtual text
 local function toggle_virtual_text()
   local current_config = vim.diagnostic.config() or {}

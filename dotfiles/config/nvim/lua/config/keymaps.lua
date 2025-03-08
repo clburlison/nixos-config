@@ -61,11 +61,6 @@ set('n', '<leader>fn', '<cmd>enew<cr>', { desc = 'New File' })
 -- quit
 set('n', '<leader>qq', '<cmd>qa<cr>', { desc = 'Quit All' })
 
--- Toggle true/false
-vim.fn.setreg('t', '^f:wye ciw' .. string.char(18) .. '=@"=~"true"?"false":"true"' .. string.char(27) .. string.char(27))
-set({ 'n', 'v' }, '<leader>eb', '@t', { noremap = true, desc = 'Toggle true/false' })
--- set({ 'n', 'v' }, '<leader>eb', ':ToggleBoolean<CR>', { desc = 'Toogle true/false' }) -- WIP
-
 -- Add quotes around selected text
 set('v', '<leader>e"', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2",/g<CR>', { desc = 'Add double quotes & comma around text' })
 

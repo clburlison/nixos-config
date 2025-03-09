@@ -8,13 +8,6 @@ let
   isLinux = pkgs.stdenv.isLinux;
   dotfiles = "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles";
 
-  # For our MANPAGER env var
-  # https://github.com/sharkdp/bat/issues/1145
-  # manpager = (pkgs.writeShellScriptBin "manpager" (if isDarwin then ''
-  #   sh -c 'col -bx | bat -l man -p'
-  #   '' else ''
-  #   cat "$1" | col -bx | bat --language man --style plain
-  # ''));
 in {
   # The state version is required and should stay at the version you
   # originally installed.
@@ -83,8 +76,7 @@ in {
     EDITOR = "nvim";
     VISUAL = "nvim";
     PAGER = "less -FirSwX";
-    # MANPAGER = "${manpager}/bin/manpager";
-    # Set default blocksize for ls, df, du: http://hints.macworld.com/comment.php?mode=view&cid=24491
+    # Set default blocksize for ls, df, du
     BLOCKSIZE = "1k";
   };
 
@@ -147,9 +139,7 @@ in {
         export BUN_INSTALL="$HOME/.bun"
         export PATH="$BUN_INSTALL/bin:$PATH"
 
-        # kubeswitch
-        # https://github.com/danielfoehrKn/kubeswitch/blob/master/docs/installation.md
-        source <(switcher init zsh)
+        source <(switcher init zsh) # kubeswitch
         source <(switch completion zsh)
         eval "$(zoxide init zsh)"
       '';
@@ -210,13 +200,6 @@ in {
     goPath = "dev/go";
     goPrivate = [ "github.com/clburlison" ];
   };
-
-  # programs.jujutsu = {
-  #   enable = true;
-
-  #   # I don't use "settings" because the path is wrong on macOS at
-  #   # the time of writing this.
-  # };
 
   # programs.tmux = {
   #   enable = true;

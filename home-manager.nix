@@ -32,6 +32,7 @@ in {
     (pkgs.nerdfonts.override { fonts = [ "CascadiaMono" "Go-Mono" "Hack" "Meslo"]; })
     pkgs.bun
     pkgs.curl
+    pkgs.fzf
     pkgs.gh
     pkgs.git
     pkgs.git-lfs

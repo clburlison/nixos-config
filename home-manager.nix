@@ -53,8 +53,8 @@ in {
     pkgs.vim
     pkgs.wget
     pkgs.zsh-powerlevel10k
-    pkgs.zsh-z
     pkgsUnstable.lazygit
+    pkgsUnstable.zoxide
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
     pkgs._1password-cli
@@ -126,7 +126,6 @@ in {
         "git"
         # "terraform"
         "kubectl"
-        "z"
       ];
       extraConfig = ''
         zstyle ':omz:plugins:nvm' lazy yes
@@ -154,6 +153,7 @@ in {
         # https://github.com/danielfoehrKn/kubeswitch/blob/master/docs/installation.md
         source <(switcher init zsh)
         source <(switch completion zsh)
+        eval "$(zoxide init zsh)"
       '';
     };
     # initExtra = builtins.readFile ./dotfiles/zshrc;

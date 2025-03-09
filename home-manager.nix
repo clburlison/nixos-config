@@ -6,6 +6,7 @@ let
   # sources = import ../../nix/sources.nix;
   isDarwin = pkgs.stdenv.isDarwin;
   isLinux = pkgs.stdenv.isLinux;
+  dotfiles = "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles";
 
   # For our MANPAGER env var
   # https://github.com/sharkdp/bat/issues/1145
@@ -88,8 +89,8 @@ in {
 
   home.file = {
     ".aliases".source = ./dotfiles/aliases;
-    ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles/config/lazygit";
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles/config/nvim";
+    ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/lazygit";
+    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/nvim";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;

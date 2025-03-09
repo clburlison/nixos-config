@@ -139,8 +139,10 @@ in {
         export BUN_INSTALL="$HOME/.bun"
         export PATH="$BUN_INSTALL/bin:$PATH"
 
-        source <(switcher init zsh) # kubeswitch
+        # kubeswitch
+        source <(switcher init zsh)
         source <(switch completion zsh)
+
         eval "$(zoxide init zsh)"
       '';
     };

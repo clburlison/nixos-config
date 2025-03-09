@@ -46,6 +46,7 @@ in {
     pkgs.vim
     pkgs.wget
     pkgs.zsh-powerlevel10k
+    pkgs.zsh-vi-mode
     pkgsUnstable.bun
     pkgsUnstable.lazygit
     pkgsUnstable.zoxide
@@ -144,6 +145,7 @@ in {
         source <(switch completion zsh)
 
         eval "$(zoxide init zsh)"
+        source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
       '';
     };
     # initExtra = builtins.readFile ./dotfiles/zshrc;

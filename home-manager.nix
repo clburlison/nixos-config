@@ -30,7 +30,6 @@ in {
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
     (pkgs.nerdfonts.override { fonts = [ "CascadiaMono" "Go-Mono" "Hack" "Meslo"]; })
-    pkgs.bun
     pkgs.curl
     pkgs.fzf
     pkgs.gh
@@ -54,6 +53,7 @@ in {
     pkgs.vim
     pkgs.wget
     pkgs.zsh-powerlevel10k
+    pkgsUnstable.bun
     pkgsUnstable.lazygit
     pkgsUnstable.zoxide
   ] ++ (lib.optionals isDarwin [
@@ -142,9 +142,6 @@ in {
             [ -r "$file" ] && [ -f "$file" ] && source "$file";
         done;
         unset file;
-
-        # bun completions
-        [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
         # bun
         export BUN_INSTALL="$HOME/.bun"

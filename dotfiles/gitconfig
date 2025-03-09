@@ -94,22 +94,6 @@
 			git config user.email "clayton@unity3d.com" --local; \
 		fi \
 	}"
-	append = town append
-	hack = town hack
-	kill = town kill
-	new-pull-request = town new-pull-request
-	prepend = town prepend
-	prune-branches = town prune-branches
-	rename-branch = town rename-branch
-	repo = town repo
-	ship = town ship
-	sync = town sync
-	contribute = town contribute
-	diff-parent = town diff-parent
-	observe = town observe
-	park = town park
-	propose = town propose
-	set-parent = town set-parent
 
 [apply]
 
@@ -212,6 +196,9 @@
 
 [branch]
 	autosetuprebase = always
+
+[rebase]
+	updateRefs = true
 
 [filter "lfs"]
 	process = git-lfs filter-process

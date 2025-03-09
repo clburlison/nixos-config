@@ -5,6 +5,8 @@ gui:
       - black
   # If true, when using the panel jump keys (default 1 through 5) and target panel is already active, go to next tab instead
   switchTabsWithPanelJumpKeys: true
+git:
+  overrideGpg: true
 # retrieved from: https://github.com/jesseduffield/lazygit/wiki/Custom-Commands-Compendium#conventional-commit
 customCommands:
   - key: "o"

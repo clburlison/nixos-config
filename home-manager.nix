@@ -46,7 +46,7 @@ in {
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
-    pkgs.terraform
+    # pkgs.terraform # this is a slow install with nix?
     pkgs.tmux
     pkgs.tree
     pkgs.tree-sitter

@@ -1,6 +1,6 @@
 # nixOS Configuration
 
-Nix configurations for my systems. Getting into Nix is not beginner friendly and this repo isn't intended to guide you, however it might be useful for examples. I borrowed many ideas from [Mitchell Hashimoto](https://github.com/mitchellh/nixos-config).
+My nix and dotfile configurations.
 
 ## Usage
 
@@ -103,3 +103,4 @@ nix --extra-experimental-features "nix-command flakes" run nix-darwin#darwin-uni
 - https://zero-to-nix.com/start/install
 - https://github.com/zhaofengli/attic (self hosted caching)
 - https://github.com/jacobbednarz/j
+- [Mitchell Hashimoto nix](https://github.com/mitchellh/nixos-config)

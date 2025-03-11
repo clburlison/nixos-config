@@ -1,5 +1,6 @@
-{ isWSL, inputs, pkgsUnstable, ... }:
+# https://nix-community.github.io/home-manager/options.xhtml
 
+{ isWSL, inputs, pkgsUnstable, ... }:
 { config, lib, pkgs, ... }:
 
 let
@@ -114,41 +115,34 @@ in {
     enable = true;
     syntaxHighlighting.enable = true;
     autosuggestion.enable = true;
-    oh-my-zsh = {
-      enable = true;
-      plugins = [
-        "git"
-        # "terraform"
-        "kubectl"
-      ];
-      extraConfig = ''
-        zstyle ':omz:plugins:nvm' lazy yes
-        zstyle ':omz:update' mode disabled
-
-        # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-        [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-        # Load the shell dotfiles, and then some:
-        # * ~/.path can be used to extend `$PATH`.
-        # * ~/.extra can be used for other settings you don’t want to commit.
-        for file in ~/.{path,aliases,functions,extra}; do
-            [ -r "$file" ] && [ -f "$file" ] && source "$file";
-        done;
-        unset file;
-
-        # bun
-        export BUN_INSTALL="$HOME/.bun"
-        export PATH="$BUN_INSTALL/bin:$PATH"
-
-        # kubeswitch
-        source <(switcher init zsh)
-        source <(switch completion zsh)
-
-        eval "$(zoxide init zsh)"
-        source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
-      '';
-    };
     # initExtra = builtins.readFile ./dotfiles/zshrc;
+    initExtra = ''
+      # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+      [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+      # Load the shell dotfiles, and then some:
+      # * ~/.path can be used to extend `$PATH`.
+      # * ~/.extra can be used for other settings you don’t want to commit.
+      for file in ~/.{path,aliases,functions,extra}; do
+          [ -r "$file" ] && [ -f "$file" ] && source "$file";
+      done;
+      unset file;
+
+      # bun
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
+
+      # kubeswitch
+      source <(switcher init zsh)
+      source <(switch completion zsh)
+
+      eval "$(zoxide init zsh)"
+      source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+      ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(buffer-empty bracketed-paste accept-line push-line-or-edit)
+      ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+      ZSH_AUTOSUGGEST_USE_ASYNC=true
+      zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")
+    '';
     initExtraFirst = ''
       source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
       # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.

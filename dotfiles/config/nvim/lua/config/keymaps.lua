@@ -77,6 +77,9 @@ set('v', '<leader>ec', ':s/^\\(\\s*\\)\\(.*\\)$/\\2,/g<CR>', { desc = 'Add trail
 -- Toggle virtual_text
 set('n', '<leader>tv', ':ToggleVirtualText<CR>', { desc = 'Toggle Diagnostic Virtual Text' })
 
+-- Toggle Markdown Rendering
+set('n', '<leader>tm', ':RenderMarkdown toggle<CR>', { desc = 'Toggle Markdown Rendering' })
+
 -- Remove duplicate lines
 set('v', '<leader>rl', ':RemoveDuplicateLines<CR>', {
   noremap = true,

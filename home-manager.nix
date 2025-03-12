@@ -50,6 +50,7 @@ in {
     pkgs.zsh-vi-mode
     pkgsUnstable.bun
     pkgsUnstable.lazygit
+    pkgsUnstable.zellij
     pkgsUnstable.zoxide
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only

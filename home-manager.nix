@@ -41,7 +41,6 @@ in {
     pkgs.ripgrep
     pkgs.ripgrep-all
     # pkgs.terraform # this is a slow install with nix?
-    pkgs.tmux
     pkgs.tree
     pkgs.tree-sitter
     pkgs.vim
@@ -199,27 +198,6 @@ in {
     goPath = "dev/go";
     goPrivate = [ "github.com/clburlison" ];
   };
-
-  # programs.tmux = {
-  #   enable = true;
-  #   terminal = "xterm-256color";
-  #   shortcut = "l";
-  #   secureSocket = false;
-  #   mouse = true;
-
-  #   extraConfig = ''
-  #     set -ga terminal-overrides ",*256col*:Tc"
-
-  #     set -g @dracula-show-battery false
-  #     set -g @dracula-show-network false
-  #     set -g @dracula-show-weather false
-
-  #     bind -n C-k send-keys "clear"\; send-keys "Enter"
-
-  #     run-shell ${sources.tmux-pain-control}/pain_control.tmux
-  #     run-shell ${sources.tmux-dracula}/dracula.tmux
-  #   '';
-  # };
 
   # services.gpg-agent = {
   #   enable = isLinux;

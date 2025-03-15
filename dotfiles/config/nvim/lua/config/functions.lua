@@ -1,3 +1,17 @@
+-- Function to toggle the 80-character ruler
+local function toggle_ruler_80()
+  if string.find(vim.o.colorcolumn, '81') then
+    -- Ruler is on, turn it off
+    vim.opt.colorcolumn = ''
+  else
+    -- Ruler is off, turn it on
+    vim.opt.colorcolumn = '81'
+  end
+end
+
+-- Command to toggle the ruler
+vim.api.nvim_create_user_command('Ruler80', toggle_ruler_80, {})
+
 -- Function to toggle diagnostic virtual text
 local function toggle_virtual_text()
   local current_config = vim.diagnostic.config() or {}

@@ -80,3 +80,9 @@ vim.diagnostic.config { virtual_text = false }
 
 -- Adjust updatetime for responsiveness
 vim.o.updatetime = 1000 -- Set to 1 second
+
+-- Treesitter for folding
+--   NOTE: ufo might be better long term https://github.com/kevinhwang91/nvim-ufo
+vim.wo.foldmethod = 'expr'
+vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.wo.foldenable = false

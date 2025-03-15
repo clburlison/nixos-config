@@ -137,11 +137,12 @@ in {
       source <(switch completion zsh)
 
       eval "$(zoxide init zsh)"
-      source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
-      ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(buffer-empty bracketed-paste accept-line push-line-or-edit)
+      # source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+      # ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(buffer-empty bracketed-paste accept-line push-line-or-edit)
       ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-      ZSH_AUTOSUGGEST_USE_ASYNC=true
-      zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")
+      # ZSH_AUTOSUGGEST_USE_ASYNC=true
+      # zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")
+      bindkey '^y' autosuggest-accept
     '';
     initExtraFirst = ''
       source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"

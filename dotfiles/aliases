@@ -38,6 +38,7 @@ alias e="$EDITOR"                           # Shortcut for main editor
 alias lsregister_fix="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user"
 alias randompass="openssl rand -base64 32"  # Easy random password
 alias zz="zellij"                           # Terminal multiplexer
+alias zzl="zellij -l welcome"               # Zel welcome screen
 
 # Docker aliases
 alias docker-ip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"

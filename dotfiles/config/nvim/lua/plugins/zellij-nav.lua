@@ -12,8 +12,11 @@ return {
     opts = {},
   },
   {
+    -- Not sure why this plugin was mentioned as required? Navigation seems to work
+    -- just fine without it. With it enabled it drastically slows down neovim's shutdown.
     'hiasr/vim-zellij-navigator.nvim',
-    enabled = true,
+    enabled = false,
+    event = 'VeryLazy',
     config = function()
       require('vim-zellij-navigator').setup()
     end,

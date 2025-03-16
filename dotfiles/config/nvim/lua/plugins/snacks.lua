@@ -19,7 +19,19 @@ return {
       quickfile = { enabled = false },
       scope = { enabled = false },
       scroll = { enabled = false },
-      statuscolumn = { enabled = false },
+      statuscolumn = {
+        enabled = true,
+        left = { 'fold', 'mark', 'sign' },
+        right = { 'git' },
+        folds = {
+          open = true,
+          git_hl = false,
+        },
+        git = {
+          patterns = { 'GitSign', 'MiniDiffSign' },
+        },
+        refresh = 50,
+      },
       words = { enabled = false },
     },
     keys = {

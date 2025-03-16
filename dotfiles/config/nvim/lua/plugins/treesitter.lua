@@ -1,4 +1,5 @@
 -- Highlight, edit, and navigate code
+-- data stored at ~/.local/share/nvim/lazy/nvim-treesitter/parser
 return {
   'nvim-treesitter/nvim-treesitter',
   build = ':TSUpdate',
@@ -18,6 +19,7 @@ return {
       'json',
       'json5',
       'jsonc',
+      'kdl',
       'lua',
       'luadoc',
       'luap',
@@ -38,10 +40,18 @@ return {
       'xml',
       'yaml',
     },
-    -- Auto-install languages that are not installed
-    auto_install = true,
+    auto_install = false,
     highlight = { enable = true },
     indent = { enable = false },
+    incremental_selection = {
+      enable = true,
+      keymaps = {
+        init_selection = '<Enter>',
+        node_incremental = '<Enter>',
+        scope_incremental = false,
+        node_decremental = '<Backspace>',
+      },
+    },
   },
   -- There are additional nvim-treesitter modules that you can use to interact
   -- with nvim-treesitter. You should go explore a few and see what interests you:

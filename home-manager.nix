@@ -47,6 +47,7 @@ in {
     pkgs.wget
     pkgs.zsh-powerlevel10k
     pkgs.zsh-vi-mode
+    pkgs.zsh-history-substring-search
     pkgsUnstable.bun
     pkgsUnstable.lazygit
     pkgsUnstable.zellij
@@ -116,6 +117,7 @@ in {
     enable = true;
     syntaxHighlighting.enable = true;
     autosuggestion.enable = true;
+    enableCompletion = true;
     # initExtra = builtins.readFile ./dotfiles/zshrc;
     initExtra = ''
       # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
@@ -132,6 +134,7 @@ in {
       # bun
       export BUN_INSTALL="$HOME/.bun"
       export PATH="$BUN_INSTALL/bin:$PATH"
+      fpath+=(${pkgs.bun}/share/zsh/site-functions)
 
       # kubeswitch
       source <(switcher init zsh)
@@ -139,11 +142,13 @@ in {
 
       eval "$(zoxide init zsh)"
       # source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
-      # ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(buffer-empty bracketed-paste accept-line push-line-or-edit)
-      ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-      # ZSH_AUTOSUGGEST_USE_ASYNC=true
+      source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh
       # zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")
       bindkey '^y' autosuggest-accept
+
+      # Better zsh history
+      bindkey '^[[A' history-substring-search-up
+      bindkey '^[[B' history-substring-search-down
     '';
     initExtraFirst = ''
       source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"

@@ -100,6 +100,18 @@ in {
     ".path".source = ./dotfiles/path;
   };
 
+  # Disable Safe Mode for Zen/Firefox. I use the hyper key for launch and this causes issues.
+  # https://github.com/zen-browser/desktop/issues/6538
+  launchd.agents.MOZ_DISABLE_SAFE_MODE = {
+    enable = true;
+    config = {
+      Label = "com.clburlison.MOZ_DISABLE_SAFE_MODE";
+      ProgramArguments = [ "/bin/launchctl" "setenv" "MOZ_DISABLE_SAFE_MODE_KEY" "1" ];
+      RunAtLoad = true;
+      ServiceIPC = false;
+    };
+  };
+
   #---------------------------------------------------------------------
   # Programs
   #---------------------------------------------------------------------

@@ -6,6 +6,8 @@ keybinds clear-defaults=true {
         bind "Super c" { Copy; }
         //bind "Ctrl Shift Tab" { GoToPreviousTab; }
         //bind "Ctrl Tab" { GoToNextTab; }
+        bind "Super [" { GoToPreviousTab; }
+        bind "Super ]" { GoToNextTab; }
         bind "Super w" { CloseTab; }
         bind "Super n" { NewTab; }
         bind "Super g" { SwitchToMode "locked"; }

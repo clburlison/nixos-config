@@ -36,7 +36,6 @@ in {
     pkgs.kubeswitch
     pkgs.mysql84
     pkgs.neovim
-    # pkgs.nodejs_22 # Node is required for Copilot.vim
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
@@ -50,6 +49,7 @@ in {
     pkgs.zsh-history-substring-search
     pkgsUnstable.bun
     pkgsUnstable.lazygit
+    pkgsUnstable.nodejs_22 # Node is required for Copilot.vim
     pkgsUnstable.zellij
     pkgsUnstable.zoxide
   ] ++ (lib.optionals isDarwin [

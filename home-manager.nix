@@ -36,7 +36,7 @@ in {
     pkgs.kubeswitch
     pkgs.mysql84
     pkgs.neovim
-    pkgs.nodejs_22 # Node is required for Copilot.vim
+    # pkgs.nodejs_22 # Node is required for Copilot.vim
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
@@ -55,7 +55,7 @@ in {
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
     pkgs._1password-cli
-    pkgs.azure-cli
+    # pkgs.azure-cli
     pkgs.ffmpeg_7-full
     pkgs.hugo
     pkgs.ngrok

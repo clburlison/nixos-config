@@ -20,10 +20,14 @@
     # Can use cachix or https://github.com/zhaofengli/attic for personal usage
     settings = {
       substituters = [
+        "https://cache.nixos.org/"
         "https://nix-community.cachix.org"
+        "https://nix-darwin.cachix.org"
       ];
       trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "nix-darwin.cachix.org-1:RIiwxkm/D5C8GGGdWKYQOY5TdpYIQejZ+j+O6Qz0aFA="
       ];
     };
   };

@@ -23,7 +23,6 @@ in {
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
-    (pkgs.nerdfonts.override { fonts = [ "CascadiaMono" "Go-Mono" "Hack" "Meslo"]; })
     pkgs.curl
     pkgs.fzf
     pkgs.gh
@@ -36,6 +35,10 @@ in {
     pkgs.kubeswitch
     pkgs.mysql84
     pkgs.neovim
+    pkgs.nerd-fonts.caskaydia-mono
+    pkgs.nerd-fonts.go-mono
+    pkgs.nerd-fonts.hack
+    pkgs.nerd-fonts.meslo-lg
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all

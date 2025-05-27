@@ -6,7 +6,7 @@
     # we'll use for our configurations. Be very careful changing this because
     # it'll impact your entire system. Using "unstable" is an option
     # https://github.com/NixOS/nixpkgs/branches/all?query=nixos-
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
     # We use the unstable nixpkgs repo for some packages.
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
@@ -16,10 +16,10 @@
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
 
     # https://github.com/nix-community/home-manager/branches/all?query=release
-    home-manager.url = "github:nix-community/home-manager/release-24.11";
+    home-manager.url = "github:nix-community/home-manager/release-25.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    darwin.url = "github:LnL7/nix-darwin/nix-darwin-24.11";
+    darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
   };
 

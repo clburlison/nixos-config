@@ -36,7 +36,7 @@ set('n', '<C-Right>', '<cmd>vertical resize +2<cr>', { desc = 'Increase Window W
 -- Create window splits
 set('n', '<leader>ww', '<C-W>v', { desc = 'Split Window Right', remap = true })
 set('n', '<leader>wW', '<C-W>s', { desc = 'Split Window Below', remap = true })
-set('n', '<leader>wd', '<C-W>c', { desc = 'Delete Window', remap = true })
+set('n', '<leader>wx', '<C-W>c', { desc = 'Delete Window', remap = true })
 
 -- tabs
 set('n', '<leader><tab><tab>', '<cmd>tabnew<cr>', { desc = 'New Tab' })
@@ -45,7 +45,7 @@ set('n', '<leader><tab>f', '<cmd>tabfirst<cr>', { desc = 'First Tab' })
 set('n', '<leader><tab>l', '<cmd>tablast<cr>', { desc = 'Last Tab' })
 set('n', '<leader><tab>n', '<cmd>tabnext<cr>', { desc = 'Next Tab' })
 set('n', '<leader><tab>p', '<cmd>tabprevious<cr>', { desc = 'Previous Tab' })
-set('n', '<leader><tab>d', '<cmd>tabclose<cr>', { desc = 'Close Tab' })
+set('n', '<leader><tab>x', '<cmd>tabclose<cr>', { desc = 'Close Tab' })
 
 -- Move Lines
 set('n', '<A-j>', "<cmd>execute 'move .+' . v:count1<cr>==", { desc = 'Move Down' })

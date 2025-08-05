@@ -1,6 +1,8 @@
 # https://nix-community.github.io/home-manager/options.xhtml
 
-{ isWSL, inputs, pkgsUnstable, ... }:
+# { isWSL, inputs, pkgsUnstable, ... }:
+{ isWSL, inputs, ... }:
+
 { config, lib, pkgs, ... }:
 
 let
@@ -23,6 +25,7 @@ in {
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
+    pkgs.bun
     pkgs.curl
     pkgs.fzf
     pkgs.gh
@@ -33,28 +36,30 @@ in {
     pkgs.jq
     pkgs.kubectl
     pkgs.kubeswitch
+    pkgs.lazygit
     pkgs.mysql84
     pkgs.neovim
     pkgs.nerd-fonts.caskaydia-mono
     pkgs.nerd-fonts.go-mono
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
+    pkgs.nodejs_22 # Node is required for Copilot.vim
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
+    pkgs.rustc
+    pkgs.rustup
+    # pkgs.rust-bin.nightly."2025-07-27".default
     # pkgs.terraform # this is a slow install with nix?
     pkgs.tree
     pkgs.tree-sitter
     pkgs.vim
     pkgs.wget
+    pkgs.zellij
+    pkgs.zoxide
+    pkgs.zsh-history-substring-search
     pkgs.zsh-powerlevel10k
     pkgs.zsh-vi-mode
-    pkgs.zsh-history-substring-search
-    pkgsUnstable.bun
-    pkgsUnstable.lazygit
-    pkgsUnstable.nodejs_22 # Node is required for Copilot.vim
-    pkgsUnstable.zellij
-    pkgsUnstable.zoxide
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
     pkgs._1password-cli

@@ -74,6 +74,9 @@ set('v', '<leader>e"', ':s/^\\(\\s*\\)\\(.*\\)$/\\1"\\2",/g<CR>', { desc = 'Add 
 -- Add trailing comma to list
 set('v', '<leader>ec', ':s/^\\(\\s*\\)\\(.*\\)$/\\2,/g<CR>', { desc = 'Add trailing comma to text' })
 
+-- Split comma-separated list into newlines
+set('v', '<leader>en', ':s/,\\s*/\\r/g<CR>', { desc = 'Split comma-separated list into newlines' })
+
 -- Toggle virtual_text
 set('n', '<leader>tv', ':ToggleVirtualText<CR>', { desc = 'Toggle Diagnostic Virtual Text' })
 

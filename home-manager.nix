@@ -160,6 +160,8 @@ in {
       source <(switcher init zsh)
       source <(switch completion zsh)
 
+      # HACK: https://github.com/zellij-org/zellij/issues/1933#issuecomment-2274464004
+      source <( zellij setup --generate-completion zsh | sed -Ee 's/^(_(zellij) ).*/compdef \1\2/' )
       eval "$(zoxide init zsh)"
       # source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
       source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh

@@ -195,7 +195,7 @@ keybinds clear-defaults=true {
             }
         }
         bind "Super y" {
-            LaunchOrFocusPlugin "https://github.com/karimould/zellij-forgot/releases/download/0.4.1/zellij_forgot.wasm" {
+            LaunchOrFocusPlugin "https://github.com/karimould/zellij-forgot/releases/download/0.4.2/zellij_forgot.wasm" {
                 floating true
                 LOAD_ZELLIJ_BINDINGS "true"
             }

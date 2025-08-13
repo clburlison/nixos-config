@@ -17,7 +17,8 @@ return {
       },
     },
     keys = {
-      { '<leader>ac', ':CopilotChat<CR>', mode = 'n', desc = 'Chat with Copilot' },
+      { '<leader>ac', ':CopilotChatToggle<CR>', mode = 'n', desc = 'Chat with Copilot' },
+      { '<leader>ar', ':CopilotChatReset<CR>', mode = 'n', desc = 'Reset Copilot Chat' },
       { '<leader>ae', ':CopilotChatExplain<CR>', mode = 'v', desc = 'Explain Code' },
       { '<leader>ar', ':CopilotChatReview<CR>', mode = 'v', desc = 'Review Code' },
       { '<leader>af', ':CopilotChatFix<CR>', mode = 'v', desc = 'Fix Code Issues' },

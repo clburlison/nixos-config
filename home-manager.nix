@@ -53,6 +53,7 @@ in {
     # pkgs.terraform # this is a slow install with nix?
     pkgs.tree
     pkgs.tree-sitter
+    pkgs.uv
     pkgs.vim
     pkgs.wget
     pkgs.zellij

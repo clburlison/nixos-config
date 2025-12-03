@@ -130,15 +130,16 @@ return {
 
       -- Swift LSP configuration
       -- https://www.swift.org/documentation/articles/zero-to-swift-nvim.html
-      require('lspconfig').sourcekit.setup {
-        capabilities = {
-          workspace = {
-            didChangeWatchedFiles = {
-              dynamicRegistration = true,
-            },
-          },
-        },
-      }
+      -- WARN: The following needs to be updated to support nvim 11.x
+      -- require('lspconfig').sourcekit.setup {
+      --   capabilities = {
+      --     workspace = {
+      --       didChangeWatchedFiles = {
+      --         dynamicRegistration = true,
+      --       },
+      --     },
+      --   },
+      -- }
 
       -- Enable the following language servers
       --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
@@ -158,7 +159,6 @@ return {
         pyright = {},
         rust_analyzer = {},
         ts_ls = {},
-        -- nixd = {},
         lua_ls = {
           settings = {
             Lua = {
@@ -189,13 +189,13 @@ return {
         'markdownlint-cli2',
         'stylua',
         'swiftlint',
-        -- 'nixd',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('lspconfig').biome.setup {}
-      -- require('lspconfig').nixd.setup {}
+      vim.lsp.enable 'biome'
       require('mason-lspconfig').setup {
+        ensure_installed = ensure_installed,
+        automatic_enable = true,
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}

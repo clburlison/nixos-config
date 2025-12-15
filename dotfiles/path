@@ -9,7 +9,7 @@ export PATH=/usr/local/bin:$PATH
 export PATH=$HOME/bin:$PATH
 export PATH=/usr/libexec:$PATH
 export PATH=/usr/local/sbin:$PATH
-export PATH=$HOME/go/bin:$PATH
+export PATH=$HOME/dev/go/bin:$PATH
 export PATH=$HOME/Library/Python/3.11/bin:$PATH
 # HACK: Ghostty currently has a conflict with nix.
 # https://github.com/ghostty-org/ghostty/discussions/5709#discussioncomment-12186534

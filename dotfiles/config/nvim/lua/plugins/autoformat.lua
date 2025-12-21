@@ -35,7 +35,17 @@ return {
         }
       end,
       formatters_by_ft = {
+        bash = { 'shfmt' },
+        css = { 'prettier' },
+        html = { 'prettier' },
+        javascript = { 'prettier' },
+        json = { 'prettier' },
+        -- kdl = { 'kdlfmt' }, -- Not popular and reduces readability
         lua = { 'stylua' },
+        markdown = { 'prettier' },
+        python = { 'isort', 'black' },
+        typescript = { 'prettier' },
+        yaml = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --

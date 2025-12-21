@@ -140,7 +140,15 @@ in {
     autosuggestion.enable = true;
     enableCompletion = true;
     # initExtra = builtins.readFile ./dotfiles/zshrc;
-    initExtra = ''
+    initContent = ''
+      source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
+      # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+      # Initialization code that may require console input (password prompts, [y/n]
+      # confirmations, etc.) must go above this block; everything else may go below.
+      if [[ -r "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+        source "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
+      fi
+
       # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
       [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -173,54 +181,12 @@ in {
       bindkey '^[[A' history-substring-search-up
       bindkey '^[[B' history-substring-search-down
     '';
-    initExtraFirst = ''
-      source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
-      # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-      # Initialization code that may require console input (password prompts, [y/n]
-      # confirmations, etc.) must go above this block; everything else may go below.
-      if [[ -r "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-        source "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-      fi
-    '';
   };
-
-  # programs.direnv= {
-  #   enable = true;
-
-  #   config = {
-  #     whitelist = {
-  #       prefix= [
-  #         "$HOME/code/go/src/github.com/hashicorp"
-  #         "$HOME/code/go/src/github.com/mitchellh"
-  #       ];
-
-  #       exact = ["$HOME/.envrc"];
-  #     };
-  #   };
-  # };
 
   programs.git = {
     enable = true;
     userName = "Clayton Burlison";
     userEmail = "git@clburlison.com";
-    # signing = {
-    #   key = "523D5DC389D273BC";
-    #   signByDefault = true;
-    # };
-    # aliases = {
-    #   cleanup = "!git branch --merged | grep  -v '\\*\\|master\\|develop' | xargs -n 1 -r git branch -d";
-    #   prettylog = "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(r) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative";
-    #   root = "rev-parse --show-toplevel";
-    # };
-    # extraConfig = {
-    #   branch.autosetuprebase = "always";
-    #   color.ui = true;
-    #   core.askPass = ""; # needs to be empty to use terminal for ask pass
-    #   credential.helper = "store"; # want to make this more secure
-    #   github.user = "mitchellh";
-    #   push.default = "tracking";
-    #   init.defaultBranch = "main";
-    # };
   };
 
   programs.go = {
@@ -228,15 +194,6 @@ in {
     goPath = "dev/go";
     goPrivate = [ "github.com/clburlison" ];
   };
-
-  # services.gpg-agent = {
-  #   enable = isLinux;
-  #   pinentryPackage = pkgs.pinentry-tty;
-
-  #   # cache the keys forever so we don't get asked for a password
-  #   defaultCacheTtl = 31536000;
-  #   maxCacheTtl = 31536000;
-  # };
 
   # Make cursor not tiny on HiDPI screens
   home.pointerCursor = lib.mkIf (isLinux && !isWSL) {

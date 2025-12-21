@@ -184,11 +184,12 @@ return {
       vim.list_extend(ensure_installed, {
         'biome',
         'html',
+        'kdlfmt',
         'markdown-toc',
         'markdownlint',
         'markdownlint-cli2',
         'stylua',
-        'swiftlint',
+        -- 'swiftlint',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

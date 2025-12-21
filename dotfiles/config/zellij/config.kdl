@@ -15,6 +15,7 @@ keybinds clear-defaults=true {
         bind "Super n" { NewTab; }
         bind "Super r" { SwitchToMode "resize"; }
         bind "Super s" { SwitchToMode "search"; }
+        bind "Ctrl s" { SwitchToMode "scroll"; }
         bind "Super u" { SwitchToMode "move"; }
         bind "Super w" { CloseTab; }
     }
@@ -232,7 +233,7 @@ keybinds clear-defaults=true {
         bind "esc" { SwitchToMode "normal"; }
     }
     shared_among "resize" "pane" "tab" "search" "session" "move" {
-        bind "Super s" { SwitchToMode "scroll"; }
+        bind "Ctrl s" { SwitchToMode "scroll"; }
     }
     shared_among "pane" "tab" "scroll" "search" "session" "move" {
         bind "Super n" { SwitchToMode "resize"; }
@@ -303,6 +304,8 @@ plugins {
 // eg. "file:/path/to/my-plugin.wasm"
 // eg. "https://example.com/my-plugin.wasm"
 load_plugins {
+    // Force load the compact-bar plugin which allows hover tooltips
+    compact-bar
 }
  
 // Use a simplified UI without special fonts (arrow glyphs)

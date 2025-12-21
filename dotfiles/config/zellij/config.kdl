@@ -194,12 +194,6 @@ keybinds clear-defaults=true {
                 move_mod "ctrl"
             }
         }
-        bind "Super y" {
-            LaunchOrFocusPlugin "https://github.com/karimould/zellij-forgot/releases/download/0.4.2/zellij_forgot.wasm" {
-                floating true
-                LOAD_ZELLIJ_BINDINGS "true"
-            }
-        }
     }
     shared_except "locked" "entersearch" "renametab" "renamepane" "move" "prompt" "tmux" {
         bind "Super h" { SwitchToMode "move"; }
@@ -276,7 +270,9 @@ keybinds clear-defaults=true {
 // changing these requires a restart to take effect
 plugins {
     about location="zellij:about"
-    compact-bar location="zellij:compact-bar"
+    compact-bar location="zellij:compact-bar" {
+        tooltip "\\"
+    }
     configuration location="zellij:configuration"
     filepicker location="zellij:strider" {
         cwd "/"

@@ -44,6 +44,7 @@ in {
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
     pkgs.nodejs_22 # Node is required for Copilot.vim
+    pkgs.oh-my-posh
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
@@ -96,6 +97,7 @@ in {
     ".aliases".source = ./dotfiles/aliases;
     ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/lazygit";
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/nvim";
+    ".config/ohmyposh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/ohmyposh";
     ".config/zellij".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/zellij";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
@@ -141,16 +143,16 @@ in {
     enableCompletion = true;
     # initExtra = builtins.readFile ./dotfiles/zshrc;
     initContent = ''
-      source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
+      #source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
       # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
       # Initialization code that may require console input (password prompts, [y/n]
       # confirmations, etc.) must go above this block; everything else may go below.
-      if [[ -r "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-        source "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-      fi
+      # if [[ -r "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+      #   source "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
+      # fi
 
       # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-      [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+      # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.
@@ -181,6 +183,13 @@ in {
       bindkey '^[[A' history-substring-search-up
       bindkey '^[[B' history-substring-search-down
     '';
+  };
+
+  programs.oh-my-posh = {
+    enable = true;
+    enableZshIntegration = true;
+    enableFishIntegration = true;
+    configFile = "$HOME/.config/ohmyposh/clburlison.toml";
   };
 
   programs.git = {

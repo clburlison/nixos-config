@@ -185,14 +185,13 @@ in {
 
   programs.git = {
     enable = true;
-    userName = "Clayton Burlison";
-    userEmail = "git@clburlison.com";
   };
 
   programs.go = {
     enable = true;
-    goPath = "dev/go";
-    goPrivate = [ "github.com/clburlison" ];
+    env = {
+        GOPATH = [ "dev/go" ];
+    };
   };
 
   # Make cursor not tiny on HiDPI screens

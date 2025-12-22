@@ -60,7 +60,6 @@ in {
     pkgs.zellij
     pkgs.zoxide
     pkgs.zsh-history-substring-search
-    pkgs.zsh-powerlevel10k
     pkgs.zsh-vi-mode
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
@@ -107,7 +106,6 @@ in {
     ".inputrc".source = ./dotfiles/inputrc;
     ".kube/switch-config.yaml".source = ./dotfiles/kube/switch-config.yaml;
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
-    ".p10k.zsh".source = ./dotfiles/p10k.zsh;
     ".path".source = ./dotfiles/path;
   };
 
@@ -143,17 +141,6 @@ in {
     enableCompletion = true;
     # initExtra = builtins.readFile ./dotfiles/zshrc;
     initContent = ''
-      #source "${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme"
-      # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-      # Initialization code that may require console input (password prompts, [y/n]
-      # confirmations, etc.) must go above this block; everything else may go below.
-      # if [[ -r "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-      #   source "''${XDG_CACHE_HOME:-\$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-      # fi
-
-      # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-      # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.
       # * ~/.extra can be used for other settings you don’t want to commit.

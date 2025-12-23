@@ -41,10 +41,16 @@ My nix and dotfile configurations.
 <details><summary>Extra</summary>
 <p>
 
+Set theme for Apple Terminal
+
 ```sh
-open users/clburlison/dotfiles/Solarized\ Dark.terminal
+open /users/clburlison/dotfiles/Solarized\ Dark.terminal
 # Open Terminal preferences > Profile > Set Solarized Dark as default
 ```
+
+Change shell to `fish`
+
+1. Open System Settings → Users & Groups → Right click on user and change shell
 
 </p>
 </details>

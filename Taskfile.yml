@@ -1,0 +1,85 @@
+version: '3'
+
+vars:
+  NIXNAME:
+    sh: echo "${NIXNAME:-$(hostname)}"
+
+tasks:
+  help:
+    desc: Show help text
+    silent: true
+    cmds:
+      - |
+        echo "Taskfile commands"
+        echo ""
+        echo "  task switch         - Run nix to configure the local system"
+        echo "  task test           - Build and test nix"
+        echo "  task install        - Initial install of nix"
+        echo "  task update         - Update external flakes"
+        echo "  task clean          - Cleanup nix garbage"
+
+  switch:
+    desc: Run nix to configure the local system
+    aliases: [run]
+    cmds:
+      - task: switch-darwin
+      - task: switch-nixos
+    status:
+      - "false"
+
+  switch-darwin:
+    internal: true
+    platforms: [darwin]
+    cmds:
+      - nix build --extra-experimental-features nix-command --extra-experimental-features flakes ".#darwinConfigurations.{{.NIXNAME}}.system"
+      - sudo ./result/sw/bin/darwin-rebuild switch --flake "$(pwd)#{{.NIXNAME}}"
+
+  switch-nixos:
+    internal: true
+    platforms: [linux]
+    cmds:
+      - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild switch --flake ".#{{.NIXNAME}}"
+
+  test:
+    desc: Build and test nix
+    cmds:
+      - task: test-darwin
+      - task: test-nixos
+    status:
+      - "false"
+
+  test-darwin:
+    internal: true
+    platforms: [darwin]
+    cmds:
+      - nix build --extra-experimental-features nix-command --extra-experimental-features flakes ".#darwinConfigurations.{{.NIXNAME}}.system"
+      - sudo ./result/sw/bin/darwin-rebuild check --flake "$(pwd)#{{.NIXNAME}}"
+
+  test-nixos:
+    internal: true
+    platforms: [linux]
+    cmds:
+      - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild test --flake ".#{{.NIXNAME}}"
+
+  install:
+    desc: Initial install of nix
+    cmds:
+      - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+  update:
+    desc: Update external flakes
+    cmds:
+      - nix flake update
+
+  clean:
+    desc: Cleanup nix garbage
+    cmds:
+      - nix-store --optimise
+      - sudo nix-collect-garbage -d
+
+  wsl:
+    desc: Build a WSL installer for Windows
+    internal: true
+    cmds:
+      - nix build ".#nixosConfigurations.wsl.config.system.build.installer"
+

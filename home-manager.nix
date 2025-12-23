@@ -30,6 +30,7 @@ in {
     pkgs.fzf
     pkgs.gh
     pkgs.git-lfs
+    pkgs.go-task
     pkgs.htop
     pkgs.jq
     pkgs.kubectl
@@ -40,8 +41,7 @@ in {
     pkgs.nerd-fonts.go-mono
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
-    # TODO: Update to node 24
-    pkgs.nodejs_22 # Node is required for Copilot.vim
+    pkgs.nodejs_22 # Node is required for Copilot.vim. TODO: Update to node 24
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all

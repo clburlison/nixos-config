@@ -17,6 +17,12 @@ final_space = true
   alignment = 'left'
   newline = true
 
+  # https://ohmyposh.dev/docs/faq#fish-display-current-bind-vim-mode
+  # Requires configuration inside of fish to support this bind mode var
+  [[blocks.segments]]
+    template = "{{ if eq .Env.FISH__BIND_MODE \"default\" }}<red>[N]</>{{ else if eq .Env.FISH__BIND_MODE \"insert\" }}<green>[I]</>{{ else if eq .Env.FISH__BIND_MODE \"replace_one\" }}<green>[R]</>{{ else if eq .Env.FISH__BIND_MODE \"visual\"}}<brmagenta>[V]</>{{ else }}<red>[?]</>{{ end }}"
+    type = "text"
+
   [[blocks.segments]]
     template = '{{ .Path }}'
     foreground = 'blue'

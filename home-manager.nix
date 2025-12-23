@@ -137,8 +137,9 @@ in {
         set fish_greeting ""
 
         source ~/.config/fish/aliases.fish
-        source ~/.config/fish/functions/lazygit.fish
+        source ~/.config/fish/omp-vimmode.fish
         source ~/.config/fish/path.fish
+        # Functions in ~/.config/fish/functions/ are auto-loaded if named properly
 
         # Enable vim mode
         set -g fish_key_bindings fish_vi_key_bindings

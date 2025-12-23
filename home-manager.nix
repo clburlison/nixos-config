@@ -28,6 +28,7 @@ in {
     pkgs.bun
     pkgs.curl
     pkgs.fzf
+    pkgs.gemini-cli
     pkgs.gh
     pkgs.git-lfs
     pkgs.go-task
@@ -42,6 +43,7 @@ in {
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
     pkgs.nodejs_22 # Node is required for Copilot.vim. TODO: Update to node 24
+    pkgs.opencode
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all

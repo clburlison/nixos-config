@@ -98,6 +98,10 @@ in {
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/ohmyposh";
     ".config/zellij".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/zellij";
+    ".config/fish/aliases.fish".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/aliases.fish";
+    ".config/fish/functions".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/functions";
+    ".config/fish/omp-vimmode.fish".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/omp-vimmode.fish";
+    ".config/fish/path.fish".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/path.fish";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;
@@ -132,6 +136,32 @@ in {
     shellOptions = [];
     historyControl = [ "ignoredups" "ignorespace" ];
     initExtra = builtins.readFile ./dotfiles/bashrc;
+  };
+
+  programs.fish = {
+    enable = true;
+    shellInit = ''
+        set fish_greeting ""
+
+        source ~/.config/fish/aliases.fish
+        source ~/.config/fish/functions/lazygit.fish
+        source ~/.config/fish/path.fish
+
+        # Enable vim mode
+        set -g fish_key_bindings fish_vi_key_bindings
+
+        bind ctrl-y accept-autosuggestion
+        bind ctrl-p history-search-backward
+        bind ctrl-n history-search-forward
+
+        bind --mode insert ctrl-y accept-autosuggestion
+        bind --mode insert ctrl-p history-search-backward
+        bind --mode insert ctrl-n history-search-forward
+
+        # bun
+        export BUN_INSTALL="$HOME/.bun"
+        export PATH="$BUN_INSTALL/bin:$PATH"
+    '';
   };
 
   programs.zsh = {

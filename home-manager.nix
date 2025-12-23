@@ -29,13 +29,10 @@ in {
     pkgs.curl
     pkgs.fzf
     pkgs.gh
-    pkgs.git
     pkgs.git-lfs
-    pkgs.go
     pkgs.htop
     pkgs.jq
     pkgs.kubectl
-    pkgs.kubeswitch
     pkgs.lazygit
     pkgs.mysql84
     pkgs.neovim
@@ -43,28 +40,23 @@ in {
     pkgs.nerd-fonts.go-mono
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
+    # TODO: Update to node 24
     pkgs.nodejs_22 # Node is required for Copilot.vim
-    pkgs.oh-my-posh
     pkgs.python312
     pkgs.ripgrep
     pkgs.ripgrep-all
     pkgs.rustc
     pkgs.rustup
-    # pkgs.rust-bin.nightly."2025-07-27".default
     # pkgs.terraform # this is a slow install with nix?
     pkgs.tree
     pkgs.tree-sitter
     pkgs.uv
-    pkgs.vim
     pkgs.wget
-    pkgs.zellij
-    pkgs.zoxide
     pkgs.zsh-history-substring-search
     pkgs.zsh-vi-mode
   ] ++ (lib.optionals isDarwin [
     # Install on macOS only
     pkgs._1password-cli
-    # pkgs.azure-cli
     pkgs.ffmpeg_7-full
     pkgs.hugo
     pkgs.ngrok
@@ -90,6 +82,9 @@ in {
     PAGER = "less -FirSwX";
     # Set default blocksize for ls, df, du
     BLOCKSIZE = "1k";
+    GIT_LFS_SKIP_SMUDGE = "1";
+    # Remove duplicates and commands that start with space
+    HISTCONTROL = "ignoreboth";
   };
 
   home.file = {
@@ -129,8 +124,6 @@ in {
   # Programs
   #---------------------------------------------------------------------
 
-  programs.gpg.enable = !isDarwin;
-
   programs.bash = {
     enable = true;
     shellOptions = [];
@@ -164,12 +157,48 @@ in {
     '';
   };
 
+  programs.git = {
+    enable = true;
+  };
+
+  programs.go = {
+    enable = true;
+    env = {
+        GOPATH = [ "dev/go" ];
+    };
+  };
+
+  programs.kubeswitch = {
+    enable = true;
+    enableZshIntegration = true;
+    enableFishIntegration = true;
+    commandName = "kswitch";
+  };
+
+  programs.oh-my-posh = {
+    enable = true;
+    enableZshIntegration = true;
+    enableFishIntegration = true;
+    configFile = "$HOME/.config/ohmyposh/clburlison.toml";
+  };
+
+  programs.zellij = {
+    enable = true;
+    enableZshIntegration = false;
+    enableFishIntegration = false;
+  };
+
+  programs.zoxide = {
+    enable = true;
+    enableZshIntegration = true;
+    enableFishIntegration = true;
+  };
+
   programs.zsh = {
     enable = true;
     syntaxHighlighting.enable = true;
     autosuggestion.enable = true;
     enableCompletion = true;
-    # initExtra = builtins.readFile ./dotfiles/zshrc;
     initContent = ''
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.
@@ -190,7 +219,6 @@ in {
 
       # HACK: https://github.com/zellij-org/zellij/issues/1933#issuecomment-2274464004
       source <( zellij setup --generate-completion zsh | sed -Ee 's/^(_(zellij) ).*/compdef \1\2/' )
-      eval "$(zoxide init zsh)"
       # source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
       source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh
       # zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")
@@ -200,24 +228,6 @@ in {
       bindkey '^[[A' history-substring-search-up
       bindkey '^[[B' history-substring-search-down
     '';
-  };
-
-  programs.oh-my-posh = {
-    enable = true;
-    enableZshIntegration = true;
-    enableFishIntegration = true;
-    configFile = "$HOME/.config/ohmyposh/clburlison.toml";
-  };
-
-  programs.git = {
-    enable = true;
-  };
-
-  programs.go = {
-    enable = true;
-    env = {
-        GOPATH = [ "dev/go" ];
-    };
   };
 
   # Make cursor not tiny on HiDPI screens

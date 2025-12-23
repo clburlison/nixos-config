@@ -18,6 +18,7 @@
 #   1.  MAKE TERMINAL BETTER
 #   -----------------------------
 
+alias cd='__zoxide_z'                       # Replace 'cd' with zoxide
 alias cp='cp -iv'                           # Preferred 'cp' implementation
 alias mv='mv -iv'                           # Preferred 'mv' implementation
 alias mkdir='mkdir -pv'                     # Preferred 'mkdir' implementation
@@ -27,8 +28,8 @@ alias pwd='pwd -P'                          # Preferred 'pwd' implementation
 alias g='git'                               # Preferred 'git' implementation
 alias f='open -a Finder ./'                 # f:            Opens current directory in MacOS Finder
 alias c='clear'                             # c:            Clear terminal display
-alias path='echo -e ${PATH//:/\\n}'         # path:         Echo all executable Paths
-alias largest="du -ck | sort -n | tail"     # Show largest file in current directory
+# alias path='echo -e ${PATH//:/\\n}'         # path:         Echo all executable Paths
+alias largest="du -hck | sort -n | tail"     # Show largest file in current directory
 alias sudo='sudo '                          # Enable aliases to be sudo’ed
 alias sha='shasum -a256 '                   # Eaiser sha256 check
 alias week='date +%V'                       # Get week number
@@ -46,23 +47,10 @@ alias docker-kill='docker kill `docker ps -q`'
 alias docker-rm='docker rm `docker ps -a -q`'
 alias docker-rmi='docker rmi `docker images -f "dangling=true" -q`'
 alias docker-rmi-all='docker rmi -f `docker images -q`'
-alias docker-rmi-none="docker images | gsed 's/\s\+/ /g' | grep '<none>' | cut -d ' ' -f 3 | xargs docker rmi"
-function docker-rmr() {
-  docker images | grep $1 | gsed 's/\s\+/ /g' | cut -d " " -f 1-2 | gsed 's/\s/:/' | xargs docker rmi
-}
+# alias docker-rmi-none="docker images | gsed 's/\s\+/ /g' | grep '<none>' | cut -d ' ' -f 3 | xargs docker rmi"
 
 # kubectl aliases
 alias kubeall="kubectl get pods,ingress,secrets,deployment.apps,services,frontendconfigs.networking.gke.io,configmaps,pvc"
-
-# Lazygit
-function lg() {
-    export LAZYGIT_NEW_DIR_FILE=~/.lazygit/newdir
-    lazygit "$@"
-    if [ -f $LAZYGIT_NEW_DIR_FILE ]; then
-            cd "$(cat $LAZYGIT_NEW_DIR_FILE)"
-            rm -f $LAZYGIT_NEW_DIR_FILE > /dev/null
-    fi
-}
 
 #   ----------------------------------------
 #   3.  SEARCHING -- More under ./functions
@@ -79,6 +67,7 @@ alias netCons='lsof -i'                             # netCons:      Show all ope
 alias lsock='sudo /usr/sbin/lsof -i -P'             # lsock:        Display open sockets
 alias lsockU='sudo /usr/sbin/lsof -nP | grep UDP'   # lsockU:       Display only open UDP sockets
 alias lsockT='sudo /usr/sbin/lsof -nP | grep TCP'   # lsockT:       Display only open TCP sockets
+alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
 alias ipInfo0='ipconfig getpacket en0'              # ipInfo0:      Get info on connections for en0
 alias ipInfo1='ipconfig getpacket en1'              # ipInfo1:      Get info on connections for en1
 alias openPorts='sudo lsof -i | grep LISTEN'        # openPorts:    All listening connections

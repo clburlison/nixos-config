@@ -33,6 +33,7 @@
         lazygit = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.lazygit;
         nodejs_22 = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.nodejs_22;
         opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
+        tree-sitter = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.tree-sitter;
         zellij = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zellij;
         zoxide = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zoxide;
       })

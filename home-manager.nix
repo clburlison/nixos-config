@@ -51,7 +51,7 @@ in {
     pkgs.rustup
     # pkgs.terraform # this is a slow install with nix?
     pkgs.tree
-    pkgs.tree-sitter
+    # pkgs.tree-sitter # `bun install -g tree-sitter-cli` require newer version than nix has
     pkgs.uv
     pkgs.wget
     pkgs.zsh-history-substring-search

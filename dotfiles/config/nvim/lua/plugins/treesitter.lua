@@ -2,8 +2,10 @@
 -- data stored at ~/.local/share/nvim/lazy/nvim-treesitter/parser
 return {
   'nvim-treesitter/nvim-treesitter',
+  branch = 'main',
   build = ':TSUpdate',
-  main = 'nvim-treesitter.configs',
+  cmd = { 'TSUpdate', 'TSInstall', 'TSLog', 'TSUninstall' },
+  event = { 'BufReadPre', 'BufNewFile' },
   -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
   opts = {
     ensure_installed = {
@@ -40,9 +42,9 @@ return {
       'xml',
       'yaml',
     },
-    auto_install = false,
     highlight = { enable = true },
-    indent = { enable = false },
+    indent = { enable = true },
+    folds = { enable = true },
     incremental_selection = {
       enable = true,
       keymaps = {

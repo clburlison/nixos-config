@@ -167,7 +167,7 @@ in {
   programs.go = {
     enable = true;
     env = {
-        GOPATH = [ "dev/go" ];
+        GOPATH = [ "${config.home.homeDirectory}/dev/go" ];
     };
   };
 

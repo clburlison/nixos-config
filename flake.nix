@@ -21,18 +21,12 @@
 
     darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.11";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
-
-    # Rust Nightly is required for fff.nvim
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, darwin, ... }@inputs: let
 
     # Overlays is the list of overlays we want to apply from flake inputs.
     overlays = [
-      inputs.rust-overlay.overlays.default
-
       (final: prev: rec {
         # Want the latest version of these
         bun = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.bun;

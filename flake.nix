@@ -23,58 +23,68 @@
     darwin.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, darwin, ... }@inputs: let
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nixpkgs-unstable,
+      home-manager,
+      darwin,
+      ...
+    }@inputs:
+    let
 
-    # Overlays is the list of overlays we want to apply from flake inputs.
-    overlays = [
-      (final: prev: rec {
-        # Want the latest version of these
-        bun = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.bun;
-        lazygit = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.lazygit;
-        nodejs_22 = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.nodejs_22;
-        opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
-        tree-sitter = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.tree-sitter;
-        zellij = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zellij;
-        zoxide = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zoxide;
-      })
-    ];
+      # Overlays is the list of overlays we want to apply from flake inputs.
+      overlays = [
+        (final: prev: rec {
+          # Want the latest version of these
+          bun = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.bun;
+          lazygit = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.lazygit;
+          nodejs_22 = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.nodejs_22;
+          opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
+          tree-sitter = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.tree-sitter;
+          zellij = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zellij;
+          zoxide = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zoxide;
+        })
+      ];
 
-    mkSystem = import ./lib/mksystem.nix {
-      inherit overlays nixpkgs inputs;
+      mkSystem = import ./lib/mksystem.nix {
+        inherit overlays nixpkgs inputs;
+      };
+    in
+    {
+      # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
+      #   system = "aarch64-linux";
+      #   user   = "clburlison";
+      # };
+
+      # nixosConfigurations."vm-intel" = mkSystem "vm-intel" rec {
+      #   system = "x86_64-linux";
+      #   user   = "clburlison";
+      # };
+
+      nixosConfigurations."wsl" = mkSystem "wsl" {
+        system = "x86_64-linux";
+        user = "clburlison";
+        wsl = true;
+      };
+
+      darwinConfigurations."vm-clayton-mac" = mkSystem "darwin-default" {
+        system = "aarch64-darwin";
+        user = "clburlison";
+        darwin = true;
+      };
+
+      darwinConfigurations."clayton-1AXM" = mkSystem "darwin-default" {
+        system = "aarch64-darwin";
+        user = "clayton";
+        darwin = true;
+      };
+
+      darwinConfigurations."clayton-7HYM" = mkSystem "darwin-default" {
+        system = "aarch64-darwin";
+        user = "clayton";
+        darwin = true;
+      };
     };
-  in {
-    # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
-    #   system = "aarch64-linux";
-    #   user   = "clburlison";
-    # };
-
-    # nixosConfigurations."vm-intel" = mkSystem "vm-intel" rec {
-    #   system = "x86_64-linux";
-    #   user   = "clburlison";
-    # };
-
-    nixosConfigurations."wsl" = mkSystem "wsl" {
-      system = "x86_64-linux";
-      user   = "clburlison";
-      wsl    = true;
-    };
-
-    darwinConfigurations."vm-clayton-mac" = mkSystem "darwin-default" {
-      system = "aarch64-darwin";
-      user   = "clburlison";
-      darwin = true;
-    };
-
-    darwinConfigurations."clayton-1AXM" = mkSystem "darwin-default" {
-      system = "aarch64-darwin";
-      user   = "clayton";
-      darwin = true;
-    };
-
-    darwinConfigurations."clayton-7HYM" = mkSystem "darwin-default" {
-      system = "aarch64-darwin";
-      user   = "clayton";
-      darwin = true;
-    };
-  };
 }

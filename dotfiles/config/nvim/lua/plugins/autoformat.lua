@@ -35,14 +35,15 @@ return {
         }
       end,
       formatters_by_ft = {
+        -- kdl = { 'kdlfmt' }, -- Not a fan of the reduced readability. Can retry later.
         bash = { 'shfmt' },
         css = { 'prettier' },
         html = { 'prettier' },
         javascript = { 'prettier' },
         json = { 'prettier' },
-        -- kdl = { 'kdlfmt' }, -- Not popular and reduces readability
         lua = { 'stylua' },
         markdown = { 'prettier' },
+        nix = { 'nixfmt' },
         python = { 'isort', 'black' },
         typescript = { 'prettier' },
         yaml = { 'prettier' },

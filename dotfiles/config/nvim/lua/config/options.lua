@@ -85,4 +85,4 @@ vim.o.updatetime = 1000 -- Set to 1 second
 vim.opt.winborder = 'rounded'
 
 -- Auto-completion to show with single matches, disable auto-selection, and display previews in a popup.
-vim.cmd [[set completeopt+=menuone,noselect,popup]]
+vim.opt.completeopt = { 'menu', 'menuone', 'noselect', 'popup' }

@@ -1,4 +1,10 @@
-{ config, inputs, pkgs, currentSystemUser, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  currentSystemUser,
+  ...
+}:
 
 {
   #---------------------------------------------------------------------
@@ -30,7 +36,6 @@
   # Keyboard remapping currently does not work
   # system.keyboard.enableKeyMapping = true;
   # system.keyboard.remapCapsLockToEscape = true;
-
 
   # nixpkgs.overlays = import ../../lib/overlays.nix ++ [
   #   (import ./vim.nix { inherit inputs; })

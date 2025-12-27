@@ -170,6 +170,7 @@ return {
           'markdownlint',
           'markdownlint-cli2',
           'marksman',
+          'nil', -- Nix LSP
           'prettier',
           'pylint',
           'pyright',

@@ -41,6 +41,7 @@ return {
         html = { 'prettier' },
         javascript = { 'prettier' },
         json = { 'prettier' },
+        jsonc = { 'biome' },
         lua = { 'stylua' },
         markdown = { 'prettier' },
         nix = { 'nixfmt' },

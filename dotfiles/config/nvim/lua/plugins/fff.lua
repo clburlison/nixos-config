@@ -1,3 +1,7 @@
+-- fff.nvim has had some bad updates. If the download fails try
+-- the following:
+-- 1. rm -rf .local/share/nvim/lazy/fff.nvim
+-- 2. lua require("fff.download").download_or_build_binary()
 return {
   'dmtrKovalenko/fff.nvim',
   enabled = true,

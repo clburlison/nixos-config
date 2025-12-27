@@ -104,6 +104,8 @@ in
     ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/ohmyposh";
     ".config/zellij".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/zellij";
+    ".config/opencode/opencode.jsonc".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/opencode/opencode.jsonc";
     ".config/fish/aliases.fish".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/aliases.fish";
     ".config/fish/functions".source =

@@ -4,6 +4,11 @@ return {
     vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' }),
     delete_to_trash = true,
     skip_confirm_for_simple_edits = true,
+    lsp_file_methods = {
+      enabled = true,
+      timeout_ms = 1000,
+      autosave_changes = true,
+    },
     view_options = {
       show_hidden = true,
       is_always_hidden = function(name, bufnr)

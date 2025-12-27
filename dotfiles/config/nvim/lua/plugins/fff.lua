@@ -11,7 +11,9 @@ return {
     -- (if you are using lazy you can use gb for rebuilding a plugin if needed)
     require('fff.download').download_or_build_binary()
   end,
-  opts = {},
+  opts = {
+    prompt = '🪄 ',
+  },
   keys = {
     {
       '<leader>ff',

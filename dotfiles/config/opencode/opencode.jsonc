@@ -1,0 +1,10 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "theme": "tokyonight",
+    // Managed by nix
+    "autoupdate": false,
+    "keybinds": {
+        "input_submit": "shift+enter",
+        "input_newline": "enter"
+    }
+}

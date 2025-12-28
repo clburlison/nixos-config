@@ -29,17 +29,18 @@ alias g='git'                               # Preferred 'git' implementation
 alias f='open -a Finder ./'                 # f:            Opens current directory in MacOS Finder
 alias c='clear'                             # c:            Clear terminal display
 # alias path='echo -e ${PATH//:/\\n}'         # path:         Echo all executable Paths
-alias largest="du -hck | sort -n | tail"     # Show largest file in current directory
+alias oc='opencode'                         # Easier access to opencode
+alias largest='du -hck | sort -n | tail'    # Show largest file in current directory
 alias sudo='sudo '                          # Enable aliases to be sudo’ed
 alias sha='shasum -a256 '                   # Eaiser sha256 check
 alias week='date +%V'                       # Get week number
-alias spotoff="sudo mdutil -a -i off"       # Disable Spotlight
-alias spoton="sudo mdutil -a -i on"         # Enable Spotlight
+alias spotoff='sudo mdutil -a -i off'       # Disable Spotlight
+alias spoton='sudo mdutil -a -i on'         # Enable Spotlight
 alias e="$EDITOR"                           # Shortcut for main editor
-alias lsregister_fix="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user"
-alias randompass="openssl rand -base64 32"  # Easy random password
-alias zz="zellij"                           # Terminal multiplexer
-alias zzl="zellij -l welcome"               # Zel welcome screen
+alias lsregister_fix='/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user'
+alias randompass='openssl rand -base64 32'  # Easy random password
+alias zz='zellij'                           # Terminal multiplexer
+alias zzl='zellij -l welcome'               # Zel welcome screen
 
 # Docker aliases
 alias docker-ip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"

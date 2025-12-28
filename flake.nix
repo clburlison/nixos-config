@@ -34,18 +34,24 @@
     }@inputs:
     let
 
-      # Overlays is the list of overlays we want to apply from flake inputs.
+      # Overlays for the packages in which we want the latest version
       overlays = [
-        (final: prev: rec {
-          # Want the latest version of these
-          bun = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.bun;
-          lazygit = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.lazygit;
-          nodejs_22 = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.nodejs_22;
-          opencode = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.opencode;
-          tree-sitter = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.tree-sitter;
-          zellij = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zellij;
-          zoxide = inputs.nixpkgs-unstable.legacyPackages.${prev.system}.zoxide;
-        })
+        (
+          final: prev:
+          let
+            system = prev.stdenv.hostPlatform.system;
+            unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
+          in
+          {
+            bun = unstable.bun;
+            lazygit = unstable.lazygit;
+            nodejs_22 = unstable.nodejs_22;
+            opencode = unstable.opencode;
+            tree-sitter = unstable.tree-sitter;
+            zellij = unstable.zellij;
+            zoxide = unstable.zoxide;
+          }
+        )
       ];
 
       mkSystem = import ./lib/mksystem.nix {

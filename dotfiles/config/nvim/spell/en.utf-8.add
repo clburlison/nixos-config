@@ -21,3 +21,7 @@ sqlite
 auth
 timestamp
 param
+backend
+desc
+cmds
+cmd

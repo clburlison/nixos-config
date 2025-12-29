@@ -23,16 +23,24 @@ My nix and dotfile configurations.
    cd nixos-config
    ```
 
-4. Install Nix
+4. Install `task`
 
    ```sh
-   make install
-   # or
-   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
-     sh -s -- install
+   sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ./
    ```
 
-5. Run nix switch to configure the system
+5. Install Nix
+
+https://docs.determinate.systems/
+
+```sh
+./task install
+# or
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
+  sh -s -- install
+```
+
+6. Run nix switch to configure the system
 
    ```sh
    make switch
@@ -50,7 +58,8 @@ open /users/clburlison/dotfiles/Solarized\ Dark.terminal
 
 Change shell to `fish`
 
-1. Open System Settings → Users & Groups → Right click on user and change shell
+- Open System Settings → Users & Groups → Right click on user and change shell or
+- `chsh -s /run/current-system/sw/bin/fish`
 
 </p>
 </details>

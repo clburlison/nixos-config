@@ -7,6 +7,13 @@
 }:
 
 {
+  # Determinate Nix uses its own daemon to manage the Nix
+  # both being enabled at the same fails.
+  nix.enable = false;
+
+  # https://github.com/NixOS/nixpkgs/pull/73966
+  documentation.doc.enable = false;
+
   #---------------------------------------------------------------------
   # Preferences
   #---------------------------------------------------------------------
@@ -64,5 +71,6 @@
   # what our home directory is (https://github.com/LnL7/nix-darwin/issues/423).
   users.users.${currentSystemUser} = {
     home = "/Users/${currentSystemUser}";
+    shell = pkgs.fish;
   };
 }

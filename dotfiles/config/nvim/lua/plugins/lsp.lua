@@ -162,8 +162,10 @@ return {
           'eslint',
           'eslint_d',
           'gopls',
+          'harper_ls',
           'html',
           'isort',
+          'jsonls',
           'kdlfmt',
           'lua_ls',
           'markdown-toc',
@@ -178,7 +180,9 @@ return {
           'rust_analyzer',
           'stylua',
           'tailwindcss',
+          'tombi', -- TOML
           'ts_ls',
+          'yamlls',
           -- 'swiftlint', # fails to install
         },
       }

@@ -1,4 +1,5 @@
-version: '3'
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
 
 vars:
   NIXNAME:
@@ -82,4 +83,3 @@ tasks:
     internal: true
     cmds:
       - nix build ".#nixosConfigurations.wsl.config.system.build.installer"
-

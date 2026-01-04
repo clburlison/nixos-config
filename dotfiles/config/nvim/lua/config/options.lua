@@ -81,8 +81,8 @@ vim.diagnostic.config { virtual_text = false }
 -- Adjust updatetime for responsiveness
 vim.o.updatetime = 1000 -- Set to 1 second
 
--- Rounded window border is pretty
-vim.opt.winborder = 'rounded'
+-- Rounded window border is pretty however globally this causes issues
+-- vim.opt.winborder = 'rounded'
 
 -- Auto-completion to show with single matches, disable auto-selection, and display previews in a popup.
 vim.opt.completeopt = { 'menu', 'menuone', 'noselect', 'popup' }

@@ -12,9 +12,10 @@
 
 let
   # sources = import ../../nix/sources.nix;
+  dotfiles = "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles";
   isDarwin = pkgs.stdenv.isDarwin;
   isLinux = pkgs.stdenv.isLinux;
-  dotfiles = "${config.home.homeDirectory}/dev/me/nixos-config/dotfiles";
+  mkLink = config.lib.file.mkOutOfStoreSymlink;
 
 in
 {
@@ -100,20 +101,15 @@ in
 
   home.file = {
     ".aliases".source = ./dotfiles/aliases;
-    ".config/lazygit".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/lazygit";
-    ".config/nvim".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/nvim";
-    ".config/ohmyposh".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/ohmyposh";
-    ".config/zellij".source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/zellij";
-    ".config/opencode/opencode.jsonc".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/opencode/opencode.jsonc";
-    ".config/fish/aliases.fish".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/aliases.fish";
-    ".config/fish/functions".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/functions";
-    ".config/fish/omp-vimmode.fish".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/omp-vimmode.fish";
-    ".config/fish/path.fish".source =
-      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/config/fish/path.fish";
+    ".config/fish/aliases.fish".source = mkLink "${dotfiles}/config/fish/aliases.fish";
+    ".config/fish/functions".source = mkLink "${dotfiles}/config/fish/functions";
+    ".config/fish/omp-vimmode.fish".source = mkLink "${dotfiles}/config/fish/omp-vimmode.fish";
+    ".config/fish/path.fish".source = mkLink "${dotfiles}/config/fish/path.fish";
+    ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";
+    ".config/nvim".source = mkLink "${dotfiles}/config/nvim";
+    ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";
+    ".config/opencode/opencode.jsonc".source = mkLink "${dotfiles}/config/opencode/opencode.jsonc";
+    ".config/zellij".source = mkLink "${dotfiles}/config/zellij";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;

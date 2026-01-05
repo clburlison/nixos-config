@@ -102,6 +102,7 @@ in
   home.file = {
     ".aliases".source = ./dotfiles/aliases;
     ".config/fish/aliases.fish".source = mkLink "${dotfiles}/config/fish/aliases.fish";
+    ".config/fish/conf.d".source = mkLink "${dotfiles}/config/fish/config.d";
     ".config/fish/functions".source = mkLink "${dotfiles}/config/fish/functions";
     ".config/fish/omp-vimmode.fish".source = mkLink "${dotfiles}/config/fish/omp-vimmode.fish";
     ".config/fish/path.fish".source = mkLink "${dotfiles}/config/fish/path.fish";

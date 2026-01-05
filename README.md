@@ -43,7 +43,7 @@ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix 
 6. Run nix switch to configure the system
 
    ```sh
-   make switch
+   task switch
    ```
 
 <details><summary>Extra</summary>

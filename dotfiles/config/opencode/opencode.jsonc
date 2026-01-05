@@ -6,5 +6,6 @@
     "keybinds": {
         "input_submit": "shift+enter",
         "input_newline": "enter"
-    }
+    },
+    "plugin": ["opencode-gemini-auth@latest"]
 }

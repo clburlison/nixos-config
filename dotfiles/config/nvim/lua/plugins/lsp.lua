@@ -178,6 +178,7 @@ return {
           'pyright',
           'ruff',
           'rust_analyzer',
+          'sqruff', -- SQL formatter
           'stylua',
           'tailwindcss',
           'tombi', -- TOML

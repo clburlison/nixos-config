@@ -89,3 +89,23 @@ set('v', '<leader>rl', ':RemoveDuplicateLines<CR>', {
   silent = true,
   desc = 'Remove duplicates with feedback',
 })
+
+-- Copy diagnostic to clipboard
+set('n', '<leader>cd', function()
+  local diagnostics = vim.diagnostic.get(0, { lnum = vim.api.nvim_win_get_cursor(0)[1] - 1 })
+
+  if #diagnostics == 0 then
+    vim.notify('No diagnostics on current line', vim.log.levels.INFO)
+    return
+  end
+
+  local messages = {}
+  for _, d in ipairs(diagnostics) do
+    local severity = vim.diagnostic.severity[d.severity]
+    table.insert(messages, string.format('[%s] %s', severity, d.message))
+  end
+
+  local result = table.concat(messages, '\n')
+  vim.fn.setreg('+', result)
+  vim.notify('Diagnostics copied to clipboard', vim.log.levels.INFO)
+end, { desc = 'Copy line diagnostics to clipboard' })

@@ -49,6 +49,7 @@ return {
         nix = { 'nixfmt' },
         python = { 'isort', 'black' },
         rust = { 'rustfmt' },
+        sql = { 'sqruff' },
         typescript = { 'biome', 'biome-organize-imports' },
         typescriptreact = { 'biome', 'biome-organize-imports' },
         yaml = { 'prettier' },

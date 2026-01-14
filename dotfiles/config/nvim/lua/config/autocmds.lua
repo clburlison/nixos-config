@@ -70,3 +70,30 @@ vim.api.nvim_create_autocmd('CursorHold', {
   callback = show_diagnostics_float,
   desc = 'Show floating diagnostics when cursor is held',
 })
+
+-- Create the LspToggle command
+vim.api.nvim_create_user_command('LspToggle', function(opts)
+  local lsp_name = opts.args
+  local clients = vim.lsp.get_clients { name = lsp_name }
+
+  if #clients > 0 then
+    -- LSP is running, stop it
+    vim.cmd('LspStop ' .. lsp_name)
+    vim.notify('Stopped ' .. lsp_name, vim.log.levels.INFO)
+  else
+    -- LSP is not running, start it
+    vim.cmd('LspStart ' .. lsp_name)
+    vim.notify('Started ' .. lsp_name, vim.log.levels.INFO)
+  end
+end, {
+  nargs = 1,
+  complete = function()
+    -- Optional: add completion for available LSP clients
+    local clients = {}
+    for _, client in ipairs(vim.lsp.get_clients()) do
+      table.insert(clients, client.name)
+    end
+    return clients
+  end,
+  desc = 'Toggle LSP client on/off',
+})

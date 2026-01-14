@@ -83,6 +83,9 @@ set('n', '<leader>tv', ':ToggleVirtualText<CR>', { desc = 'Toggle Diagnostic Vir
 -- Toggle Markdown Rendering
 set('n', '<leader>tm', ':RenderMarkdown toggle<CR>', { desc = 'Toggle Markdown Rendering' })
 
+-- Toggle Harper LSP
+set('n', '<leader>tg', ':LspToggle harper_ls<CR>', { desc = 'Toggle Harper LS' })
+
 -- Remove duplicate lines
 set('v', '<leader>rl', ':RemoveDuplicateLines<CR>', {
   noremap = true,

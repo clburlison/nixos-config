@@ -178,7 +178,7 @@ return {
           'pyright',
           'ruff',
           'rust_analyzer',
-          -- 'sqruff', -- SQL formatter. Has errors with drizzle migrations
+          'sqruff', -- SQL formatter. Has errors with drizzle migrations
           'stylua',
           'tailwindcss',
           'tombi', -- TOML

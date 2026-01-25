@@ -49,15 +49,10 @@ return {
         nix = { 'nixfmt' },
         python = { 'isort', 'black' },
         rust = { 'rustfmt' },
-        -- sql = { 'sqruff' }, -- Has errors with drizzle migrations
+        sql = { 'sqruff' }, -- Has errors with drizzle migrations
         typescript = { 'biome', 'biome-organize-imports' },
         typescriptreact = { 'biome', 'biome-organize-imports' },
         yaml = { 'prettier' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
   },

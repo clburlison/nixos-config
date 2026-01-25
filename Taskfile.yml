@@ -6,19 +6,6 @@ vars:
     sh: echo "${NIXNAME:-$(hostname)}"
 
 tasks:
-  help:
-    desc: Show help text
-    silent: true
-    cmds:
-      - |
-        echo "Taskfile commands"
-        echo ""
-        echo "  task switch         - Run nix to configure the local system"
-        echo "  task test           - Build and test nix"
-        echo "  task install        - Initial install of nix"
-        echo "  task update         - Update external flakes"
-        echo "  task clean          - Cleanup nix garbage"
-
   switch:
     desc: Run nix to configure the local system
     aliases: [run]

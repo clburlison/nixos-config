@@ -57,7 +57,9 @@ tasks:
   update:
     desc: Update external flakes
     cmds:
-      - nix flake update
+       - nix flake update
+       - git add flake.lock
+       - 'git commit -S -m "chore(nix): Update deps"'
 
   clean:
     desc: Cleanup nix garbage

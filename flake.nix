@@ -44,6 +44,7 @@
           in
           {
             bun = unstable.bun;
+            gemini-cli = unstable.gemini-cli;
             lazygit = unstable.lazygit;
             nodejs_22 = unstable.nodejs_22;
             opencode = unstable.opencode;

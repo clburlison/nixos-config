@@ -82,7 +82,7 @@
         darwin = true;
       };
 
-      darwinConfigurations."clayton-1AXM" = mkSystem "darwin-default" {
+      darwinConfigurations."clayton-51FM" = mkSystem "darwin-default" {
         system = "aarch64-darwin";
         user = "clayton";
         darwin = true;

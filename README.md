@@ -40,8 +40,10 @@ My nix and dotfile configurations.
 6. Run nix switch to configure the system
 
    ```sh
-   task switch
+   ./task switch
    ```
+
+Future runs can use the global install of `task`.
 
 <details><summary>Extra</summary>
 <p>

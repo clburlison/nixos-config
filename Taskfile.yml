@@ -61,7 +61,7 @@ tasks:
     platforms: [darwin]
     cmds:
       - curl -L https://install.determinate.systems/determinate-pkg/stable/Universal -o /tmp/determinate-nix.pkg
-      - installer -pkg /tmp/determinate-nix.pkg -tgt /
+      - sudo installer -pkg /tmp/determinate-nix.pkg -tgt /
 
   install-other:
     desc: Install nix on Linux and Windows

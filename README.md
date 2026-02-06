@@ -31,14 +31,11 @@ My nix and dotfile configurations.
 
 5. Install Nix
 
-https://docs.determinate.systems/
+   https://docs.determinate.systems/
 
-```sh
-./task install
-# or
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
-  sh -s -- install
-```
+   ```sh
+   ./task install
+   ```
 
 6. Run nix switch to configure the system
 

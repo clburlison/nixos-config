@@ -52,14 +52,30 @@ tasks:
   install:
     desc: Initial install of nix
     cmds:
+      - task: install-darwin
+      - task: install-other
+
+  install-darwin:
+    desc: Install determinate Nix on macOS using native pkg
+    internal: true
+    platforms: [darwin]
+    cmds:
+      - curl -L https://install.determinate.systems/determinate-pkg/stable/Universal -o /tmp/determinate-nix.pkg
+      - installer -pkg /tmp/determinate-nix.pkg -tgt /
+
+  install-other:
+    desc: Install nix on Linux and Windows
+    internal: true
+    platforms: [linux, windows]
+    cmds:
       - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
   update:
     desc: Update external flakes
     cmds:
-       - nix flake update
-       - git add flake.lock
-       - 'git commit -S -m "chore(nix): Update deps"'
+      - nix flake update
+      - git add flake.lock
+      - 'git commit -S -m "chore(nix): Update deps"'
 
   clean:
     desc: Cleanup nix garbage

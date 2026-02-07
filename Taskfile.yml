@@ -70,11 +70,19 @@ tasks:
     cmds:
       - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
-  install-homebrew:
+  brew-install:
     desc: Install homebrew
     platforms: [darwin]
+    status:
+      - test -f /opt/homebrew/bin/brew
     cmds:
       - /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  brew-run:
+    desc: Install files from Brewfile. Add more apps with `brew bundle add --cask <name>`
+    platforms: [darwin]
+    cmds:
+      - brew bundle install
 
   update:
     desc: Update external flakes

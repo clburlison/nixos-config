@@ -54,6 +54,9 @@ in
     pkgs.nixfmt-rfc-style
     pkgs.nodejs_22 # Node is required for Copilot.vim. TODO: Update to node 24
     pkgs.opencode
+    pkgs.podman
+    pkgs.podman-compose
+    pkgs.podman-tui
     pkgs.python314
     pkgs.ripgrep
     pkgs.ripgrep-all

@@ -33,7 +33,6 @@ in
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
     # pkgs.terraform # this is a slow install with nix?
-    # pkgs.tree-sitter # `bun install -g tree-sitter-cli` require newer version than nix has
     pkgs.bun
     pkgs.curl
     pkgs.fzf
@@ -52,7 +51,7 @@ in
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
     pkgs.nixfmt-rfc-style
-    pkgs.nodejs_22 # Node is required for Copilot.vim. TODO: Update to node 24
+    pkgs.nodejs_24 # Node is required for Copilot.vim. TODO: Update to node 24
     pkgs.opencode
     pkgs.podman
     pkgs.podman-compose
@@ -63,6 +62,7 @@ in
     pkgs.rustc
     pkgs.rustup
     pkgs.tree
+    pkgs.tree-sitter # `bun install -g tree-sitter-cli` require newer version than nix has
     pkgs.uv
     pkgs.wget
     pkgs.zsh-history-substring-search
@@ -70,13 +70,13 @@ in
   ]
   ++ (lib.optionals isDarwin [
     # Install on macOS only
+    # pkgs.ngrok
+    # pkgs.yt-dlp # youtube-dl replacement
     pkgs._1password-cli
     pkgs.ffmpeg_7-full
     pkgs.hugo
-    pkgs.ngrok
     pkgs.terraform-docs
     pkgs.tflint
-    pkgs.yt-dlp # youtube-dl replacement
   ])
   ++ (lib.optionals (isLinux && !isWSL) [
     # Install on Linux only

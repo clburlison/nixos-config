@@ -40,10 +40,14 @@
           final: prev:
           let
             system = prev.stdenv.hostPlatform.system;
-            unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
+            unstable = import inputs.nixpkgs-unstable {
+              inherit system;
+              config.allowUnfree = true;
+            };
           in
           {
             bun = unstable.bun;
+            claude-code = unstable.claude-code;
             gemini-cli = unstable.gemini-cli;
             lazygit = unstable.lazygit;
             nodejs_22 = unstable.nodejs_22;

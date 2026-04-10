@@ -34,6 +34,7 @@ in
   home.packages = [
     # pkgs.terraform # this is a slow install with nix?
     pkgs.bun
+    pkgs.claude-code
     pkgs.curl
     pkgs.fzf
     pkgs.gemini-cli

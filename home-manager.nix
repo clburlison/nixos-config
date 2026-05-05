@@ -33,6 +33,7 @@ in
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
     # pkgs.terraform # this is a slow install with nix?
+    pkgs.azure-cli
     pkgs.bun
     pkgs.claude-code
     pkgs.curl

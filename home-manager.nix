@@ -35,7 +35,7 @@ in
     # pkgs.terraform # this is a slow install with nix?
     pkgs.azure-cli
     pkgs.bun
-    pkgs.claude-code
+    # pkgs.claude-code
     pkgs.curl
     pkgs.fzf
     pkgs.gemini-cli

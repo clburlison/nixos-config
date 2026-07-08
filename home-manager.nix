@@ -52,7 +52,7 @@ in
     pkgs.nerd-fonts.go-mono
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
-    pkgs.nixfmt-rfc-style
+    pkgs.nixfmt
     pkgs.nodejs_24 # Node is required for Copilot.vim. TODO: Update to node 24
     pkgs.opencode
     pkgs.podman
@@ -230,6 +230,7 @@ in
 
   programs.zsh = {
     enable = true;
+    dotDir = "${config.xdg.configHome}/zsh";
     syntaxHighlighting.enable = true;
     autosuggestion.enable = true;
     enableCompletion = true;

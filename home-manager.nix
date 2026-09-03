@@ -32,16 +32,17 @@ in
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
+    # pkgs.claude-code
     # pkgs.terraform # this is a slow install with nix?
     pkgs.azure-cli
     pkgs.bun
-    # pkgs.claude-code
     pkgs.curl
     pkgs.fzf
     pkgs.gemini-cli
     pkgs.gh
     pkgs.git-lfs
     pkgs.go-task
+    pkgs.herdr
     pkgs.htop
     pkgs.jq
     pkgs.kubectl
@@ -55,9 +56,6 @@ in
     pkgs.nixfmt
     pkgs.nodejs_24 # Node is required for Copilot.vim. TODO: Update to node 24
     pkgs.opencode
-    pkgs.podman
-    pkgs.podman-compose
-    pkgs.podman-tui
     pkgs.python314
     pkgs.ripgrep
     pkgs.ripgrep-all

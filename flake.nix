@@ -49,6 +49,7 @@
             bun = unstable.bun;
             claude-code = unstable.claude-code;
             gemini-cli = unstable.gemini-cli;
+            herdr = unstable.herdr;
             lazygit = unstable.lazygit;
             nodejs_22 = unstable.nodejs_22;
             opencode = unstable.opencode;

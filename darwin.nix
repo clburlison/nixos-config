@@ -93,6 +93,10 @@
       "zed"
       "zen"
     ];
+
+    masApps = {
+      Amphetamine = 937984704;
+    };
   };
 
   # The user should already exist, but we need to set this up so Nix knows

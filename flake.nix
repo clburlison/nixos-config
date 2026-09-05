@@ -93,6 +93,12 @@
         darwin = true;
       };
 
+      darwinConfigurations."clb-work" = mkSystem "darwin-default" {
+        system = "aarch64-darwin";
+        user = "clburlison";
+        darwin = true;
+      };
+
       darwinConfigurations."clayton-7HYM" = mkSystem "darwin-default" {
         system = "aarch64-darwin";
         user = "clayton";

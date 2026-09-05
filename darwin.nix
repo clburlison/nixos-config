@@ -48,27 +48,57 @@
   #   (import ./vim.nix { inherit inputs; })
   # ];
 
-  # homebrew = {
-  #   enable = true;
-  #   casks  = [
-  #     "1password"
-  #     # "cleanshot"
-  #     "discord"
-  #     "google-chrome"
-  #     # "hammerspoon"
-  #     # "imageoptim"
-  #     # "istat-menus"
-  #     # "monodraw"
-  #     # "raycast"
-  #     # "rectangle"
-  #     # "screenflow"
-  #     "slack"
-  #     "spotify"
-  #   ];
-  # };
+  # Install Homebrew itself. nix-darwin's `homebrew` module below only
+  # manages packages in an existing Homebrew installation.
+  nix-homebrew = {
+    enable = true;
+    user = currentSystemUser;
+
+    # All configured Macs are Apple Silicon. Leave the Intel prefix disabled
+    # unless an x86_64-only formula is required through Rosetta.
+    enableRosetta = false;
+
+    # Keep taps writable so normal Homebrew casks work without pinning the
+    # homebrew-core and homebrew-cask repositories as separate flake inputs.
+    mutableTaps = true;
+  };
+
+  homebrew = {
+    enable = true;
+
+    # Avoid changing unrelated packages on every system rebuild. Declared
+    # packages are still installed when missing.
+    onActivation = {
+      autoUpdate = false;
+      cleanup = "none";
+      upgrade = false;
+    };
+
+    casks = [
+      "1password"
+      "discord"
+      "firefox"
+      "ghostty"
+      "google-chrome"
+      "hiddenbar"
+      "karabiner-elements"
+      "raycast"
+      "slack"
+      "spotify"
+      "suspicious-package"
+      "tableplus"
+      "tableplus"
+      "tower"
+      "utm"
+      "zed"
+      "zen"
+    ];
+  };
 
   # The user should already exist, but we need to set this up so Nix knows
   # what our home directory is (https://github.com/LnL7/nix-darwin/issues/423).
+  system.primaryUser = currentSystemUser;
+
   users.users.${currentSystemUser} = {
     home = "/Users/${currentSystemUser}";
     shell = pkgs.fish;

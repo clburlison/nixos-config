@@ -66,6 +66,10 @@ systemFunc rec {
     # Bring in WSL if this is a WSL build
     (if isWSL then inputs.nixos-wsl.nixosModules.wsl else { })
 
+    # nix-darwin's homebrew module manages packages, but nix-homebrew
+    # installs and owns Homebrew itself.
+    (if darwin then inputs.nix-homebrew.darwinModules.nix-homebrew else { })
+
     machineConfig
     userOSConfig
     home-manager.home-manager

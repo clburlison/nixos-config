@@ -21,6 +21,9 @@
 
     darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Install and manage Homebrew itself through nix-darwin.
+    nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   };
 
   outputs =

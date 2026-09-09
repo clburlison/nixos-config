@@ -31,18 +31,51 @@
   # specifying the relevant user separately, moved under the
   # `users.users.*` namespace, or migrated to Home Manager.
   #
-  # system.defaults.NSGlobalDomain.AppleShowAllExtensions = true;
-  # system.defaults.finder.AppleShowAllExtensions = true;
-  # system.defaults.finder.FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
-  # system.defaults.finder.ShowPathbar = true;
-  # system.defaults.finder.FXPreferredViewStyle = "Nlsv"; # List view
-  # system.defaults.finder.FXRemoveOldTrashItems = true; # Remove items from trash after 30 days
-  # system.defaults.finder.NewWindowTarget = "Home";
-  # system.defaults.ActivityMonitor.ShowCategory = 100; # Show all processes
+  system.defaults.NSGlobalDomain.AppleShowAllExtensions = true;
+  system.defaults.finder.AppleShowAllExtensions = true;
+  system.defaults.finder.FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
+  system.defaults.finder.ShowPathbar = true;
+  system.defaults.finder.ShowStatusBar = true;
+  system.defaults.finder.FXPreferredViewStyle = "Nlsv"; # List view
+  system.defaults.finder.FXRemoveOldTrashItems = true; # Remove items from trash after 30 days
+  system.defaults.finder.NewWindowTarget = "Home";
+  system.defaults.finder.FXDefaultSearchScope = "SCcf";
+  system.defaults.ActivityMonitor.ShowCategory = 100; # Show all processes
 
-  # Keyboard remapping currently does not work
-  # system.keyboard.enableKeyMapping = true;
-  # system.keyboard.remapCapsLockToEscape = true;
+  system.defaults.dock = {
+    autohide = true;
+    orientation = "left";
+    show-recents = false;
+    persistent-apps = [
+      "/Applications/Google Chrome.app"
+      "/Applications/Slack.app"
+      "/Applications/Spotify.app"
+      "/Applications/zoom.us.app"
+      "/Applications/1Password.app"
+      "/Applications/Ghostty.app"
+      "/Applications/Tower.app"
+      "/Applications/TablePlus.app"
+      "/System/Applications/Messages.app"
+      "/System/Applications/System Settings.app"
+    ];
+    persistent-others = [
+      {
+        folder = {
+          path = "/Users/${currentSystemUser}/Downloads";
+          displayas = "folder";
+          arrangement = "date-added";
+          showas = "list";
+        };
+      }
+    ];
+  };
+
+  # Enable Touch ID for sudo
+  security.pam.services.sudo_local.touchIdAuth = true;
+
+  # Keyboard remapping
+  system.keyboard.enableKeyMapping = true;
+  system.keyboard.remapCapsLockToEscape = true;
 
   # nixpkgs.overlays = import ../../lib/overlays.nix ++ [
   #   (import ./vim.nix { inherit inputs; })
@@ -87,11 +120,11 @@
       "spotify"
       "suspicious-package"
       "tableplus"
-      "tableplus"
       "tower"
       "utm"
       "zed"
       "zen"
+      "zoom"
     ];
 
     masApps = {

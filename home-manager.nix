@@ -34,11 +34,11 @@ in
   home.packages = [
     # pkgs.claude-code
     # pkgs.terraform # this is a slow install with nix?
+    pkgs.antigravity-cli
     pkgs.azure-cli
     pkgs.bun
     pkgs.curl
     pkgs.fzf
-    pkgs.gemini-cli
     pkgs.gh
     pkgs.git-lfs
     pkgs.go-task

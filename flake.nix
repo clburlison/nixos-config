@@ -49,6 +49,7 @@
             };
           in
           {
+            antigravity-cli = unstable.antigravity-cli;
             bun = unstable.bun;
             claude-code = unstable.claude-code;
             gemini-cli = unstable.gemini-cli;

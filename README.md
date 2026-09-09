@@ -43,7 +43,13 @@ My nix and dotfile configurations.
    ./task install
    ```
 
-6. Run nix switch to configure the system
+6. (Optional) Set macOS computer name
+
+   ```sh
+   ./task rename-mac
+   ```
+
+7. Run nix switch to configure the system
 
    ```sh
    ./task switch

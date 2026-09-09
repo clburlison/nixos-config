@@ -102,3 +102,23 @@ tasks:
     internal: true
     cmds:
       - nix build ".#nixosConfigurations.wsl.config.system.build.installer"
+
+  rename-mac:
+    desc: Rename macOS computer names (HostName, ComputerName, LocalHostName)
+    platforms: [darwin]
+    interactive: true
+    cmds:
+      - |
+        NAME="{{.CLI_ARGS}}"
+        if [ -z "$NAME" ]; then
+          read -r -p "Enter computer name: " NAME
+        fi
+        if [ -z "$NAME" ]; then
+          echo "Error: No computer name provided." >&2
+          exit 1
+        fi
+        echo "Updating computer names to $NAME..."
+        sudo scutil --set HostName "$NAME"
+        sudo scutil --set ComputerName "$NAME"
+        sudo scutil --set LocalHostName "$NAME"
+        echo "Computer names updated successfully."

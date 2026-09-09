@@ -23,12 +23,6 @@ My nix and dotfile configurations.
    cd nixos-config
    ```
 
-   Once your environment/SSH keys are configured, update the remote URL to SSH/git:
-
-   ```sh
-   git remote set-url origin git@github.com:clburlison/nixos-config.git
-   ```
-
 4. Install `task`
 
    ```sh
@@ -53,6 +47,15 @@ My nix and dotfile configurations.
 
    ```sh
    ./task switch
+   ```
+
+8. Cleanup
+
+   Once your environment/SSH keys are configured, update the remote URL to SSH/git:
+
+   ```sh
+   git remote set-url origin git@github.com:clburlison/nixos-config.git
+   rm ./task
    ```
 
 Future runs can use the global install of `task`.

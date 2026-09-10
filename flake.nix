@@ -55,8 +55,8 @@
             gemini-cli = unstable.gemini-cli;
             herdr = unstable.herdr;
             lazygit = unstable.lazygit;
-            nodejs_22 = unstable.nodejs_22;
             opencode = unstable.opencode;
+            openusage = unstable.openusage;
             tree-sitter = unstable.tree-sitter;
             zellij = unstable.zellij;
             zoxide = unstable.zoxide;

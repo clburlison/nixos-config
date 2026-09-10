@@ -115,6 +115,7 @@
       "google-chrome"
       "hiddenbar"
       "karabiner-elements"
+      "openusage"
       "raycast"
       "slack"
       "spotify"

@@ -98,7 +98,7 @@ alias desktopHide='defaults write com.apple.finder CreateDesktop -bool false; ki
 
 #   cleanupLS:  Clean up LaunchServices to remove duplicates in the "Open With" menu
 #   -----------------------------------------------------------------------------------
-alias cleanupLS="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
+# alias cleanupLS="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
 
 #   ---------------------------------------
 #   7.   References & Notes

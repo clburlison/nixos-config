@@ -52,6 +52,7 @@
             antigravity-cli = unstable.antigravity-cli;
             bun = unstable.bun;
             claude-code = unstable.claude-code;
+            codex = unstable.codex;
             gemini-cli = unstable.gemini-cli;
             herdr = unstable.herdr;
             lazygit = unstable.lazygit;

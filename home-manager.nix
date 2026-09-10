@@ -31,11 +31,12 @@ in
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
-    # pkgs.claude-code
     # pkgs.terraform # this is a slow install with nix?
     pkgs.antigravity-cli
     pkgs.azure-cli
     pkgs.bun
+    pkgs.claude-code
+    pkgs.codex
     pkgs.curl
     pkgs.fzf
     pkgs.gh

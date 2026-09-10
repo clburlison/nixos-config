@@ -110,6 +110,7 @@ in
     ".config/fish/omp-vimmode.fish".source = mkLink "${dotfiles}/config/fish/omp-vimmode.fish";
     ".config/fish/path.fish".source = mkLink "${dotfiles}/config/fish/path.fish";
     ".config/karabiner/karabiner.json".source = mkLink "${dotfiles}/config/karabiner/karabiner.json";
+    ".config/herdr/config.toml".source = mkLink "${dotfiles}/config/herdr/config.toml";
     ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";
     ".config/nvim".source = mkLink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";

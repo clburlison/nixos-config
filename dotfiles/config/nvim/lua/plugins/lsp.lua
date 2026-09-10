@@ -31,6 +31,7 @@ return {
   -- Main LSP Configuration
   {
     'neovim/nvim-lspconfig',
+    lazy = false,
     dependencies = {
       { 'mason-org/mason.nvim', config = true },
       'mason-org/mason-lspconfig.nvim',
@@ -186,6 +187,10 @@ return {
           'yamlls',
           -- 'swiftlint', # fails to install
         },
+        auto_update = true,
+        run_on_start = true,
+        start_delay = 5000, -- 5 second delay
+        debounce_hours = 5, -- at least 5 hours between attempts to install/update
       }
     end,
   },

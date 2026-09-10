@@ -1,7 +1,7 @@
--- https://github.com/hiasr/vim-zellij-navigator
+-- herdr plugin link  ~/.local/share/nvim/lazy/smart-splits.nvim
 return {
   {
-    'mrjones2014/smart-splits.nvim',
+    'smart-splits-nvim/smart-splits.nvim',
     enabled = true,
     lazy = false,
     event = 'VeryLazy',
@@ -24,18 +24,5 @@ return {
       { '<leader><leader>k', '<cmd>SmartSwapUp<cr>', { silent = true, desc = 'swap buffer up' } },
       { '<leader><leader>l', '<cmd>SmartSwapRight<cr>', { silent = true, desc = 'swap buffer right' } },
     },
-  },
-  {
-    'swaits/zellij-nav.nvim',
-    enabled = false,
-    lazy = true,
-    event = 'VeryLazy',
-    keys = {
-      { '<c-h>', '<cmd>ZellijNavigateLeftTab<cr>', { silent = true, desc = 'navigate left or tab' } },
-      { '<c-j>', '<cmd>ZellijNavigateDown<cr>', { silent = true, desc = 'navigate down' } },
-      { '<c-k>', '<cmd>ZellijNavigateUp<cr>', { silent = true, desc = 'navigate up' } },
-      { '<c-l>', '<cmd>ZellijNavigateRightTab<cr>', { silent = true, desc = 'navigate right or tab' } },
-    },
-    opts = {},
   },
 }

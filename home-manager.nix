@@ -1,6 +1,5 @@
 # https://nix-community.github.io/home-manager/options.xhtml
 
-# { isWSL, inputs, pkgsUnstable, ... }:
 { isWSL, inputs, ... }:
 
 {
@@ -54,7 +53,7 @@ in
     pkgs.nerd-fonts.hack
     pkgs.nerd-fonts.meslo-lg
     pkgs.nixfmt
-    pkgs.nodejs_24 # Node is required for Copilot.vim. TODO: Update to node 24
+    pkgs.nodejs_24
     pkgs.opencode
     pkgs.python314
     pkgs.ripgrep
@@ -62,7 +61,7 @@ in
     pkgs.rustc
     pkgs.rustup
     pkgs.tree
-    pkgs.tree-sitter # `bun install -g tree-sitter-cli` require newer version than nix has
+    pkgs.tree-sitter
     pkgs.uv
     pkgs.wget
     pkgs.zsh-history-substring-search

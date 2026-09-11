@@ -41,6 +41,7 @@ in
     pkgs.fzf
     pkgs.gh
     pkgs.git-lfs
+    pkgs.git-open
     pkgs.go-task
     pkgs.herdr
     pkgs.htop

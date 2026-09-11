@@ -24,6 +24,13 @@
 
     # Install and manage Homebrew itself through nix-darwin.
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+
+    agent-skills.url = "github:Kyure-A/agent-skills-nix";
+
+    matt-pocock-skills = {
+      url = "github:mattpocock/skills";
+      flake = false;
+    };
   };
 
   outputs =

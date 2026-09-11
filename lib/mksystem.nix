@@ -76,6 +76,7 @@ systemFunc rec {
     {
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
+      home-manager.extraSpecialArgs = { inherit inputs; };
       home-manager.users.${user} = import userHMConfig {
         isWSL = isWSL;
         inputs = inputs;

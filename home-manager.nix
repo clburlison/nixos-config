@@ -18,6 +18,8 @@ let
 
 in
 {
+  imports = [ inputs.agent-skills.homeManagerModules.default ];
+
   # The state version is required and should stay at the version you
   # originally installed.
   home.stateVersion = "24.05";
@@ -158,6 +160,24 @@ in
       "ignorespace"
     ];
     initExtra = builtins.readFile ./dotfiles/bashrc;
+  };
+
+  programs.agent-skills = {
+    enable = true;
+    sources.matt-pocock = {
+      input = "matt-pocock-skills";
+      subdir = "skills";
+      filter.nameRegex = "^(engineering|productivity)/.*";
+    };
+    skills.enableAll = [ "matt-pocock" ];
+    targets = {
+      agents.enable = true;
+      antigravity.enable = true;
+      claude.enable = true;
+      codex.enable = true;
+      opencode.enable = true;
+      pi.enable = true;
+    };
   };
 
   programs.fish = {

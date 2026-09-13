@@ -32,6 +32,7 @@
   # `users.users.*` namespace, or migrated to Home Manager.
   #
   system.defaults.NSGlobalDomain.AppleShowAllExtensions = true;
+  system.defaults.NSGlobalDomain."com.apple.sound.beep.feedback" = 1; # requires system restart afterwards
   system.defaults.finder.AppleShowAllExtensions = true;
   system.defaults.finder.FXEnableExtensionChangeWarning = false; # disable warning when changing file extension
   system.defaults.finder.ShowPathbar = true;

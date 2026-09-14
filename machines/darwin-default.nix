@@ -19,6 +19,7 @@
         "https://cache.nixos.org/"
         "https://nix-community.cachix.org"
         "https://nix-darwin.cachix.org"
+        "https://nixpkgs-ruby.cachix.org"
       ];
       trusted-public-keys = [
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
@@ -37,7 +38,7 @@
       . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
     fi
     # End Nix
-    '';
+  '';
 
   programs.fish.enable = true;
   programs.fish.shellInit = ''
@@ -46,9 +47,13 @@
       source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
     end
     # End Nix
-    '';
+  '';
 
-  environment.shells = with pkgs; [ bashInteractive zsh fish ];
+  environment.shells = with pkgs; [
+    bashInteractive
+    zsh
+    fish
+  ];
   # environment.systemPackages = with pkgs; [
   #   cachix
   # ];

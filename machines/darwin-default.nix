@@ -3,31 +3,24 @@
   # $ darwin-rebuild changelog
   system.stateVersion = 5;
 
-  # Keep in async with vm-shared.nix. (todo: pull this out into a file)
-  nix = {
-    # We need to enable flakes
-    extraOptions = ''
-      experimental-features = nix-command flakes
-      keep-outputs = true
-      keep-derivations = true
+  # Determinate Nix includes this file from /etc/nix/nix.conf. nix-darwin's
+  # nix.settings are inactive because nix.enable is false in darwin.nix.
+  system.activationScripts.postActivation.text =
+    let
+      nixCustomConf = pkgs.writeText "nix.custom.conf" ''
+        accept-flake-config = true
+        keep-outputs = true
+        keep-derivations = true
+        extra-substituters = https://nix-community.cachix.org https://nix-darwin.cachix.org https://nixpkgs-ruby.cachix.org
+        extra-trusted-public-keys = nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= nix-darwin.cachix.org-1:RIiwxkm/D5C8GGGdWKYQOY5TdpYIQejZ+j+O6Qz0aFA= nixpkgs-ruby.cachix.org-1:vrcdi50fTolOxWCZZkw0jakOnUI1T19oYJ+PRYdK4SM=
+      '';
+    in
+    ''
+      if ! cmp -s ${nixCustomConf} /etc/nix/nix.custom.conf; then
+        install -m 0644 ${nixCustomConf} /etc/nix/nix.custom.conf
+        launchctl kickstart -k system/systems.determinate.nix-daemon
+      fi
     '';
-
-    # https://nixos.wiki/wiki/Binary_Cache#Using_a_binary_cache
-    # Can use cachix or https://github.com/zhaofengli/attic for personal usage
-    settings = {
-      substituters = [
-        "https://cache.nixos.org/"
-        "https://nix-community.cachix.org"
-        "https://nix-darwin.cachix.org"
-        "https://nixpkgs-ruby.cachix.org"
-      ];
-      trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-        "nix-darwin.cachix.org-1:RIiwxkm/D5C8GGGdWKYQOY5TdpYIQejZ+j+O6Qz0aFA="
-      ];
-    };
-  };
 
   # zsh is the default shell on Mac and we want to make sure that we're
   # configuring the rc correctly with nix-darwin paths.

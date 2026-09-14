@@ -118,6 +118,7 @@
       "hiddenbar"
       "karabiner-elements"
       "openusage"
+      "orbstack"
       "raycast"
       "slack"
       "spotify"

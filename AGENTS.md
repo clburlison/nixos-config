@@ -19,3 +19,17 @@
   - `dotfiles/`: User-space application configs (Neovim, Fish, etc.).
   - `lib/`: Shared Nix functions.
 - **Changes**: When adding packages, check `overlays` in `flake.nix` first. Use `unstable` only if necessary.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for `clburlison/nixos-config`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the five canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Uses a single-context domain-doc layout. See `docs/agents/domain.md`.

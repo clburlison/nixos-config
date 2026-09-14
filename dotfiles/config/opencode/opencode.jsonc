@@ -7,5 +7,22 @@
         "input_submit": "shift+enter",
         "input_newline": "enter"
     },
-    "plugin": ["opencode-gemini-auth@latest"]
+    "plugin": [],
+    "provider": {
+        "omlx": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "oMLX (local)",
+            "options": {
+                "baseURL": "http://clb-mini.home.clb.ai:8000/v1"
+            },
+            "models": {
+                "Qwen2.5-Coder-7B-Instruct-4bit": {
+                    "name": "Qwen2.5-Coder-7B-Instruct-4bit (oMLX)"
+                },
+                "gemma-4-E4B-it-MLX-4bit": {
+                    "name": "Gemma-4-E4B-it-MLX-4bit (oMLX)"
+                }
+            }
+        }
+    }
 }

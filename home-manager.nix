@@ -185,6 +185,7 @@ in
     enableZshIntegration = true;
     enableFishIntegration = true;
     nix-direnv.enable = true;
+    silent = true;
   };
 
   programs.fish = {

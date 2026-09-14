@@ -124,6 +124,7 @@
       "spotify"
       "suspicious-package"
       "tableplus"
+      "tailscale"
       "tower"
       "utm"
       "zed"

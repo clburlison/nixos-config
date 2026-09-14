@@ -110,6 +110,7 @@
 
     casks = [
       "1password"
+      "claude"
       "discord"
       "firefox"
       "ghostty"

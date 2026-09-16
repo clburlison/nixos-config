@@ -24,6 +24,10 @@ in
   # originally installed.
   home.stateVersion = "24.05";
 
+  # Avoid generating the Home Manager option manual, which triggers a
+  # Determinate Nix store-context warning.
+  manual.manpages.enable = false;
+
   xdg.enable = true;
 
   #---------------------------------------------------------------------

@@ -164,12 +164,18 @@ in
 
   programs.agent-skills = {
     enable = true;
-    sources.matt-pocock = {
+    sources.matt-pocock-engineering = {
       input = "matt-pocock-skills";
-      subdir = "skills";
-      filter.nameRegex = "^(engineering|productivity)/.*";
+      subdir = "skills/engineering";
     };
-    skills.enableAll = [ "matt-pocock" ];
+    sources.matt-pocock-productivity = {
+      input = "matt-pocock-skills";
+      subdir = "skills/productivity";
+    };
+    skills.enableAll = [
+      "matt-pocock-engineering"
+      "matt-pocock-productivity"
+    ];
     targets = {
       agents.enable = true;
       antigravity.enable = true;

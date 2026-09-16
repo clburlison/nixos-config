@@ -117,6 +117,8 @@
       "google-chrome"
       "hiddenbar"
       "karabiner-elements"
+      "linear"
+      "notion"
       "openusage"
       "orbstack"
       "raycast"

@@ -115,9 +115,11 @@
       "firefox"
       "ghostty"
       "google-chrome"
+      "granola" # unclear on this one
       "hiddenbar"
       "karabiner-elements"
       "linear"
+      "loom"
       "notion"
       "openusage"
       "orbstack"

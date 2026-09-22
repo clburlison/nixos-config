@@ -1,6 +1,11 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
+includes:
+  packages:
+    taskfile: ./packages/Taskfile.yml
+    dir: ./packages
+
 vars:
   NIXNAME:
     sh: echo "${NIXNAME:-$(hostname)}"

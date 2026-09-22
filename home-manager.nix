@@ -62,6 +62,7 @@ in
     pkgs.nerd-fonts.meslo-lg
     pkgs.nixfmt
     pkgs.nodejs_24
+    pkgs.ntn
     pkgs.opencode
     pkgs.python314
     pkgs.ripgrep
@@ -117,6 +118,9 @@ in
     ".config/fish/functions".source = mkLink "${dotfiles}/config/fish/functions";
     ".config/fish/omp-vimmode.fish".source = mkLink "${dotfiles}/config/fish/omp-vimmode.fish";
     ".config/fish/path.fish".source = mkLink "${dotfiles}/config/fish/path.fish";
+    ".config/fish/completions/ntn.fish".source = pkgs.runCommand "ntn-fish-completions" { } ''
+      ${pkgs.ntn}/bin/ntn completions fish > $out
+    '';
     ".config/karabiner/karabiner.json".source = mkLink "${dotfiles}/config/karabiner/karabiner.json";
     ".config/herdr/config.toml".source = mkLink "${dotfiles}/config/herdr/config.toml";
     ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";

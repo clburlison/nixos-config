@@ -176,9 +176,14 @@ in
       input = "matt-pocock-skills";
       subdir = "skills/productivity";
     };
+    sources.notion = {
+      input = "notion-skills";
+      subdir = "skills";
+    };
     skills.enableAll = [
       "matt-pocock-engineering"
       "matt-pocock-productivity"
+      "notion"
     ];
     targets = {
       agents.enable = true;

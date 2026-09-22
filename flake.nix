@@ -31,6 +31,11 @@
       url = "github:mattpocock/skills";
       flake = false;
     };
+
+    notion-skills = {
+      url = "github:makenotion/skills";
+      flake = false;
+    };
   };
 
   outputs =

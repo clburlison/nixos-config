@@ -241,6 +241,22 @@
         "type": "github"
       }
     },
+    "notion-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1777929017,
+        "narHash": "sha256-rzT+jXI+hwoXvqS/ln6PT2juxzFsDoKGIOygkJWCM94=",
+        "owner": "makenotion",
+        "repo": "skills",
+        "rev": "423af2bf546cd0354e5cc871017251945d9ad14f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "makenotion",
+        "repo": "skills",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "agent-skills": "agent-skills",
@@ -250,7 +266,8 @@
         "nix-homebrew": "nix-homebrew",
         "nixos-wsl": "nixos-wsl",
         "nixpkgs": "nixpkgs_2",
-        "nixpkgs-unstable": "nixpkgs-unstable"
+        "nixpkgs-unstable": "nixpkgs-unstable",
+        "notion-skills": "notion-skills"
       }
     },
     "systems": {

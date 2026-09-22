@@ -4,7 +4,7 @@
 
 - **Apply Config**: `task switch` (builds and switches system config)
 - **Verify/Test**: `task test` (builds and runs `darwin-rebuild check` or `nixos-rebuild test`)
-- **Single Test**: System configs are monolithic; run `task test` to validate entire configuration.
+- **Agent Verification**: Do not run Nix builds, `task switch`, or `task test`; they are slow and require interactive `sudo` authentication. Run `nixfmt` for modified Nix files instead.
 - **Linting**:
   - Lua: `stylua` (config in `dotfiles/config/nvim/.stylua.toml`)
   - Nix: Standard `nixfmt` (2 spaces indent)

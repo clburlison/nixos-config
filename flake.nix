@@ -73,6 +73,7 @@
             gemini-cli = unstable.gemini-cli;
             herdr = unstable.herdr;
             lazygit = unstable.lazygit;
+            linear-cli = final.callPackage ./packages/linear-cli.nix { };
             ntn = final.callPackage ./packages/ntn.nix { };
             opencode = unstable.opencode;
             openusage = unstable.openusage;

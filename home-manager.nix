@@ -54,6 +54,7 @@ in
     pkgs.jq
     pkgs.kubectl
     pkgs.lazygit
+    pkgs.linear-cli
     pkgs.mysql84
     pkgs.neovim
     pkgs.nerd-fonts.caskaydia-mono

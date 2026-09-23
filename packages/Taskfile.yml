@@ -2,6 +2,70 @@
 version: "3"
 
 tasks:
+  update-linear-cli:
+    desc: Update Linear CLI to the latest npm release or a specified version
+    cmds:
+      - |
+        set -eu
+
+        PACKAGE="linear-cli.nix"
+        VERSION="{{.CLI_ARGS}}"
+        if [ -z "$VERSION" ]; then
+          VERSION="$(curl -fsSL https://registry.npmjs.org/@schpet/linear-cli/latest | jq -er '.version')"
+        fi
+        VERSION="${VERSION#v}"
+
+        case "$VERSION" in
+          ''|*[!0-9A-Za-z.-]*)
+            printf 'Invalid Linear CLI version: %s\n' "$VERSION" >&2
+            exit 1
+            ;;
+        esac
+
+        TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/linear-cli-update.XXXXXX")"
+        trap 'rm -rf "$TMP_DIR"' EXIT
+        HASHES="$TMP_DIR/hashes"
+        UPDATED="$TMP_DIR/linear-cli.nix"
+
+        for source in \
+          "aarch64-darwin:aarch64-apple-darwin" \
+          "x86_64-darwin:x86_64-apple-darwin" \
+          "aarch64-linux:aarch64-unknown-linux-gnu" \
+          "x86_64-linux:x86_64-unknown-linux-gnu"
+        do
+          system="${source%%:*}"
+          target="${source#*:}"
+          url="https://github.com/schpet/linear-cli/releases/download/v${VERSION}/linear-${target}.tar.xz"
+          printf 'Prefetching %s...\n' "$target"
+          hash="$(nix --extra-experimental-features 'nix-command flakes' store prefetch-file --json "$url" | jq -er '.hash')"
+          printf '%s\t%s\n' "$system" "$hash" >> "$HASHES"
+        done
+
+        awk -v version="$VERSION" '
+          NR == FNR {
+            hashes[$1] = $2
+            next
+          }
+          $1 in hashes && $2 == "=" && $3 == "{" {
+            current_system = $1
+          }
+          current_system in hashes && $1 == "hash" && $2 == "=" {
+            print "      hash = \"" hashes[current_system] "\";"
+            current_system = ""
+            next
+          }
+          $1 == "version" && $2 == "=" {
+            print "  version = \"" version "\";"
+            next
+          }
+          { print }
+        ' "$HASHES" "$PACKAGE" > "$UPDATED"
+
+        chmod 644 "$UPDATED"
+        mv "$UPDATED" "$PACKAGE"
+        nixfmt "$PACKAGE"
+        printf 'Updated Linear CLI to %s. Run task test to verify the configuration.\n' "$VERSION"
+
   update-ntn:
     desc: Update ntn to the latest release or a specified version
     cmds:

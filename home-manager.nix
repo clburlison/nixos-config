@@ -184,10 +184,15 @@ in
       input = "notion-skills";
       subdir = "skills";
     };
+    sources.linear-cli = {
+      input = "linear-cli-skills";
+      subdir = "skills";
+    };
     skills.enableAll = [
       "matt-pocock-engineering"
       "matt-pocock-productivity"
       "notion"
+      "linear-cli"
     ];
     targets = {
       agents.enable = true;

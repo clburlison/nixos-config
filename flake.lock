@@ -138,6 +138,22 @@
         "type": "github"
       }
     },
+    "linear-cli-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1790142049,
+        "narHash": "sha256-6mYf1FTCPH8vWe/k3jN7nlXdiYKE1xW6OaMYLDHIbjM=",
+        "owner": "schpet",
+        "repo": "linear-cli",
+        "rev": "d4fe6fa7358f018fd1da0c6b96ec2b022247e898",
+        "type": "github"
+      },
+      "original": {
+        "owner": "schpet",
+        "repo": "linear-cli",
+        "type": "github"
+      }
+    },
     "matt-pocock-skills": {
       "flake": false,
       "locked": {
@@ -262,6 +278,7 @@
         "agent-skills": "agent-skills",
         "darwin": "darwin",
         "home-manager": "home-manager_2",
+        "linear-cli-skills": "linear-cli-skills",
         "matt-pocock-skills": "matt-pocock-skills",
         "nix-homebrew": "nix-homebrew",
         "nixos-wsl": "nixos-wsl",

@@ -70,6 +70,7 @@
             bun = unstable.bun;
             claude-code = unstable.claude-code;
             codex = unstable.codex;
+            codeburn = final.callPackage ./packages/codeburn.nix { };
             gemini-cli = unstable.gemini-cli;
             herdr = unstable.herdr;
             lazygit = unstable.lazygit;

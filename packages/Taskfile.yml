@@ -2,6 +2,67 @@
 version: "3"
 
 tasks:
+  update-codeburn:
+    desc: Update Codeburn to the latest npm release or a specified version
+    cmds:
+      - |
+        set -eu
+
+        PACKAGE="codeburn.nix"
+        VERSION="{{.CLI_ARGS}}"
+        if [ -z "$VERSION" ]; then
+          VERSION="$(curl -fsSL https://registry.npmjs.org/codeburn/latest | jq -er '.version')"
+        fi
+        VERSION="${VERSION#v}"
+
+        case "$VERSION" in
+          ''|*[!0-9A-Za-z.-]*)
+            printf 'Invalid Codeburn version: %s\n' "$VERSION" >&2
+            exit 1
+            ;;
+        esac
+
+        METADATA="$(curl -fsSL "https://registry.npmjs.org/codeburn/${VERSION}")"
+        REV="$(printf '%s' "$METADATA" | jq -er '.gitHead')"
+        case "$REV" in
+          ''|*[!0-9a-f]*)
+            printf 'Invalid Codeburn git revision: %s\n' "$REV" >&2
+            exit 1
+            ;;
+        esac
+
+        TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/codeburn-update.XXXXXX")"
+        trap 'rm -rf "$TMP_DIR"' EXIT
+        URL="https://github.com/getagentseal/codeburn/archive/${REV}.tar.gz"
+        SOURCE_HASH="$(nix --extra-experimental-features 'nix-command flakes' store prefetch-file --unpack --json "$URL" | jq -er '.hash')"
+        SOURCE="$(nix --extra-experimental-features 'nix-command flakes' eval --raw --expr "builtins.fetchTarball { url = \"$URL\"; sha256 = \"$SOURCE_HASH\"; }")"
+        NPM_DEPS_HASH="$(nix run --extra-experimental-features 'nix-command flakes' 'github:NixOS/nixpkgs/nixos-26.05#prefetch-npm-deps' -- "$SOURCE/package-lock.json")"
+
+        awk -v version="$VERSION" -v rev="$REV" -v source_hash="$SOURCE_HASH" -v npm_hash="$NPM_DEPS_HASH" '
+          $1 == "version" && $2 == "=" {
+            print "  version = \"" version "\";"
+            next
+          }
+          $1 == "rev" && $2 == "=" {
+            print "    rev = \"" rev "\";"
+            next
+          }
+          $1 == "hash" && $2 == "=" {
+            print "    hash = \"" source_hash "\";"
+            next
+          }
+          $1 == "npmDepsHash" && $2 == "=" {
+            print "  npmDepsHash = \"" npm_hash "\";"
+            next
+          }
+          { print }
+        ' "$PACKAGE" > "$TMP_DIR/codeburn.nix"
+
+        chmod 644 "$TMP_DIR/codeburn.nix"
+        mv "$TMP_DIR/codeburn.nix" "$PACKAGE"
+        nixfmt "$PACKAGE"
+        printf 'Updated Codeburn to %s. Run task test to verify the configuration.\n' "$VERSION"
+
   update-linear-cli:
     desc: Update Linear CLI to the latest npm release or a specified version
     cmds:

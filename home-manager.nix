@@ -42,6 +42,7 @@ in
     pkgs.azure-cli
     pkgs.bun
     pkgs.claude-code
+    pkgs.codeburn
     pkgs.codex
     pkgs.curl
     pkgs.fzf

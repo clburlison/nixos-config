@@ -83,6 +83,8 @@ in
     # pkgs.ngrok
     # pkgs.yt-dlp # youtube-dl replacement
     pkgs._1password-cli
+    pkgs.colima
+    pkgs.docker
     pkgs.ffmpeg_7-full
     pkgs.hugo
     pkgs.terraform-docs

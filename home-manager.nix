@@ -114,6 +114,7 @@ in
 
   home.file = {
     ".aliases".source = ./dotfiles/aliases;
+    ".claude/CLAUDE.md".source = mkLink "${dotfiles}/claude/CLAUDE.md";
     ".claude/keybindings.json".source = mkLink "${dotfiles}/claude/keybindings.json";
     ".config/fish/aliases.fish".source = mkLink "${dotfiles}/config/fish/aliases.fish";
     ".config/fish/conf.d".source = mkLink "${dotfiles}/config/fish/config.d";

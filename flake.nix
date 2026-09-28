@@ -41,6 +41,16 @@
       url = "github:schpet/linear-cli";
       flake = false;
     };
+
+    herdr-nix = {
+      url = "github:kevinpita/herdr-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    smart-splits-nvim = {
+      url = "github:smart-splits-nvim/smart-splits.nvim";
+      flake = false;
+    };
   };
 
   outputs =
@@ -72,7 +82,6 @@
             codex = unstable.codex;
             codeburn = final.callPackage ./packages/codeburn.nix { };
             gemini-cli = unstable.gemini-cli;
-            herdr = unstable.herdr;
             lazygit = unstable.lazygit;
             linear-cli = final.callPackage ./packages/linear-cli.nix { };
             ntn = final.callPackage ./packages/ntn.nix { };
@@ -88,6 +97,15 @@
       mkSystem = import ./lib/mksystem.nix {
         inherit overlays nixpkgs inputs;
       };
+
+      mkDarwin =
+        hostName:
+        mkSystem "darwin-default" {
+          inherit hostName;
+          system = "aarch64-darwin";
+          user = "clburlison";
+          darwin = true;
+        };
     in
     {
       # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
@@ -106,22 +124,10 @@
         wsl = true;
       };
 
-      darwinConfigurations."vm-clayton-mac" = mkSystem "darwin-default" {
-        system = "aarch64-darwin";
-        user = "clburlison";
-        darwin = true;
-      };
-
-      darwinConfigurations."clb-work" = mkSystem "darwin-default" {
-        system = "aarch64-darwin";
-        user = "clburlison";
-        darwin = true;
-      };
-
-      darwinConfigurations."clb-mini" = mkSystem "darwin-default" {
-        system = "aarch64-darwin";
-        user = "clburlison";
-        darwin = true;
-      };
+      darwinConfigurations = nixpkgs.lib.genAttrs [
+        "vm-clayton-mac"
+        "clb-work"
+        "clb-mini"
+      ] mkDarwin;
     };
 }

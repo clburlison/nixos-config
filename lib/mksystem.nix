@@ -32,6 +32,7 @@ name:
 {
   system,
   user,
+  hostName ? name,
   nixConfigUser ? "clburlison",
   darwin ? false,
   wsl ? false,
@@ -80,6 +81,7 @@ systemFunc rec {
       home-manager.users.${user} = import userHMConfig {
         isWSL = isWSL;
         inputs = inputs;
+        hostName = hostName;
       };
     }
 

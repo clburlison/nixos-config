@@ -1,6 +1,11 @@
 # https://nix-community.github.io/home-manager/options.xhtml
 
-{ isWSL, inputs, ... }:
+{
+  isWSL,
+  inputs,
+  hostName,
+  ...
+}:
 
 {
   config,
@@ -18,7 +23,10 @@ let
 
 in
 {
-  imports = [ inputs.agent-skills.homeManagerModules.default ];
+  imports = [
+    inputs.agent-skills.homeManagerModules.default
+    inputs.herdr-nix.homeModules.default
+  ];
 
   # The state version is required and should stay at the version you
   # originally installed.
@@ -50,7 +58,6 @@ in
     pkgs.git-lfs
     pkgs.git-open
     pkgs.go-task
-    pkgs.herdr
     pkgs.htop
     pkgs.jq
     pkgs.kubectl
@@ -127,7 +134,6 @@ in
       ${pkgs.ntn}/bin/ntn completions fish > $out
     '';
     ".config/karabiner/karabiner.json".source = mkLink "${dotfiles}/config/karabiner/karabiner.json";
-    ".config/herdr/config.toml".source = mkLink "${dotfiles}/config/herdr/config.toml";
     ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";
     ".config/nvim".source = mkLink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";
@@ -276,6 +282,55 @@ in
       GOPATH = [ "${config.home.homeDirectory}/dev/go" ];
     };
   };
+
+  programs.herdr = {
+    enable = true;
+    package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.herdr;
+    extraPackages = [ pkgs.bash ];
+    plugins.smart-splits.source = inputs.smart-splits-nvim;
+    machines = lib.optionalAttrs (hostName != "clb-mini") {
+      clb-mini = {
+        id = "9197ad236dbec9f5a454ec297ab15b4c";
+        target = "clb-mini";
+      };
+    };
+    settings = {
+      theme = {
+        name = "tokyo-night";
+        auto_switch = false;
+      };
+      keys.command = [
+        {
+          key = "ctrl+h";
+          type = "plugin_action";
+          command = "smart-splits.nvim.left";
+          description = "navigate left (vim/herdr)";
+        }
+        {
+          key = "ctrl+j";
+          type = "plugin_action";
+          command = "smart-splits.nvim.down";
+          description = "navigate down (vim/herdr)";
+        }
+        {
+          key = "ctrl+k";
+          type = "plugin_action";
+          command = "smart-splits.nvim.up";
+          description = "navigate up (vim/herdr)";
+        }
+        {
+          key = "ctrl+l";
+          type = "plugin_action";
+          command = "smart-splits.nvim.right";
+          description = "navigate right (vim/herdr)";
+        }
+      ];
+    };
+  };
+
+  # Replace the registries that were previously maintained by the Herdr CLI.
+  xdg.configFile."herdr/plugins.json".force = true;
+  home.file."${config.xdg.stateHome}/herdr/client/endpoints.json".force = true;
 
   programs.kubeswitch = {
     enable = true;

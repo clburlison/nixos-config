@@ -144,6 +144,21 @@ in
     ".path".source = ./dotfiles/path;
   };
 
+  home.activation.authorizeSshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    sshDir="${config.home.homeDirectory}/.ssh"
+    authorizedKeys="$sshDir/authorized_keys"
+    key='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC187yAHL5GQ2BzAFFA9b0otVM3asoW0JFg8CPR1m5tU'
+
+    ${pkgs.coreutils}/bin/install -d -m 700 "$sshDir"
+    if [ ! -e "$authorizedKeys" ]; then
+      ${pkgs.coreutils}/bin/touch "$authorizedKeys"
+    fi
+    ${pkgs.coreutils}/bin/chmod 600 "$authorizedKeys"
+    if ! ${pkgs.gnugrep}/bin/grep -Fqx "$key" "$authorizedKeys"; then
+      printf '%s\n' "$key" >> "$authorizedKeys"
+    fi
+  '';
+
   # Disable Safe Mode for Zen/Firefox. I use the hyper key for launch and this causes issues.
   # https://github.com/zen-browser/desktop/issues/6538
   launchd.agents.MOZ_DISABLE_SAFE_MODE = {

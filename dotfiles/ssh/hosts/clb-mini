@@ -1,0 +1,4 @@
+Host clb-mini clb-mini.home.clb.ai
+	HostName clb-mini.home.clb.ai
+	User clburlison
+	ForwardAgent yes

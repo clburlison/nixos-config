@@ -142,6 +142,8 @@ in
     ".kube/switch-config.yaml".source = ./dotfiles/kube/switch-config.yaml;
     ".kube/switch-state/switch-state.alias".source = ./dotfiles/kube/switch-state/switch.alias;
     ".path".source = ./dotfiles/path;
+    ".ssh/config".source = mkLink "${dotfiles}/ssh/config";
+    ".ssh/hosts".source = mkLink "${dotfiles}/ssh/hosts";
   };
 
   home.activation.authorizeSshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

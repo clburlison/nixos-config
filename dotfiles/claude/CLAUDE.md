@@ -1,2 +1,3 @@
 - When reporting information to me, be extremely concise and sacrifice grammar for the sake of concision.
 - Do not use em dashes
+- When writing commit messages use the $HOME/.git-commit-template.txt template

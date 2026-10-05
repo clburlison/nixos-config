@@ -65,7 +65,7 @@
           path = "/Users/${currentSystemUser}/Downloads";
           displayas = "folder";
           arrangement = "date-added";
-          showas = "list";
+          showas = "grid";
         };
       }
     ];

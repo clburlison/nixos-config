@@ -138,7 +138,6 @@ in
     ".config/nvim".source = mkLink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";
     ".config/opencode/opencode.jsonc".source = mkLink "${dotfiles}/config/opencode/opencode.jsonc";
-    ".config/zellij".source = mkLink "${dotfiles}/config/zellij";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;
@@ -346,12 +345,6 @@ in
     configFile = "$HOME/.config/ohmyposh/clburlison.toml";
   };
 
-  programs.zellij = {
-    enable = true;
-    enableZshIntegration = false;
-    enableFishIntegration = false;
-  };
-
   programs.zoxide = {
     enable = true;
     enableZshIntegration = true;
@@ -382,8 +375,6 @@ in
       source <(switcher init zsh)
       source <(switch completion zsh)
 
-      # HACK: https://github.com/zellij-org/zellij/issues/1933#issuecomment-2274464004
-      source <( zellij setup --generate-completion zsh | sed -Ee 's/^(_(zellij) ).*/compdef \1\2/' )
       # source ${pkgs.zsh-vi-mode}/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh
       source ${pkgs.zsh-history-substring-search}/share/zsh-history-substring-search/zsh-history-substring-search.zsh
       # zvm_after_init_commands+=("bindkey '^y' autosuggest-accept")

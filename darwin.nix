@@ -41,6 +41,7 @@
   system.defaults.finder.FXRemoveOldTrashItems = true; # Remove items from trash after 30 days
   system.defaults.finder.NewWindowTarget = "Home";
   system.defaults.finder.FXDefaultSearchScope = "SCcf";
+  system.defaults.CustomUserPreferences."com.apple.finder".DesktopViewSettings.GroupBy = "Kind"; # Use Stacks on the desktop
   system.defaults.ActivityMonitor.ShowCategory = 100; # Show all processes
 
   system.defaults.dock = {

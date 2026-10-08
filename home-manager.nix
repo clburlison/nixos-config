@@ -134,6 +134,7 @@ in
     ".config/fish/completions/ntn.fish".source = pkgs.runCommand "ntn-fish-completions" { } ''
       ${pkgs.ntn}/bin/ntn completions fish > $out
     '';
+    ".config/ghostty/config".source = mkLink "${dotfiles}/config/ghostty/config";
     ".config/karabiner/karabiner.json".source = mkLink "${dotfiles}/config/karabiner/karabiner.json";
     ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";
     ".config/nvim".source = mkLink "${dotfiles}/config/nvim";

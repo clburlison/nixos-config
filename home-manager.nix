@@ -239,6 +239,7 @@ in
     enableFishIntegration = true;
     nix-direnv.enable = true;
     silent = true;
+    config.whitelist.prefix = [ "${config.home.homeDirectory}/.herdr/worktrees/" ];
   };
 
   programs.fish = {

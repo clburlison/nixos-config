@@ -122,6 +122,7 @@ in
   };
 
   home.file = {
+    "bin/glim-dev-layout".source = mkLink "${dotfiles}/bin/glim-dev-layout";
     ".aliases".source = ./dotfiles/aliases;
     ".claude/CLAUDE.md".source = mkLink "${dotfiles}/claude/CLAUDE.md";
     ".claude/keybindings.json".source = mkLink "${dotfiles}/claude/keybindings.json";
@@ -299,6 +300,12 @@ in
         auto_switch = false;
       };
       keys.command = [
+        {
+          key = "prefix+alt+d";
+          type = "shell";
+          command = "${config.home.homeDirectory}/bin/glim-dev-layout";
+          description = "launch glim development layout";
+        }
         {
           key = "ctrl+h";
           type = "plugin_action";

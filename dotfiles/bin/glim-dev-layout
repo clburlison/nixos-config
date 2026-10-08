@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pane_args=()
+if [[ -n "${HERDR_PANE_ID:-}" ]]; then
+  pane_args+=(--current)
+fi
+current=$(herdr pane current "${pane_args[@]}")
+workspace=$(jq -er '.result.pane.workspace_id' <<< "$current")
+cwd=$(jq -er '.result.pane.foreground_cwd // .result.pane.cwd' <<< "$current")
+
+created=$(herdr tab create --workspace "$workspace" --cwd "$cwd" --label runner --focus)
+left=$(jq -er '.result.root_pane.pane_id' <<< "$created")
+
+# Keep one third on the left, then divide the remaining two thirds.
+split=$(herdr pane split "$left" --direction right --ratio 0.333333 --cwd "$cwd" --no-focus)
+middle=$(jq -er '.result.pane.pane_id' <<< "$split")
+split=$(herdr pane split "$middle" --direction right --ratio 0.5 --cwd "$cwd" --no-focus)
+right=$(jq -er '.result.pane.pane_id' <<< "$split")
+
+herdr pane rename "$left" npm > /dev/null
+herdr pane rename "$middle" rails > /dev/null
+herdr pane rename "$right" sidekiq > /dev/null
+herdr pane run "$left" "npm run start" > /dev/null
+herdr pane run "$middle" "bin/rails s" > /dev/null
+herdr pane run "$right" "bundle exec sidekiq -c 6" > /dev/null

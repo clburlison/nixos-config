@@ -300,6 +300,10 @@ in
         name = "tokyo-night";
         auto_switch = false;
       };
+      keys = {
+        open_worktree = "prefix+shift+f";
+        remove_worktree = "prefix+shift+b";
+      };
       keys.command = [
         {
           key = "prefix+alt+d";

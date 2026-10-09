@@ -111,6 +111,22 @@
         "type": "github"
       }
     },
+    "herdr-worktrunk": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791287192,
+        "narHash": "sha256-puZWyvtBt2svov0NIVJTzdfHzm/k1EglbXsTGsm8N7I=",
+        "owner": "devashish2203",
+        "repo": "herdr-worktrunk",
+        "rev": "f9df9ba700b8a4f4d97ddfe3ea3eb345e80b880b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "devashish2203",
+        "repo": "herdr-worktrunk",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -272,6 +288,7 @@
         "agent-skills": "agent-skills",
         "darwin": "darwin",
         "herdr-nix": "herdr-nix",
+        "herdr-worktrunk": "herdr-worktrunk",
         "home-manager": "home-manager",
         "linear-cli-skills": "linear-cli-skills",
         "matt-pocock-skills": "matt-pocock-skills",

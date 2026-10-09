@@ -51,6 +51,11 @@
       url = "github:smart-splits-nvim/smart-splits.nvim";
       flake = false;
     };
+
+    herdr-worktrunk = {
+      url = "github:devashish2203/herdr-worktrunk";
+      flake = false;
+    };
   };
 
   outputs =
@@ -88,6 +93,7 @@
             opencode = unstable.opencode;
             openusage = unstable.openusage;
             tree-sitter = unstable.tree-sitter;
+            worktrunk = unstable.worktrunk;
             zellij = unstable.zellij;
             zoxide = unstable.zoxide;
           }

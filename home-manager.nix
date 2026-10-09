@@ -82,6 +82,7 @@ in
     pkgs.tree-sitter
     pkgs.uv
     pkgs.wget
+    pkgs.worktrunk
     pkgs.zsh-history-substring-search
     pkgs.zsh-vi-mode
   ]
@@ -247,6 +248,10 @@ in
     shellInit = ''
       set fish_greeting ""
 
+      if status is-interactive
+        ${pkgs.worktrunk}/bin/wt config shell init fish | source
+      end
+
       source ~/.config/fish/aliases.fish
       source ~/.config/fish/omp-vimmode.fish
       source ~/.config/fish/path.fish
@@ -288,8 +293,14 @@ in
   programs.herdr = {
     enable = true;
     package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.herdr;
-    extraPackages = [ pkgs.bash ];
+    extraPackages = [
+      pkgs.bash
+      pkgs.fzf
+      pkgs.jq
+      pkgs.worktrunk
+    ];
     plugins.smart-splits.source = inputs.smart-splits-nvim;
+    plugins.worktrunk.source = inputs.herdr-worktrunk;
     machines = lib.optionalAttrs (hostName != "clb-mini") {
       clb-mini = {
         id = "9197ad236dbec9f5a454ec297ab15b4c";
@@ -302,10 +313,29 @@ in
         auto_switch = false;
       };
       keys = {
-        open_worktree = "prefix+shift+f";
-        remove_worktree = "prefix+shift+b";
+        new_worktree = [ ];
+        open_worktree = [ ];
+        remove_worktree = [ ];
       };
       keys.command = [
+        {
+          key = "prefix+shift+g";
+          type = "plugin_action";
+          command = "worktrunk.open";
+          description = "worktree: switch/create (worktrunk)";
+        }
+        {
+          key = "prefix+shift+b";
+          type = "plugin_action";
+          command = "worktrunk.remove";
+          description = "worktree: remove (worktrunk)";
+        }
+        {
+          key = "prefix+shift+m";
+          type = "plugin_action";
+          command = "worktrunk.merge";
+          description = "worktree: merge into the target branch (worktrunk)";
+        }
         {
           key = "prefix+alt+d";
           type = "shell";

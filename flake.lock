@@ -151,11 +151,11 @@
     "linear-cli-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1790142049,
-        "narHash": "sha256-6mYf1FTCPH8vWe/k3jN7nlXdiYKE1xW6OaMYLDHIbjM=",
+        "lastModified": 1791417167,
+        "narHash": "sha256-MQI4QRIUnqu5zjZUplbMUun1ah8Yd8uJSJT/i3MivPs=",
         "owner": "schpet",
         "repo": "linear-cli",
-        "rev": "d4fe6fa7358f018fd1da0c6b96ec2b022247e898",
+        "rev": "63463ac8a31d7a14b7a7d5964c363853d0089842",
         "type": "github"
       },
       "original": {

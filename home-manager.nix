@@ -331,12 +331,6 @@ in
           description = "worktree: remove (worktrunk)";
         }
         {
-          key = "prefix+shift+m";
-          type = "plugin_action";
-          command = "worktrunk.merge";
-          description = "worktree: merge into the target branch (worktrunk)";
-        }
-        {
           key = "prefix+alt+d";
           type = "shell";
           command = "${config.home.homeDirectory}/bin/glim-dev-layout";

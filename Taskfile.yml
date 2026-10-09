@@ -82,6 +82,32 @@ tasks:
       - git add flake.lock
       - 'git commit -S -m "chore(nix): Update deps"'
 
+  update-input:
+    desc: Fuzzy-select flake inputs to update (Tab selects multiple)
+    interactive: true
+    preconditions:
+      - sh: command -v jq && command -v fzf && command -v nix
+        msg: Requires jq, fzf, and nix in PATH
+    cmds:
+      - |
+        inputs=$(jq -r '.nodes[.root].inputs | keys[]' flake.lock)
+        if selected=$(printf '%s\n' "$inputs" | fzf --multi --prompt='Update input> ' --header='Tab: select multiple | Enter: update | Esc: cancel'); then
+          [ -n "$selected" ] || exit 0
+          set --
+          while IFS= read -r input; do
+            set -- "$@" "$input"
+          done <<EOF
+        $selected
+        EOF
+          nix flake update "$@"
+        else
+          status=$?
+          case "$status" in
+            1|130) exit 0 ;;
+            *) exit "$status" ;;
+          esac
+        fi
+
   clean:
     desc: Cleanup nix garbage
     cmds:

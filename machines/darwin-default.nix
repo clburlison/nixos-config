@@ -1,4 +1,10 @@
-{ config, pkgs, ... }: {
+{
+  config,
+  pkgs,
+  currentSystemUser,
+  ...
+}:
+{
   # Used for backwards compatibility, please read the changelog before changing.
   # $ darwin-rebuild changelog
   system.stateVersion = 5;
@@ -8,6 +14,7 @@
   system.activationScripts.postActivation.text =
     let
       nixCustomConf = pkgs.writeText "nix.custom.conf" ''
+        trusted-users = root ${currentSystemUser}
         accept-flake-config = true
         keep-outputs = true
         keep-derivations = true

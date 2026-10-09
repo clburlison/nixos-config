@@ -84,9 +84,10 @@
             antigravity-cli = unstable.antigravity-cli;
             bun = unstable.bun;
             claude-code = unstable.claude-code;
-            codex = unstable.codex;
             codeburn = final.callPackage ./packages/codeburn.nix { };
+            codex = unstable.codex;
             gemini-cli = unstable.gemini-cli;
+            herdr = unstable.herdr;
             lazygit = unstable.lazygit;
             linear-cli = final.callPackage ./packages/linear-cli.nix { };
             ntn = final.callPackage ./packages/ntn.nix { };

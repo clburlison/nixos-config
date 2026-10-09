@@ -22,3 +22,8 @@
 ehthumbs.db
 Thumbs.db
 Desktop.ini
+
+# Worktrunk (local only for now) #
+#################################
+.config/wt.toml
+.worktreeinclude

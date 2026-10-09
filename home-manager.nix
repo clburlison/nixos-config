@@ -23,7 +23,14 @@ let
 
 in
 {
+  # Backport declarative Python/tool management to the released Home Manager.
+  disabledModules = [ "programs/uv.nix" ];
+
   imports = [
+    (builtins.fetchurl {
+      url = "https://raw.githubusercontent.com/nix-community/home-manager/f53f3267f5d009dd8f99443505e609389d7ff267/modules/programs/uv.nix";
+      sha256 = "sha256-rvf6gkV/jDiaxHaeXA25tpQ+2gw2VPQGsRwPjrYI0K4=";
+    })
     inputs.agent-skills.homeManagerModules.default
     inputs.herdr-nix.homeModules.default
   ];
@@ -45,6 +52,7 @@ in
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
   home.packages = [
+    # pkgs.python314 # switch to `uv` for python version management
     # pkgs.terraform # this is a slow install with nix?
     pkgs.antigravity-cli
     pkgs.azure-cli
@@ -73,14 +81,12 @@ in
     pkgs.nodejs_24
     pkgs.ntn
     pkgs.opencode
-    pkgs.python314
     pkgs.ripgrep
     pkgs.ripgrep-all
     pkgs.rustc
     pkgs.rustup
     pkgs.tree
     pkgs.tree-sitter
-    pkgs.uv
     pkgs.wget
     pkgs.worktrunk
     pkgs.zsh-history-substring-search
@@ -107,6 +113,8 @@ in
   #---------------------------------------------------------------------
   # Env vars and dotfiles
   #---------------------------------------------------------------------
+
+  home.sessionPath = [ "$HOME/.local/bin" ];
 
   home.sessionVariables = {
     LANG = "en_US.UTF-8";
@@ -380,6 +388,21 @@ in
     enableZshIntegration = true;
     enableFishIntegration = true;
     configFile = "$HOME/.config/ohmyposh/clburlison.toml";
+  };
+
+  programs.uv = {
+    enable = true;
+
+    python = {
+      versions = [ "3.14.7" ];
+      default = [ "3.14.7" ];
+      prune = true;
+    };
+
+    tool = {
+      packages = [ "repowise" ];
+      prune = true;
+    };
   };
 
   programs.zoxide = {

@@ -94,6 +94,7 @@
             opencode = unstable.opencode;
             openusage = unstable.openusage;
             tree-sitter = unstable.tree-sitter;
+            uv = unstable.uv;
             worktrunk = unstable.worktrunk;
             zellij = unstable.zellij;
             zoxide = unstable.zoxide;

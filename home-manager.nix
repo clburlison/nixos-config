@@ -390,6 +390,19 @@ in
     configFile = "$HOME/.config/ohmyposh/clburlison.toml";
   };
 
+  # uv-managed Python builds native extensions with Apple's compiler, which
+  # needs an explicit SDK path in the activation environment.
+  home.activation.uvDarwinSdk = lib.mkIf isDarwin (
+    lib.hm.dag.entryBefore
+      [
+        "uvPython"
+        "uvTool"
+      ]
+      ''
+        export SDKROOT="$(/usr/bin/xcrun --sdk macosx --show-sdk-path)"
+      ''
+  );
+
   programs.uv = {
     enable = true;
 

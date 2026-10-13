@@ -402,21 +402,25 @@ in
     configFile = "$HOME/.config/ohmyposh/clburlison.toml";
   };
 
-  # uv-managed Python builds native extensions with Apple's compiler, which
-  # needs an explicit SDK path in the activation environment.
-  home.activation.uvDarwinSdk = lib.mkIf isDarwin (
+  # Activation does not inherit home.sessionPath. uv needs its executable
+  # directory on PATH, plus Apple's install_name_tool and SDK on macOS.
+  home.activation.uvEnvironment =
     lib.hm.dag.entryBefore
       [
         "uvPython"
         "uvTool"
       ]
       ''
-        export SDKROOT="$(/usr/bin/xcrun --sdk macosx --show-sdk-path)"
-      ''
-  );
+        export PATH="${config.home.homeDirectory}/.local/bin:$PATH"
+        ${lib.optionalString isDarwin ''
+          export PATH="/usr/bin:$PATH"
+          export SDKROOT="$(/usr/bin/xcrun --sdk macosx --show-sdk-path)"
+        ''}
+      '';
 
   programs.uv = {
     enable = true;
+    settings.preview-features = [ "python-install-default" ];
 
     python = {
       versions = [ "3.14.7" ];
@@ -443,6 +447,8 @@ in
     autosuggestion.enable = true;
     enableCompletion = true;
     initContent = ''
+      source ${inputs.herdr-automatic-rename}/shell/hook.zsh
+
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.
       # * ~/.extra can be used for other settings you don’t want to commit.

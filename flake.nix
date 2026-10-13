@@ -56,6 +56,11 @@
       url = "github:devashish2203/herdr-worktrunk";
       flake = false;
     };
+
+    herdr-auto-title = {
+      url = "github:kryptamine/herdr-auto-title";
+      flake = false;
+    };
   };
 
   outputs =

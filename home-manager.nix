@@ -300,6 +300,7 @@ in
 
   programs.herdr = {
     enable = true;
+    integrations = [ "claude" ];
     package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.herdr;
     extraPackages = [
       pkgs.bash
@@ -307,6 +308,17 @@ in
       pkgs.jq
       pkgs.worktrunk
     ];
+    plugins.auto-title.source = pkgs.buildGoModule {
+      pname = "herdr-auto-title";
+      version = "0.13.2";
+      src = inputs.herdr-auto-title;
+      vendorHash = "sha256-QxFp1b7pf7bn3Hh0hyaj8ke5Z61N+WwjhHt3pFiapTs=";
+      subPackages = [ "cmd/herdr-auto-title" ];
+      postInstall = ''
+        cp herdr-plugin.toml $out/
+        mv $out/bin/herdr-auto-title $out/herdr-auto-title
+      '';
+    };
     plugins.smart-splits.source = inputs.smart-splits-nvim;
     plugins.worktrunk.source = inputs.herdr-worktrunk;
     machines = lib.optionalAttrs (hostName != "clb-mini") {

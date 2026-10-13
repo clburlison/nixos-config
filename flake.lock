@@ -90,19 +90,19 @@
         "type": "github"
       }
     },
-    "herdr-auto-title": {
+    "herdr-automatic-rename": {
       "flake": false,
       "locked": {
-        "lastModified": 1791794095,
-        "narHash": "sha256-CNSw6J+Xbo0PaO5EwmW9zZ14KxxnTRAs8/87pW4q9Ok=",
-        "owner": "kryptamine",
-        "repo": "herdr-auto-title",
-        "rev": "8b2504514bb2aaa79ecbba6cb0e6c426652f4419",
+        "lastModified": 1791517011,
+        "narHash": "sha256-HvoFscLm4cYBb40nQxkW2gFoCSIZwxwzNrE26gvUjUY=",
+        "owner": "qu8n",
+        "repo": "herdr-automatic-rename",
+        "rev": "b90c4086854080fd0dbde63c19667e38d55df5af",
         "type": "github"
       },
       "original": {
-        "owner": "kryptamine",
-        "repo": "herdr-auto-title",
+        "owner": "qu8n",
+        "repo": "herdr-automatic-rename",
         "type": "github"
       }
     },
@@ -303,7 +303,7 @@
       "inputs": {
         "agent-skills": "agent-skills",
         "darwin": "darwin",
-        "herdr-auto-title": "herdr-auto-title",
+        "herdr-automatic-rename": "herdr-automatic-rename",
         "herdr-nix": "herdr-nix",
         "herdr-worktrunk": "herdr-worktrunk",
         "home-manager": "home-manager",

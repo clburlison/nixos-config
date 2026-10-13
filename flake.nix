@@ -57,8 +57,8 @@
       flake = false;
     };
 
-    herdr-auto-title = {
-      url = "github:kryptamine/herdr-auto-title";
+    herdr-automatic-rename = {
+      url = "github:qu8n/herdr-automatic-rename";
       flake = false;
     };
   };

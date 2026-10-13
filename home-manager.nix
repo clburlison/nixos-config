@@ -205,7 +205,9 @@ in
       "ignoredups"
       "ignorespace"
     ];
-    initExtra = builtins.readFile ./dotfiles/bashrc;
+    initExtra = builtins.readFile ./dotfiles/bashrc + ''
+      source ${inputs.herdr-automatic-rename}/shell/hook.bash
+    '';
   };
 
   programs.agent-skills = {
@@ -258,6 +260,7 @@ in
 
       if status is-interactive
         ${pkgs.worktrunk}/bin/wt config shell init fish | source
+        source ${inputs.herdr-automatic-rename}/shell/hook.fish
       end
 
       source ~/.config/fish/aliases.fish
@@ -308,17 +311,7 @@ in
       pkgs.jq
       pkgs.worktrunk
     ];
-    plugins.auto-title.source = pkgs.buildGoModule {
-      pname = "herdr-auto-title";
-      version = "0.13.2";
-      src = inputs.herdr-auto-title;
-      vendorHash = "sha256-QxFp1b7pf7bn3Hh0hyaj8ke5Z61N+WwjhHt3pFiapTs=";
-      subPackages = [ "cmd/herdr-auto-title" ];
-      postInstall = ''
-        cp herdr-plugin.toml $out/
-        mv $out/bin/herdr-auto-title $out/herdr-auto-title
-      '';
-    };
+    plugins.automatic-rename.source = inputs.herdr-automatic-rename;
     plugins.smart-splits.source = inputs.smart-splits-nvim;
     plugins.worktrunk.source = inputs.herdr-worktrunk;
     machines = lib.optionalAttrs (hostName != "clb-mini") {
@@ -328,6 +321,7 @@ in
       };
     };
     settings = {
+      ui.prompt_new_tab_name = false;
       theme = {
         name = "tokyo-night";
         auto_switch = false;

@@ -75,7 +75,7 @@ tasks:
     cmds:
       - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
-  update:
+  update-all:
     desc: Update external flakes
     cmds:
       - nix flake update
@@ -100,6 +100,8 @@ tasks:
         $selected
         EOF
           nix flake update "$@"
+          git add flake.lock
+          git commit -S -m "chore(nix): Update $@ dep"
         else
           status=$?
           case "$status" in

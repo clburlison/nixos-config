@@ -303,7 +303,11 @@ in
 
   programs.herdr = {
     enable = true;
-    integrations = [ "claude" ];
+    integrations = [
+      "claude"
+      "codex"
+      "opencode"
+    ];
     package = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.herdr;
     extraPackages = [
       pkgs.bash

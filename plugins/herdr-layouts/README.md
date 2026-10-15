@@ -11,9 +11,12 @@ Self-contained plugin, usable outside this Nix repository.
 - **Alt+Enter** replaces the original tab if every pane is an idle shell.
 - **Escape** cancels.
 
-No second prompt. A cancelled replacement shows a Herdr notification explaining
-which pane is busy. Foreground commands, background jobs, and unavailable process
-information all prevent replacement. The check is point-in-time, immediately
+Successful selections need no second prompt. If an error or cancellation occurs,
+the popup shows the reason and stays open until **Enter** is pressed. Busy-pane
+errors include the pane name/ID and process names/PIDs; a Herdr notification is
+also sent. Foreground commands, background jobs (including stopped jobs), and
+unavailable process information all prevent replacement. Exited zombie processes
+are ignored. The check is point-in-time, immediately
 before applying the layout; Herdr does not provide an atomic check-and-replace API.
 
 All panes inherit the original focused pane's working directory unless overridden

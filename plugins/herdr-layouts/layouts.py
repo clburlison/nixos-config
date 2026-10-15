@@ -128,11 +128,14 @@ def select_layout(layouts):
 
 def process_snapshot():
   result = subprocess.run(
-    ["ps", "-axo", "pid=,ppid=,comm="], check=True, text=True, stdout=subprocess.PIPE,
+    ["ps", "-axo", "pid=,ppid=,stat=,comm="], check=True, text=True, stdout=subprocess.PIPE,
   )
   processes = {}
   for line in result.stdout.splitlines():
-    pid, parent, command = line.split(None, 2)
+    pid, parent, state, command = line.split(None, 3)
+    # Zombies have already exited and cannot lose work when their shell closes.
+    if "Z" in state:
+      continue
     processes[int(pid)] = (int(parent), Path(command).name)
   return processes
 
@@ -146,14 +149,24 @@ def require_idle(api, panes):
   for pane, info in zip(panes, infos):
     shell_pid = info.get("shell_pid")
     shell = processes.get(shell_pid)
-    name = pane.get("label", pane["pane_id"])
+    label = pane.get("label")
+    name = f"{label} ({pane['pane_id']})" if label else pane["pane_id"]
     shell_name = shell[1].lstrip("-").removeprefix(".").removesuffix("-wrapped") if shell else ""
     if shell_name not in SHELLS:
-      raise LayoutError(f"Cancelled: {name} is not an idle shell (or cannot be checked).")
+      detail = f"{shell[1]} (PID {shell_pid})" if shell else f"missing shell process (PID {shell_pid})"
+      raise LayoutError(f"Cancelled: {name} is not an idle shell (or cannot be checked): {detail}.")
     foreground = info.get("foreground_processes")
-    if (not foreground or any(proc.get("pid") != shell_pid for proc in foreground)):
-      raise LayoutError(f"Cancelled: {name} has a running foreground command.")
-    children = [command for parent, command in processes.values() if parent == shell_pid]
+    if not foreground:
+      raise LayoutError(
+        f"Cancelled: {name} has no foreground process information (shell PID {shell_pid}); "
+        "cannot verify that it is idle.")
+    busy = [proc for proc in foreground if proc.get("pid") != shell_pid]
+    if busy:
+      detail = ", ".join(f"{proc.get('name', 'unknown')} (PID {proc.get('pid', 'unknown')})"
+                         for proc in busy)
+      raise LayoutError(f"Cancelled: {name} has a running foreground command: {detail}.")
+    children = [f"{command} (PID {pid})" for pid, (parent, command) in processes.items()
+                if parent == shell_pid]
     if children:
       raise LayoutError(f"Cancelled: {name} has running processes: {', '.join(children)}.")
 
@@ -224,11 +237,18 @@ def main():
         apply_layout(api, origin_id, *selection)
   except (LayoutError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
     message = str(error)
-    print(f"Layouts: {message}", file=sys.stderr)
+    if isinstance(error, subprocess.CalledProcessError) and error.stderr:
+      message += "\n" + error.stderr.strip()
+    print(f"\nLayouts: {message}", file=sys.stderr, flush=True)
     try:
       api("notification.show", title="Layouts", body=message)
     except (LayoutError, OSError, ValueError):
       pass
+    if args.action == "pick" and sys.stdin.isatty():
+      try:
+        input("\nPress Enter to close this popup...")
+      except (EOFError, KeyboardInterrupt):
+        pass
     return 1
   return 0
 

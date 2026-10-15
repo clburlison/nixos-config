@@ -98,6 +98,26 @@ class LayoutTests(unittest.TestCase):
     self.processes[201] = (200, "sleep")
     self.assert_cancelled("running processes: sleep")
 
+  def test_zombie_children_do_not_block_idle_shell(self):
+    snapshot = "100 1 Ss+ -fish\n101 100 Z+ <defunct>\n"
+    with patch.object(layouts.subprocess, "run", return_value=
+                      subprocess.CompletedProcess([], 0, snapshot)):
+      layouts.require_idle(self.api, [ORIGIN])
+
+  def test_stopped_children_still_block_replacement(self):
+    snapshot = "100 1 Ss+ -fish\n101 100 T sleep\n"
+    with patch.object(layouts.subprocess, "run", return_value=
+                      subprocess.CompletedProcess([], 0, snapshot)):
+      with self.assertRaisesRegex(layouts.LayoutError, "sleep.*101"):
+        layouts.require_idle(self.api, [ORIGIN])
+
+  def test_foreground_error_identifies_pane_process_and_pid(self):
+    self.api.infos["w1:p2"] = dict(
+      IDLE, shell_pid=200, foreground_processes=[{"pid": 201, "name": "rails"}])
+    with patch.object(layouts, "process_snapshot", return_value=self.processes):
+      with self.assertRaisesRegex(layouts.LayoutError, r"right \(w1:p2\).*rails.*201"):
+        layouts.require_idle(self.api, [OTHER])
+
   def test_command_execed_over_shell_is_not_considered_idle(self):
     self.processes[100] = (1, "nvim")
     self.assert_cancelled("not an idle shell")
@@ -106,7 +126,7 @@ class LayoutTests(unittest.TestCase):
     for info in ({}, dict(IDLE, foreground_processes=[])):
       with self.subTest(info=info):
         self.api.infos["w1:p1"] = info
-        self.assert_cancelled("cannot be checked|foreground command")
+        self.assert_cancelled("cannot be checked|no foreground process information")
 
   def test_missing_origin_cancels(self):
     self.api.panes = [OTHER]

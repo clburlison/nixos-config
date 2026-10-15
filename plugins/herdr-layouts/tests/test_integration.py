@@ -2,6 +2,8 @@
 
 import os
 from pathlib import Path
+import pty
+import select
 import shutil
 import subprocess
 import sys
@@ -80,13 +82,16 @@ class IntegrationTests(unittest.TestCase):
                             check=True, text=True, capture_output=True)
     self.assertIn('"placement":"popup"', result.stdout)
 
-  def invoke_picker_with_key(self, key):
-    # Supply deterministic picker input, but run the real plugin action, popup
-    # entrypoint, socket transport, layout application, and process inspection.
+  def write_picker_result(self, key):
     fzf = self.bin / "fzf"
     fzf.write_text(f'#!{sys.executable}\nimport sys\nsys.stdin.read()\n'
                    f'print({key!r})\nprint("two-columns\\tTwo columns")\n')
     fzf.chmod(0o755)
+
+  def invoke_picker_with_key(self, key):
+    # Supply deterministic picker input, but run the real plugin action, popup
+    # entrypoint, socket transport, layout application, and process inspection.
+    self.write_picker_result(key)
     # Nix's Herdr wrapper prepends its bundled fzf to PATH. Only the test
     # manifest overrides that PATH so the popup uses our deterministic input.
     plugin = Path(self.directory.name) / "plugin"
@@ -143,6 +148,44 @@ class IntegrationTests(unittest.TestCase):
 
   def test_background_job_blocks_replacement(self):
     self.assert_job_blocks_replacement("sleep 60 &")
+
+  def test_error_screen_waits_for_enter_without_changing_panes(self):
+    subprocess.run([self.herdr, "pane", "run", self.origin["pane_id"], "sleep 60"],
+                   check=True, capture_output=True)
+    self.wait_for(lambda: not self.origin_idle())
+    self.write_picker_result("alt-enter")
+    before = {pane["pane_id"] for pane in self.panes()}
+    master, slave = pty.openpty()
+    self.addCleanup(os.close, master)
+    try:
+      picker = subprocess.Popen(
+        [sys.executable, "-B", str(layouts.ROOT / "layouts.py"), "pick"],
+        stdin=slave, stdout=slave, stderr=slave,
+        env=dict(os.environ, HERDR_LAYOUTS_ORIGIN_PANE_ID=self.origin["pane_id"]),
+      )
+    finally:
+      os.close(slave)
+
+    def stop_picker():
+      if picker.poll() is None:
+        picker.kill()
+      picker.wait()
+    self.addCleanup(stop_picker)
+    output = b""
+    deadline = time.monotonic() + 8
+    while b"Press Enter to close this popup..." not in output:
+      self.assertIsNone(picker.poll(), output.decode(errors="replace"))
+      if time.monotonic() >= deadline:
+        self.fail(f"No error acknowledgement prompt: {output!r}")
+      if select.select([master], [], [], 0.1)[0]:
+        output += os.read(master, 8192)
+    self.assertIn(b"sleep (PID ", output)
+    self.assertIn(self.origin["pane_id"].encode(), output)
+    self.assertIsNone(picker.poll())
+    self.assertEqual(before, {pane["pane_id"] for pane in self.panes()})
+    os.write(master, b"\n")
+    self.assertEqual(picker.wait(timeout=5), 1)
+    self.assertEqual(before, {pane["pane_id"] for pane in self.panes()})
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+    "name": "ruby dev (alt)",
+    "tab_label": "runner",
+    "root": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.75,
+        "first": {
+            "type": "split",
+            "direction": "right",
+            "ratio": 0.5,
+            "first": { "type": "pane", "label": "npm", "run": "npm run start" },
+            "second": { "type": "pane", "label": "rails", "run": "bin/rails s" }
+        },
+        "second": {
+            "type": "pane",
+            "label": "sidekiq",
+            "run": "bundle exec sidekiq -c 6"
+        }
+    }
+}

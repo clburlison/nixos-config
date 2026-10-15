@@ -2,10 +2,11 @@ import copy
 import json
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import layouts
@@ -157,12 +158,14 @@ class LayoutTests(unittest.TestCase):
                      "/repo/worktree/server")
 
   def test_popup_captures_original_pane_without_creating_a_tiled_pane(self):
-    with patch.dict(layouts.os.environ, {"HERDR_PANE_ID": "w1:p1"}):
+    with patch.dict(layouts.os.environ, {"HERDR_PANE_ID": "w1:p1"}), \
+         patch.object(layouts, "serve_selection") as serve:
       layouts.open_picker(self.api)
+    self.assertEqual(serve.call_args.args[:2], (self.api, "w1:p1"))
     method, params = self.api.calls[-1]
     self.assertEqual(method, "plugin.pane.open")
     self.assertEqual(params["entrypoint"], "picker")
-    self.assertEqual(params["env"], {"HERDR_LAYOUTS_ORIGIN_PANE_ID": "w1:p1"})
+    self.assertIn("HERDR_LAYOUTS_ACTION_SOCKET", params["env"])
     self.assertEqual(params["cwd"], "/repo/worktree")
 
   def test_picker_enter_alt_enter_and_escape(self):
@@ -179,17 +182,33 @@ class LayoutTests(unittest.TestCase):
   def test_escape_exits_without_any_api_requests(self):
     with patch.object(layouts, "Api", return_value=self.api), \
          patch.object(layouts, "select_layout", return_value=None), \
+         patch.dict(layouts.os.environ, {"HERDR_LAYOUTS_ACTION_SOCKET": "test.sock"}), \
+         patch.object(layouts.socket, "socket") as socket, \
          patch.object(sys, "argv", ["layouts.py", "pick"]):
       self.assertEqual(layouts.main(), 0)
+    socket.return_value.__enter__.return_value.sendall.assert_not_called()
     self.assertEqual(self.api.calls, [])
 
+  def test_dispatch_error_reopens_popup_if_original_picker_was_closed(self):
+    connection, picker = socket.socketpair()
+    with picker:
+      picker.sendall((json.dumps({"layout": self.layout, "replace": True}) + "\n").encode())
+    listener = Mock()
+    listener.accept.return_value = (connection, None)
+    with patch.object(layouts, "apply_layout", side_effect=layouts.LayoutError("Dispatch failed")):
+      layouts.serve_selection(self.api, "w1:p1", listener)
+    self.assertEqual(self.api.calls[-1], ("plugin.pane.open", {
+      "plugin_id": "layouts", "entrypoint": "picker", "focus": True,
+      "env": {"HERDR_LAYOUTS_ERROR": "Dispatch failed"},
+    }))
+    with patch.dict(layouts.os.environ, {"HERDR_LAYOUTS_ERROR": "Dispatch failed"}):
+      with self.assertRaisesRegex(layouts.LayoutError, "Dispatch failed"):
+        layouts.pick_layout()
+
   def test_busy_replacement_reports_notification_without_confirmation(self):
-    self.api.infos["w1:p2"] = dict(
-      IDLE, shell_pid=200, foreground_processes=[{"pid": 201, "name": "rails"}])
     with patch.object(layouts, "Api", return_value=self.api), \
-         patch.object(layouts, "select_layout", return_value=(self.layout, True)), \
-         patch.object(layouts, "process_snapshot", return_value=self.processes), \
-         patch.dict(layouts.os.environ, {"HERDR_LAYOUTS_ORIGIN_PANE_ID": "w1:p1"}), \
+         patch.object(layouts, "pick_layout", side_effect=layouts.LayoutError(
+           "Cancelled: right (w1:p2) has a running foreground command: rails (PID 201).")), \
          patch.object(sys, "argv", ["layouts.py", "pick"]), \
          patch.object(sys, "stderr"):
       self.assertEqual(layouts.main(), 1)

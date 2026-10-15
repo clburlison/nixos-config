@@ -96,7 +96,13 @@ Pane fields:
 
 The tree uses Herdr's native layout format with `run` as an extension. The plugin
 creates the shell layout through `layout.apply`, then dispatches commands through
-`herdr pane run`. Herdr builds replacement panes before closing the old tab and
+`herdr pane run`. The plugin action applies the layout and runs commands outside
+the popup process: replacing a tab closes its popup, but must not interrupt
+startup commands. A private, temporary Unix socket connects the picker to the
+action and forwards errors back to the popup for acknowledgement. If command
+dispatch fails after replacement has closed the original popup, the action opens
+an error popup on the new layout instead.
+Herdr builds replacement panes before closing the old tab and
 rolls back pane-creation failures. A command-dispatch failure is reported, leaving
 the created layout available for inspection.
 

@@ -9,6 +9,7 @@ from pathlib import Path
 import socket
 import subprocess
 import sys
+import tempfile
 
 
 ROOT = Path(__file__).resolve().parent
@@ -208,15 +209,79 @@ def apply_layout(api, origin_id, layout, replace):
     api("tab.focus", tab_id=result["layout"]["tab_id"])
 
 
+def error_message(error):
+  message = str(error)
+  if isinstance(error, subprocess.CalledProcessError) and error.stderr:
+    message += "\n" + error.stderr.strip()
+  return message
+
+
+def serve_selection(api, origin_id, listener):
+  connection, _ = listener.accept()
+  connection.settimeout(None)
+  with connection, connection.makefile("r") as incoming:
+    line = incoming.readline()
+    if not line:
+      return  # Escape or a closed popup, before any selection was submitted.
+    try:
+      selection = json.loads(line)
+      apply_layout(api, origin_id, selection["layout"], selection["replace"])
+      response = {"ok": True}
+    except (LayoutError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+      response = {"error": error_message(error)}
+    try:
+      connection.sendall((json.dumps(response) + "\n").encode())
+    except (BrokenPipeError, ConnectionResetError):
+      # Replacing the original tab makes Herdr close its popup. The action must
+      # finish dispatching startup commands even though the picker has exited.
+      if "error" in response:
+        api("plugin.pane.open", plugin_id="layouts", entrypoint="picker", focus=True,
+            env={"HERDR_LAYOUTS_ERROR": response["error"]})
+
+
 def open_picker(api):
   context = json.loads(os.environ.get("HERDR_PLUGIN_CONTEXT_JSON", "{}"))
   origin_id = os.environ.get("HERDR_PANE_ID") or context.get("focused_pane_id")
   if not origin_id:
     raise LayoutError("No focused pane to open layouts from.")
   origin = api("pane.get", pane_id=origin_id)["pane"]
-  api("plugin.pane.open", plugin_id="layouts", entrypoint="picker", focus=True,
-      cwd=origin.get("foreground_cwd") or origin["cwd"],
-      env={"HERDR_LAYOUTS_ORIGIN_PANE_ID": origin_id})
+  # This action outlives the popup, whose owning tab may be replaced. Keep all
+  # layout mutation and command dispatch here rather than in the popup process.
+  with tempfile.TemporaryDirectory(prefix="herdr-layouts-") as directory:
+    path = str(Path(directory) / "action.sock")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+      listener.bind(path)
+      listener.listen(1)
+      listener.settimeout(15)
+      api("plugin.pane.open", plugin_id="layouts", entrypoint="picker", focus=True,
+          cwd=origin.get("foreground_cwd") or origin["cwd"],
+          env={"HERDR_LAYOUTS_ACTION_SOCKET": path})
+      serve_selection(api, origin_id, listener)
+
+
+def pick_layout():
+  if os.environ.get("HERDR_LAYOUTS_ERROR"):
+    raise LayoutError(os.environ["HERDR_LAYOUTS_ERROR"])
+  path = os.environ.get("HERDR_LAYOUTS_ACTION_SOCKET")
+  if not path:
+    raise LayoutError("The popup is missing its layout action connection.")
+  with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+    connection.connect(path)
+    # Connect before waiting for user input, so closing the popup also releases
+    # the waiting action. User selection itself has no timeout.
+    layouts = load_layouts(config_dir=os.environ.get("HERDR_PLUGIN_CONFIG_DIR"))
+    selection = select_layout(layouts)
+    if selection is None:
+      return
+    layout, replace = selection
+    connection.sendall((json.dumps({"layout": layout, "replace": replace}) + "\n").encode())
+    with connection.makefile("r") as incoming:
+      line = incoming.readline()
+    if not line:
+      raise LayoutError("The layout action exited without reporting a result.")
+    response = json.loads(line)
+    if "error" in response:
+      raise LayoutError(response["error"])
 
 
 def main():
@@ -228,17 +293,9 @@ def main():
     if args.action == "open":
       open_picker(api)
     else:
-      layouts = load_layouts(config_dir=os.environ.get("HERDR_PLUGIN_CONFIG_DIR"))
-      selection = select_layout(layouts)
-      if selection:
-        origin_id = os.environ.get("HERDR_LAYOUTS_ORIGIN_PANE_ID")
-        if not origin_id:
-          raise LayoutError("The popup is missing its original pane.")
-        apply_layout(api, origin_id, *selection)
+      pick_layout()
   except (LayoutError, OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
-    message = str(error)
-    if isinstance(error, subprocess.CalledProcessError) and error.stderr:
-      message += "\n" + error.stderr.strip()
+    message = error_message(error)
     print(f"\nLayouts: {message}", file=sys.stderr, flush=True)
     try:
       api("notification.show", title="Layouts", body=message)

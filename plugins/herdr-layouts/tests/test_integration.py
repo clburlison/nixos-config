@@ -1,13 +1,17 @@
 """Opt-in integration tests against an isolated headless Herdr server."""
 
+import copy
+import json
 import os
 from pathlib import Path
 import pty
 import select
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest.mock import patch
@@ -30,6 +34,9 @@ class IntegrationTests(unittest.TestCase):
     config.mkdir(parents=True)
     (config / "config.toml").write_text(
       'onboarding = false\n[terminal]\ndefault_shell = "/bin/sh"\nshell_mode = "login"\n')
+    # A shell can briefly look idle between /etc/profile subprocesses. Wait for
+    # its final user profile before testing replacement of an idle login shell.
+    (root / ".profile").write_text('printf ready > "$HOME/shell-ready"\n')
     env = {key: value for key, value in os.environ.items() if not key.startswith("HERDR_")}
     env.update(HOME=str(root), XDG_CONFIG_HOME=str(root / ".config"),
                XDG_STATE_HOME=str(root / ".local/state"), XDG_RUNTIME_DIR=str(root),
@@ -46,6 +53,7 @@ class IntegrationTests(unittest.TestCase):
     workspace = self.api("workspace.create", cwd=str(root), label="layout tests", focus=True)
     self.workspace_id = workspace["workspace"]["workspace_id"]
     self.origin = self.api("pane.list", workspace_id=self.workspace_id)["panes"][0]
+    self.wait_for(lambda: (root / "shell-ready").exists())
     self.wait_for(self.origin_idle)
     self.presets = layouts.load_layouts()
 
@@ -88,7 +96,7 @@ class IntegrationTests(unittest.TestCase):
                    f'print({key!r})\nprint("two-columns\\tTwo columns")\n')
     fzf.chmod(0o755)
 
-  def invoke_picker_with_key(self, key):
+  def invoke_picker_with_key(self, key, layout=None):
     # Supply deterministic picker input, but run the real plugin action, popup
     # entrypoint, socket transport, layout application, and process inspection.
     self.write_picker_result(key)
@@ -96,6 +104,8 @@ class IntegrationTests(unittest.TestCase):
     # manifest overrides that PATH so the popup uses our deterministic input.
     plugin = Path(self.directory.name) / "plugin"
     shutil.copytree(layouts.ROOT, plugin)
+    if layout is not None:
+      (plugin / "layouts/two-columns.json").write_text(json.dumps(layout))
     manifest = plugin / "herdr-plugin.toml"
     manifest.write_text(manifest.read_text().replace(
       "exec python3 ", f'PATH="{self.bin}:$PATH" exec python3 '))
@@ -117,6 +127,31 @@ class IntegrationTests(unittest.TestCase):
     self.invoke_picker_with_key("alt-enter")
     self.wait_for(lambda: len(self.panes()) == 2)
     self.assertNotIn(self.origin["pane_id"], {pane["pane_id"] for pane in self.panes()})
+
+  def assert_popup_runs_startup_commands(self, key, replace):
+    preset = copy.deepcopy(self.presets["two-columns"])
+    preset["root"]["first"]["run"] = "printf left > left-ran"
+    preset["root"]["second"]["run"] = "printf right > right-ran"
+    self.invoke_picker_with_key(key, preset)
+    root = Path(self.directory.name)
+    self.wait_for(lambda: (root / "left-ran").exists() and (root / "right-ran").exists())
+    self.assertEqual((root / "left-ran").read_text(), "left")
+    self.assertEqual((root / "right-ran").read_text(), "right")
+    self.assertEqual(self.origin["pane_id"] not in {pane["pane_id"] for pane in self.panes()}, replace)
+
+  def test_popup_alt_enter_runs_startup_commands(self):
+    self.assert_popup_runs_startup_commands("alt-enter", True)
+
+  def test_popup_enter_runs_startup_commands(self):
+    self.assert_popup_runs_startup_commands("enter", False)
+
+  def test_direct_replacement_runs_startup_command(self):
+    preset = {"name": "Command test", "root": {
+      "type": "pane", "run": "printf direct > direct-ran"}}
+    layouts.apply_layout(self.api, self.origin["pane_id"], preset, True)
+    marker = Path(self.directory.name) / "direct-ran"
+    self.wait_for(marker.exists)
+    self.assertEqual(marker.read_text(), "direct")
 
   def test_native_new_tab_and_idle_replacement(self):
     layouts.apply_layout(self.api, self.origin["pane_id"], self.presets["two-columns"], False)
@@ -155,13 +190,23 @@ class IntegrationTests(unittest.TestCase):
     self.wait_for(lambda: not self.origin_idle())
     self.write_picker_result("alt-enter")
     before = {pane["pane_id"] for pane in self.panes()}
+    path = str(Path(self.directory.name) / "action.sock")
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    self.addCleanup(listener.close)
+    listener.bind(path)
+    listener.listen(1)
+    listener.settimeout(8)
+    worker = threading.Thread(target=layouts.serve_selection,
+                              args=(self.api, self.origin["pane_id"], listener), daemon=True)
+    worker.start()
+    self.addCleanup(worker.join, 5)
     master, slave = pty.openpty()
     self.addCleanup(os.close, master)
     try:
       picker = subprocess.Popen(
         [sys.executable, "-B", str(layouts.ROOT / "layouts.py"), "pick"],
         stdin=slave, stdout=slave, stderr=slave,
-        env=dict(os.environ, HERDR_LAYOUTS_ORIGIN_PANE_ID=self.origin["pane_id"]),
+        env=dict(os.environ, HERDR_LAYOUTS_ACTION_SOCKET=path),
       )
     finally:
       os.close(slave)

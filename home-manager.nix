@@ -131,7 +131,6 @@ in
   };
 
   home.file = {
-    "bin/glim-dev-layout".source = mkLink "${dotfiles}/bin/glim-dev-layout";
     ".aliases".source = ./dotfiles/aliases;
     ".claude/CLAUDE.md".source = mkLink "${dotfiles}/claude/CLAUDE.md";
     ".claude/keybindings.json".source = mkLink "${dotfiles}/claude/keybindings.json";
@@ -313,9 +312,11 @@ in
       pkgs.bash
       pkgs.fzf
       pkgs.jq
+      pkgs.python3
       pkgs.worktrunk
     ];
     plugins.automatic-rename.source = inputs.herdr-automatic-rename;
+    plugins.layouts.source = ./plugins/herdr-layouts;
     plugins.smart-splits.source = inputs.smart-splits-nvim;
     plugins.worktrunk.source = inputs.herdr-worktrunk;
     machines = lib.optionalAttrs (hostName != "clb-mini") {
@@ -331,11 +332,21 @@ in
         auto_switch = false;
       };
       keys = {
+        focus_pane_left = [ ];
+        focus_pane_down = [ ];
+        focus_pane_up = [ ];
+        focus_pane_right = [ ];
         new_worktree = [ ];
         open_worktree = [ ];
         remove_worktree = [ ];
       };
       keys.command = [
+        {
+          key = "prefix+l";
+          type = "plugin_action";
+          command = "layouts.open";
+          description = "layouts: open picker";
+        }
         {
           key = "prefix+shift+g";
           type = "plugin_action";
@@ -347,12 +358,6 @@ in
           type = "plugin_action";
           command = "worktrunk.remove";
           description = "worktree: remove (worktrunk)";
-        }
-        {
-          key = "prefix+alt+d";
-          type = "shell";
-          command = "${config.home.homeDirectory}/bin/glim-dev-layout";
-          description = "launch glim development layout";
         }
         {
           key = "ctrl+h";

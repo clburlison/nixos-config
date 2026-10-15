@@ -1,0 +1,17 @@
+{
+    "name": "Triple split",
+    "tab_label": "",
+    "root": {
+        "type": "split",
+        "direction": "down",
+        "ratio": 0.75,
+        "first": {
+            "type": "split",
+            "direction": "right",
+            "ratio": 0.75,
+            "first": { "type": "pane", "label": "" },
+            "second": { "type": "pane", "label": "" }
+        },
+        "second": { "type": "pane", "label": "" }
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "name": "Two column",
+    "tab_label": "",
+    "root": {
+        "type": "split",
+        "direction": "right",
+        "ratio": 0.5,
+        "first": { "type": "pane", "label": "" },
+        "second": { "type": "pane", "label": "" }
+    }
+}

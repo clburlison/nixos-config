@@ -1,0 +1,20 @@
+id = "layouts"
+name = "Layout Picker"
+version = "0.1.0"
+min_herdr_version = "0.9.3"
+description = "Fuzzy-pick a layout for a new tab or replace an idle tab"
+platforms = ["macos", "linux"]
+
+[[actions]]
+id = "open"
+title = "Layouts: open picker"
+contexts = ["workspace"]
+command = ["sh", "-c", 'exec python3 "$HERDR_PLUGIN_ROOT/layouts.py" open']
+
+[[panes]]
+id = "picker"
+title = "Layouts"
+placement = "popup"
+width = "80%"
+height = "60%"
+command = ["sh", "-c", 'exec python3 "$HERDR_PLUGIN_ROOT/layouts.py" pick']

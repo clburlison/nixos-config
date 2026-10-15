@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pane_args=()
 if [[ -n "${HERDR_PANE_ID:-}" ]]; then
-  pane_args+=(--current)
+  current=$(herdr pane current --current)
+else
+  current=$(herdr pane current)
 fi
-current=$(herdr pane current "${pane_args[@]}")
 workspace=$(jq -er '.result.pane.workspace_id' <<< "$current")
 cwd=$(jq -er '.result.pane.foreground_cwd // .result.pane.cwd' <<< "$current")
 

@@ -438,6 +438,11 @@ in
     enableFishIntegration = true;
   };
 
+  programs.mise = {
+    enable = true;
+    enableFishIntegration = true;
+  };
+
   programs.zsh = {
     enable = true;
     dotDir = "${config.xdg.configHome}/zsh";

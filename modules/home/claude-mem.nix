@@ -23,7 +23,11 @@ in
 
   # Env overrides settings.json, so no machine-specific settings file is managed.
   # Run local on purpose: hide the cmem.ai Pro trial welcome hint.
-  home.sessionVariables.CLAUDE_MEM_WELCOME_HINT_ENABLED = "false";
+  home.sessionVariables = {
+    CLAUDE_MEM_WELCOME_HINT_ENABLED = "false";
+    # Keep the context injected for the model, hide the noisy terminal copy.
+    CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT = "false";
+  };
 
   programs.claude-code = {
     enable = true;

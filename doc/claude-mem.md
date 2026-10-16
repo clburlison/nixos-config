@@ -120,9 +120,11 @@ smoke test above before applying. This reuses published bundles, not a claim of
 reproducing those bundles from Git.
 
 The Python/model package is `packages/claude-mem/chroma.nix`. Its dependency
-closure follows the main nixpkgs lock, with protobuf 6 selected consistently
-and MCP SDK 1.6.0 pinned as required by the bridge. Version assertions enforce
-Chroma 1.5.9, ONNX Runtime >=1.20, protobuf <7, and Pydantic <2.14. Recheck those
-constraints, the model archive hash, and semantic tests when updating nixpkgs.
+closure follows the main nixpkgs lock, including its protobuf, so cached
+binaries are reused (upstream's `protobuf<7` cap is intentionally not enforced;
+the Chroma self-test covers it) and MCP SDK 1.6.0 is pinned as required by the
+bridge. Version assertions enforce Chroma 1.5.9, ONNX Runtime >=1.20, and
+Pydantic <2.14. Recheck those constraints, the model archive hash, and semantic
+tests when updating nixpkgs.
 Do not downgrade an existing Chroma store to an older engine: its schema/data
 compatibility is separate from Nix package rollback.

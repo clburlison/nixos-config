@@ -7,13 +7,7 @@
 }:
 
 let
-  # Match upstream's protobuf<7 constraint throughout the Python dependency
-  # graph rather than mixing two protobuf installations in one environment.
-  python = python313.override {
-    packageOverrides = _: prev: {
-      protobuf = prev.protobuf6;
-    };
-  };
+  python = python313;
   ps = python.pkgs;
 
   modelArchive = fetchurl {
@@ -62,7 +56,6 @@ let
 in
 assert ps.chromadb.version == "1.5.9";
 assert lib.versionAtLeast ps.onnxruntime.version "1.20";
-assert lib.versionOlder ps.protobuf.version "7";
 assert lib.versionOlder ps.pydantic.version "2.14";
 ps.buildPythonApplication {
   pname = "claude-mem-chroma";

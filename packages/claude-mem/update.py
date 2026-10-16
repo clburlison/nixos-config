@@ -88,7 +88,7 @@ def validate_release(source, staging):
     if not variable or not re.search(r'\b' + re.escape(variable[1]) +
                                      r'="' + re.escape(bridge_version) + r'"', worker):
         raise ValueError('Chroma bridge pin changed; review chroma.nix before updating')
-    for constraint in ('chromadb==1.5.9', 'onnxruntime>=1.20', 'protobuf<7', 'pydantic<2.14'):
+    for constraint in ('chromadb==1.5.9', 'onnxruntime>=1.20', 'pydantic<2.14'):
         if json.dumps(constraint) not in worker:
             raise ValueError(f'Chroma constraint changed: {constraint}; review manually')
     out = staging / 'validated'

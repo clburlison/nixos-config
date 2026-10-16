@@ -93,6 +93,7 @@
           {
             bun = unstable.bun;
             claude-code = unstable.claude-code;
+            claude-mem = final.callPackage ./packages/claude-mem.nix { };
             codeburn = final.callPackage ./packages/codeburn.nix { };
             codex = unstable.codex;
             gemini-cli = unstable.gemini-cli;

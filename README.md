@@ -100,6 +100,11 @@ Coming soon...
 </p>
 </details>
 
+## AI agents
+
+Claude Code, Codex, and OpenCode share [Nix-managed claude-mem](doc/claude-mem.md).
+See the guide for login, Codex hook approval, verification, and updates.
+
 ## Other
 
 ### Nix taking up to much space?

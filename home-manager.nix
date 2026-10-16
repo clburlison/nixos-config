@@ -27,6 +27,7 @@ in
   disabledModules = [ "programs/uv.nix" ];
 
   imports = [
+    ./modules/home/claude-mem.nix
     (builtins.fetchurl {
       url = "https://raw.githubusercontent.com/nix-community/home-manager/f53f3267f5d009dd8f99443505e609389d7ff267/modules/programs/uv.nix";
       sha256 = "sha256-rvf6gkV/jDiaxHaeXA25tpQ+2gw2VPQGsRwPjrYI0K4=";
@@ -56,9 +57,7 @@ in
     # pkgs.terraform # this is a slow install with nix?
     pkgs.azure-cli
     pkgs.bun
-    pkgs.claude-code
     pkgs.codeburn
-    pkgs.codex
     pkgs.curl
     pkgs.fzf
     pkgs.gh
@@ -146,7 +145,6 @@ in
     ".config/lazygit".source = mkLink "${dotfiles}/config/lazygit";
     ".config/nvim".source = mkLink "${dotfiles}/config/nvim";
     ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";
-    ".config/opencode/opencode.jsonc".source = mkLink "${dotfiles}/config/opencode/opencode.jsonc";
     ".editorconfig".source = ./dotfiles/editorconfig;
     ".functions".source = ./dotfiles/functions;
     ".git-commit-template.txt".source = ./dotfiles/git-commit-template.txt;

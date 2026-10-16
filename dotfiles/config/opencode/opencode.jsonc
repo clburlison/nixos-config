@@ -8,6 +8,15 @@
         "input_newline": "enter"
     },
     "plugin": [],
+    "mcp": {
+        "servers": {
+            "claude-mem": {
+                "type": "local",
+                "command": ["@claudeMemMcp@"],
+                "timeout": { "startup": 60000 }
+            }
+        }
+    },
     "provider": {
         "omlx": {
             "npm": "@ai-sdk/openai-compatible",

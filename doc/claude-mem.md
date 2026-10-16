@@ -95,18 +95,27 @@ that unrelated host issue is not changed here.
 
 ## Updating
 
-Review upstream adapter events, launcher/worker behavior, dependency manifests,
-and migration notes together. Update the release archive/version/hash and the
-combined runtime manifest under `packages/claude-mem/`, then regenerate its lock:
+Use the package task from the repository root:
 
 ```sh
-cd packages/claude-mem
-npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+task packages:update-claude-mem                       # latest npm release
+task packages:update-claude-mem -- 13.40.0             # specific release
+task packages:update-claude-mem -- 13.40.0 --dry-run   # validate without replacing files
 ```
 
-Recompute `npmDepsHash`, recheck the asserted bundle patch and grammar mapping in
-`prepare.py`, format the Nix files, and rerun package checks/smoke tests. This
-reuses published bundles; it does not claim to reproduce those bundles from Git.
+The updater verifies registry SHA-512 integrity, checks the actual bundle/hook
+adaptations in staging, merges root/plugin runtime manifests, regenerates the
+lock with lifecycle scripts disabled, computes the archive and `npmDepsHash`
+hashes using the locked nixpkgs tooling, and formats the package. Files are only
+replaced after validation succeeds; concurrent edits are not overwritten.
+
+This deliberately refuses releases whose bundle patches, dependency policies,
+or Chroma pins need manual adaptation. Review upstream migration notes and
+adapter changes, then update `prepare.py`/checks and Python packaging as needed.
+The updater does not build or activate a system, change the flake lock, or update
+Chroma/model pins automatically. Run the individual package build and runtime
+smoke test above before applying. This reuses published bundles, not a claim of
+reproducing those bundles from Git.
 
 The Python/model package is `packages/claude-mem/chroma.nix`. Its dependency
 closure follows the main nixpkgs lock, with protobuf 6 selected consistently

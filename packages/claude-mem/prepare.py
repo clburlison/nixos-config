@@ -12,6 +12,9 @@ root = Path(sys.argv[1])
 codex = sys.argv[2]
 shell = sys.argv[3]
 chroma = sys.argv[4]
+validate_only = sys.argv[5:] == ['--validate-only']
+if sys.argv[5:] and not validate_only:
+    raise ValueError('Unknown prepare.py arguments')
 plugin = root / 'share/claude-mem/plugin'
 
 
@@ -98,11 +101,12 @@ grammars = {
 lib_dir = root / 'share/claude-mem/grammars'
 lib_dir.mkdir()
 suffix = '.dylib' if sys.platform == 'darwin' else '.so'
-for language, package in grammars.items():
-    source = plugin / 'node_modules' / package
-    assert (source / 'src/parser.c').is_file(), source
-    subprocess.run(['tree-sitter', 'build', '-o', str(lib_dir / (language + suffix)),
-                    str(source)], check=True)
+if not validate_only:
+    for language, package in grammars.items():
+        source = plugin / 'node_modules' / package
+        assert (source / 'src/parser.c').is_file(), source
+        subprocess.run(['tree-sitter', 'build', '-o', str(lib_dir / (language + suffix)),
+                        str(source)], check=True)
 write_json(lib_dir / 'languages.json', list(grammars))
 
 # One deliberately narrow bundle patch: use immutable prebuilt grammars instead

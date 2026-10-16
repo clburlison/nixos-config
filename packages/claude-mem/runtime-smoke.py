@@ -35,7 +35,8 @@ with tempfile.TemporaryDirectory(prefix='claude-mem-smoke-', dir=os.environ.get(
     guards.mkdir()
     for command in ('uvx', 'uv', 'pip', 'pip3'):
         guard = guards / command
-        guard.write_text(f'#!/bin/sh\necho {command} >> "{home}/unexpected-download"\nexit 99\n')
+        guard.write_text(f'#!/bin/sh\necho "{command} $*" >> "{home}/unexpected-download"\n'
+                         f'ps -p "$PPID" -o command= >> "{home}/unexpected-download"\nexit 99\n')
         guard.chmod(0o755)
     env['PATH'] = str(guards) + os.pathsep + env['PATH']
     data = home / '.claude-mem'
@@ -137,6 +138,8 @@ with tempfile.TemporaryDirectory(prefix='claude-mem-smoke-', dir=os.environ.get(
             assert (home / '.claude-mem/chroma/chroma.sqlite3').is_file()
             print('Codex preservation, lazy worker, MCP, SQLite/semantic recall, and smart_outline passed')
         except BaseException:
+            if (home / 'unexpected-download').exists():
+                print((home / 'unexpected-download').read_text(), file=sys.stderr)
             stderr.flush()
             stderr.seek(0)
             print(stderr.read(), file=sys.stderr)

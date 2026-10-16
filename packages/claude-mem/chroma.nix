@@ -97,9 +97,9 @@ ps.buildPythonApplication {
     chmod +x "$out/bin/chroma-mcp"
   '';
   pythonImportsCheck = [ "chroma_mcp" ];
-  doCheck = false;
-  doInstallCheck = true;
-  installCheckPhase = ''
+  # Python's builder maps checkPhase/doCheck to the post-install check phase.
+  doCheck = true;
+  checkPhase = ''
     export HOME="$TMPDIR/chroma-check"
     mkdir -p "$HOME"
     export ANONYMIZED_TELEMETRY=False

@@ -2,6 +2,13 @@
 version: "3"
 
 tasks:
+  update-claude-mem:
+    desc: Update claude-mem bundles, runtime lock, and hashes (latest or specified version)
+    env:
+      CLAUDE_MEM_UPDATE_ARGS: "{{.CLI_ARGS}}"
+    cmds:
+      - python3 claude-mem/update.py
+
   update-opencode:
     desc: Update OpenCode to the latest v2 release or a specified version
     cmds:

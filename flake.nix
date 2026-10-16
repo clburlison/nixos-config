@@ -11,6 +11,11 @@
     # We use the unstable nixpkgs repo for some packages.
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
+    opencode-v2 = {
+      url = "github:anomalyco/opencode/v2.0.31";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+
     # Build a custom WSL installer
     nixos-wsl.url = "github:nix-community/NixOS-WSL";
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
@@ -95,7 +100,9 @@
             lazygit = unstable.lazygit;
             linear-cli = final.callPackage ./packages/linear-cli.nix { };
             ntn = final.callPackage ./packages/ntn.nix { };
-            opencode = unstable.opencode;
+            opencode = final.callPackage ./packages/opencode.nix {
+              opencode-v2 = inputs.opencode-v2;
+            };
             openusage = unstable.openusage;
             tree-sitter = unstable.tree-sitter;
             uv = unstable.uv;

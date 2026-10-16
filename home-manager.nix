@@ -54,7 +54,6 @@ in
   home.packages = [
     # pkgs.python314 # switch to `uv` for python version management
     # pkgs.terraform # this is a slow install with nix?
-    pkgs.antigravity-cli
     pkgs.azure-cli
     pkgs.bun
     pkgs.claude-code
@@ -235,11 +234,9 @@ in
     ];
     targets = {
       agents.enable = true;
-      antigravity.enable = true;
       claude.enable = true;
       codex.enable = true;
       opencode.enable = true;
-      pi.enable = true;
     };
   };
 

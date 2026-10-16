@@ -86,7 +86,6 @@
             };
           in
           {
-            antigravity-cli = unstable.antigravity-cli;
             bun = unstable.bun;
             claude-code = unstable.claude-code;
             codeburn = final.callPackage ./packages/codeburn.nix { };

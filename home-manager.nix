@@ -224,11 +224,16 @@ in
       input = "linear-cli-skills";
       subdir = "skills";
     };
+    sources.cloudflare-security-audit = {
+      input = "cloudflare-security-audit-skills";
+      subdir = "skills";
+    };
     skills.enableAll = [
       "matt-pocock-engineering"
       "matt-pocock-productivity"
       "notion"
       "linear-cli"
+      "cloudflare-security-audit"
     ];
     targets = {
       agents.enable = true;

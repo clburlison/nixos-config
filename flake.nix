@@ -47,6 +47,11 @@
       flake = false;
     };
 
+    cloudflare-security-audit-skills = {
+      url = "github:cloudflare/security-audit-skill";
+      flake = false;
+    };
+
     herdr-nix = {
       url = "github:kevinpita/herdr-nix";
       inputs.nixpkgs.follows = "nixpkgs";

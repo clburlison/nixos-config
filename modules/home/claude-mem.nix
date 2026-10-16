@@ -21,6 +21,10 @@ in
     '')
   ];
 
+  # Env overrides settings.json, so no machine-specific settings file is managed.
+  # Run local on purpose: hide the cmem.ai Pro trial welcome hint.
+  home.sessionVariables.CLAUDE_MEM_WELCOME_HINT_ENABLED = "false";
+
   programs.claude-code = {
     enable = true;
     plugins = [ claudeMem.pluginRoot ];

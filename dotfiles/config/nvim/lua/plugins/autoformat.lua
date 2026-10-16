@@ -50,6 +50,7 @@ return {
         python = { 'isort', 'black' },
         rust = { 'rustfmt' },
         sql = { 'sqruff' }, -- Has errors with drizzle migrations
+        terraform = { 'terraform_fmt' },
         typescript = { 'biome', 'biome-organize-imports' },
         typescriptreact = { 'biome', 'biome-organize-imports' },
         yaml = { 'prettier' },

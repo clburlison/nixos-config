@@ -12,8 +12,9 @@ root = Path(sys.argv[1])
 codex = sys.argv[2]
 shell = sys.argv[3]
 chroma = sys.argv[4]
-validate_only = sys.argv[5:] == ['--validate-only']
-if sys.argv[5:] and not validate_only:
+ca_bundle = sys.argv[5]
+validate_only = sys.argv[6:] == ['--validate-only']
+if sys.argv[6:] and not validate_only:
     raise ValueError('Unknown prepare.py arguments')
 plugin = root / 'share/claude-mem/plugin'
 
@@ -130,4 +131,13 @@ text = text.replace(prefix, 'static buildLauncherPrefix(e){return[]}')
 resolver = 'if(e!=="win32")return"uvx"'
 assert text.count(resolver) == 2, 'Recheck the Chroma executable resolvers'
 text = text.replace(resolver, 'if(e!=="win32")return' + json.dumps(chroma))
+# Darwin's enterprise-certificate helper otherwise provisions certifi through
+# uvx even for a local Chroma client. Keep its system-keychain merge behavior,
+# but supply Nix's CA bundle without executing Python/package managers.
+certificate_probe = (
+    '(0,mm.execSync)(\'uvx --with certifi python -c "import certifi; print(certifi.where())"\','
+    '{encoding:"utf8",stdio:["pipe","pipe","pipe"],timeout:1e4}).trim()'
+)
+assert text.count(certificate_probe) == 1, 'Recheck the Chroma certificate lookup patch'
+text = text.replace(certificate_probe, json.dumps(ca_bundle))
 worker.write_text(text)

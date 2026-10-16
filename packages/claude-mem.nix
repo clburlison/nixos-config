@@ -1,6 +1,7 @@
 {
   lib,
   callPackage,
+  cacert,
   buildNpmPackage,
   fetchurl,
   nodejs_24,
@@ -62,7 +63,8 @@ buildNpmPackage (finalAttrs: {
     ln -sf ${lib.getExe tree-sitter} "$root/node_modules/tree-sitter-cli/tree-sitter"
 
     ${python3}/bin/python ${./claude-mem/prepare.py} \
-      "$out" ${lib.getExe codex} ${lib.getExe bash} "$out/libexec/chroma-mcp"
+      "$out" ${lib.getExe codex} ${lib.getExe bash} "$out/libexec/chroma-mcp" \
+      ${cacert}/etc/ssl/certs/ca-bundle.crt
 
     for entry in claude-mem claude-mem-mcp claude-mem-codex-hook; do
       case "$entry" in

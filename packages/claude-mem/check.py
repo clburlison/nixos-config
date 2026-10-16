@@ -35,6 +35,7 @@ worker = (plugin / 'scripts/worker-service.cjs').read_text()
 assert 'static buildLauncherPrefix(e){return[]}' in worker
 assert 'if(e!=="win32")return"uvx"' not in worker
 assert worker.count(str(root / 'libexec/chroma-mcp')) == 2
+assert 'uvx --with certifi' not in worker
 assert (root / 'libexec/chroma-mcp').is_file()
 
 # Round-trip the actual CLI override arguments through a TOML parser. JSON

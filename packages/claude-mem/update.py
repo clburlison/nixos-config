@@ -100,7 +100,7 @@ def validate_release(source, staging):
     # installation. Only our Python code executes; all writes are in staging.
     subprocess.run([sys.executable, str(HERE / 'prepare.py'), str(out),
                     '/nix/validation/codex', '/bin/sh', '/nix/validation/chroma-mcp',
-                    '--validate-only'], check=True)
+                    '/nix/validation/ca-bundle.crt', '--validate-only'], check=True)
 
 
 def replace_one(text, pattern, replacement):

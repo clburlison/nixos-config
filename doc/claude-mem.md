@@ -51,7 +51,9 @@ Claude receives upstream plugin skills; Codex/OpenCode additionally receive
   (`chroma-mcp` 0.2.6), Chroma 1.5.9, Python 3.13 dependency closure, and
   `all-MiniLM-L6-v2` ONNX/tokenizer assets are Nix-owned. The worker launches the
   packaged bridge directly, not `uvx`; no Python packages or models are fetched
-  on first use. Embeddings run locally without an API key.
+  on first use. Nix also supplies the CA bundle used by the macOS certificate
+  helper instead of provisioning certifi through uvx. Embeddings run locally
+  without an API key.
 - The bridge exposes the default local ONNX embedder, not upstream's optional
   hosted/image embedding providers. A missing packaged model is an error, not a
   reason to download to a user cache. Chroma telemetry is disabled.

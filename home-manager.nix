@@ -431,10 +431,6 @@ in
       prune = true;
     };
 
-    tool = {
-      packages = [ "repowise" ];
-      prune = true;
-    };
   };
 
   programs.zoxide = {

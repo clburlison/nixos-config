@@ -20,6 +20,38 @@ let
   isDarwin = pkgs.stdenv.isDarwin;
   isLinux = pkgs.stdenv.isLinux;
   mkLink = config.lib.file.mkOutOfStoreSymlink;
+  mattPocockSkills = {
+    # Engineering
+    "ask-matt" = false;
+    "code-review" = true;
+    "codebase-design" = false;
+    "diagnosing-bugs" = false;
+    "domain-modeling" = false;
+    "grill-with-docs" = true;
+    "implement" = true;
+    "implement-spec" = true;
+    "improve-codebase-architecture" = true;
+    "pr" = true;
+    "prototype" = true;
+    "research" = true;
+    "retro" = true;
+    "setup-matt-pocock-skills" = true;
+    "tdd" = true;
+    "to-spec" = true;
+    "to-tickets" = true;
+    "triage" = true;
+    "wayfinder" = true;
+    "wizard" = false;
+
+    # Productivity
+    "grill-me" = true;
+    "grilling" = true;
+    "handoff" = true;
+    "teach" = true;
+    "to-questionnaire" = false;
+    "wait-what" = true;
+    "writing-for-agents" = true;
+  };
 
 in
 {
@@ -216,10 +248,10 @@ in
       input = "matt-pocock-skills";
       subdir = "skills/productivity";
     };
-    sources.notion = {
-      input = "notion-skills";
-      subdir = "skills";
-    };
+    # sources.notion = {
+    #   input = "notion-skills";
+    #   subdir = "skills";
+    # };
     sources.linear-cli = {
       input = "linear-cli-skills";
       subdir = "skills";
@@ -228,13 +260,15 @@ in
       input = "cloudflare-security-audit-skills";
       subdir = "skills";
     };
-    skills.enableAll = [
-      "matt-pocock-engineering"
-      "matt-pocock-productivity"
-      "notion"
-      "linear-cli"
-      "cloudflare-security-audit"
-    ];
+    skills = {
+      # Set individual Matt Pocock skills to true as needed.
+      enable = lib.attrNames (lib.filterAttrs (_: enabled: enabled) mattPocockSkills);
+      enableAll = [
+        # "notion"
+        "linear-cli"
+        "cloudflare-security-audit"
+      ];
+    };
     targets = {
       agents.enable = true;
       claude.enable = true;

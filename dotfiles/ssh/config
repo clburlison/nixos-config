@@ -1,6 +1,10 @@
 Include ~/.ssh/hosts/*
 
-Host *
+# Use the local 1Password agent unless SSH_AUTH_SOCK already offers keys
+# (e.g. a forwarded agent). IdentityAgent overrides SSH_AUTH_SOCK, so it must
+# be skipped on remotes. Local herdr panes expose an empty launchd agent, so
+# check for identities instead of matching the socket path.
+Match exec "! ssh-add -l >/dev/null 2>&1"
 	IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
 
 Host *.home.clb.ai

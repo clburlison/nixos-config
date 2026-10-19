@@ -423,6 +423,9 @@ in
 
   # Replace the registries that were previously maintained by the Herdr CLI.
   xdg.configFile."herdr/plugins.json".force = true;
+  xdg.configFile."herdr/plugins/worktrunk/config.toml".text = ''
+    show_remote_branches = true
+  '';
   home.file."${config.xdg.stateHome}/herdr/client/endpoints.json".force = true;
 
   programs.kubeswitch = {

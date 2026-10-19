@@ -30,6 +30,8 @@ in
     CLAUDE_MEM_WELCOME_HINT_ENABLED = "false";
     # Keep the context injected for the model, hide the noisy terminal copy.
     CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT = "false";
+    # Key projects by git remote slug so worktrees share the parent project.
+    CLAUDE_MEM_PROJECT_NAME_SOURCE = "git-remote";
   };
 
   programs.claude-code = {

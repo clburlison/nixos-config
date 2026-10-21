@@ -423,8 +423,11 @@ in
 
   # Replace the registries that were previously maintained by the Herdr CLI.
   xdg.configFile."herdr/plugins.json".force = true;
-  xdg.configFile."herdr/plugins/worktrunk/config.toml".text = ''
+  xdg.configFile."herdr/plugins/config/worktrunk/config.toml".text = ''
     show_remote_branches = true
+    # picker_placement = "popup"
+    # popup_width = "70%"
+    # popup_height = "50%"
   '';
   home.file."${config.xdg.stateHome}/herdr/client/endpoints.json".force = true;
 

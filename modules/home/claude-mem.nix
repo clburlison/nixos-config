@@ -6,6 +6,38 @@
 
 let
   claudeMem = pkgs.claude-mem;
+  # Keep this list aligned with the claude-mem slash commands you use.
+  # The plugin prefix is implicit here; e.g. "mem-search" is
+  # "claude-mem:mem-search".
+  enabledClaudeMemSkills = [
+    "how-it-works"
+    "mem-search"
+    "pathfinder"
+    "smart-explore"
+    "what-the"
+  ];
+  claudeMemPlugin = pkgs.runCommand "claude-mem-plugin" { } ''
+    mkdir -p "$out"
+    cp -R ${claudeMem.pluginRoot}/. "$out/"
+    chmod -R u+w "$out"
+    rm "$out/node_modules"
+    ln -s ${claudeMem}/share/claude-mem/node_modules "$out/node_modules"
+    ${lib.concatMapStringsSep "\n" (name: ''
+      skill="$out/skills/${lib.escapeShellArg name}"
+      if [ ! -d "$skill" ]; then
+        echo "Unknown enabled claude-mem skill: ${lib.escapeShellArg name}" >&2
+        exit 1
+      fi
+    '') enabledClaudeMemSkills}
+    for skill in "$out"/skills/*; do
+      [ -d "$skill" ] || continue
+      skill_name="''${skill##*/}"
+      case "$skill_name" in
+        ${lib.concatMapStringsSep "|" lib.escapeShellArg enabledClaudeMemSkills}) ;;
+        *) rm -rf "$skill" ;;
+      esac
+    done
+  '';
   memorySkills = [
     "mem-search"
     "smart-explore"
@@ -36,7 +68,7 @@ in
 
   programs.claude-code = {
     enable = true;
-    plugins = [ claudeMem.pluginRoot ];
+    plugins = [ claudeMemPlugin ];
     # Leave settings empty: existing mutable settings.json remains its owner.
   };
 

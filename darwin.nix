@@ -123,6 +123,7 @@
       "loom"
       "notion"
       "openusage"
+      "stablyai/orca/orca"
       "orbstack"
       "raycast"
       "slack"

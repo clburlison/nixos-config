@@ -60,6 +60,8 @@ in
   # Env overrides settings.json, so no machine-specific settings file is managed.
   # Run local on purpose: hide the cmem.ai Pro trial welcome hint.
   home.sessionVariables = {
+    # Claude MIM owns persistent memory for Claude Code.
+    CLAUDE_CODE_DISABLE_AUTO_MEMORY = "1";
     CLAUDE_MEM_WELCOME_HINT_ENABLED = "false";
     # Keep the context injected for the model, hide the noisy terminal copy.
     CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT = "false";

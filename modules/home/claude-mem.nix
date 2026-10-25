@@ -52,6 +52,7 @@ in
       exec ${claudeMem}/bin/claude-mem-codex \
         -c 'tui.keymap.composer.submit=["enter"]' \
         -c 'tui.keymap.editor.insert_newline=["shift-enter"]' \
+        -c 'mcp_servers.claude-mem.default_tools_approval_mode="approve"' \
         "$@"
     '')
   ];

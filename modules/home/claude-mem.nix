@@ -50,8 +50,8 @@ in
     # The package adds its inline hooks/MCP through targeted CLI overrides.
     (pkgs.writeShellScriptBin "codex" ''
       exec ${claudeMem}/bin/claude-mem-codex \
-        -c 'tui.keymap.composer.submit=["shift-enter"]' \
-        -c 'tui.keymap.editor.insert_newline=["enter"]' \
+        -c 'tui.keymap.composer.submit=["enter"]' \
+        -c 'tui.keymap.editor.insert_newline=["shift-enter"]' \
         "$@"
     '')
   ];

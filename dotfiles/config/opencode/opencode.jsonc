@@ -4,8 +4,8 @@
     // Managed by nix
     "autoupdate": false,
     "keybinds": {
-        "input_submit": "shift+enter",
-        "input_newline": "enter"
+        "input_submit": "enter",
+        "input_newline": "shift+enter"
     },
     "plugin": [],
     "mcp": {

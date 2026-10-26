@@ -188,6 +188,8 @@ in
     ".path".source = ./dotfiles/path;
     ".ssh/config".source = mkLink "${dotfiles}/ssh/config";
     ".ssh/hosts".source = mkLink "${dotfiles}/ssh/hosts";
+    ".t3/userdata/keybindings.json".source = mkLink "${dotfiles}/t3code/keybindings.json";
+    ".t3/userdata/settings.json".source = mkLink "${dotfiles}/t3code/settings.json";
   };
 
   home.activation.authorizeSshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

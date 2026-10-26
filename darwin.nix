@@ -130,6 +130,7 @@
       "spotify"
       "suspicious-package"
       "tableplus"
+      "t3-code"
       "tailscale-app"
       "tower"
       "utm"

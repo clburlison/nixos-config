@@ -241,7 +241,7 @@ in
       "ignorespace"
     ];
     initExtra = builtins.readFile ./dotfiles/bashrc + ''
-      source ${inputs.herdr-automatic-rename}/shell/hook.bash
+      # source ${inputs.herdr-automatic-rename}/shell/hook.bash
     '';
   };
 
@@ -300,7 +300,7 @@ in
 
       if status is-interactive
         ${pkgs.worktrunk}/bin/wt config shell init fish | source
-        source ${inputs.herdr-automatic-rename}/shell/hook.fish
+        # source ${inputs.herdr-automatic-rename}/shell/hook.fish
       end
 
       source ~/.config/fish/aliases.fish
@@ -356,7 +356,40 @@ in
       pkgs.python3
       pkgs.worktrunk
     ];
-    plugins.automatic-rename.source = inputs.herdr-automatic-rename;
+    # plugins.automatic-rename.source = inputs.herdr-automatic-rename;
+    plugins.herdr-bar.source =
+      let
+        version = "0.12.0";
+        releases = {
+          aarch64-darwin = {
+            asset = "macos-aarch64";
+            hash = "2b100b2be0456c38a8319ecbf44079b0d9e2e26bd5744593daa2e57aa7524651";
+          };
+          x86_64-darwin = {
+            asset = "macos-x86_64";
+            hash = "4d6a3b7ffabbf4c68b09587c5bd75e9b560dfd62ce0288e4512523779031eec5";
+          };
+          aarch64-linux = {
+            asset = "linux-aarch64";
+            hash = "df3050ad1d4c9c83691672492838116aa019fa21898818db123c26b09da3f0f0";
+          };
+          x86_64-linux = {
+            asset = "linux-x86_64";
+            hash = "59c4e3cbc8831808f2771f0d237250670c41f94c97a0a1bfdcb8b572f9b7beee";
+          };
+        };
+        release = releases.${pkgs.stdenv.hostPlatform.system};
+        binary = pkgs.fetchurl {
+          url = "https://github.com/jeffarese/herdr-bar/releases/download/v${version}/herdr-bar-${release.asset}";
+          sha256 = release.hash;
+        };
+      in
+      pkgs.runCommand "herdr-bar-plugin-${version}" { } ''
+        mkdir -p $out/bin
+        cp ${inputs.herdr-bar}/herdr-plugin.toml $out/
+        cp ${binary} $out/bin/herdr-bar
+        chmod +x $out/bin/herdr-bar
+      '';
     plugins.layouts.source = ./plugins/herdr-layouts;
     plugins.smart-splits.source = inputs.smart-splits-nvim;
     plugins.worktrunk.source = inputs.herdr-worktrunk;
@@ -384,6 +417,15 @@ in
         remove_worktree = [ ];
       };
       keys.command = [
+        {
+          key = [
+            "prefix+k"
+            "cmd+k"
+          ];
+          type = "plugin_action";
+          command = "herdr-bar.open";
+          description = "command bar";
+        }
         {
           key = "prefix+l";
           type = "plugin_action";
@@ -432,6 +474,10 @@ in
 
   # Replace the registries that were previously maintained by the Herdr CLI.
   xdg.configFile."herdr/plugins.json".force = true;
+  xdg.configFile."herdr/plugins/config/herdr-bar/config.json".text = builtins.toJSON {
+    auto_titles = true;
+    tab_status = true;
+  };
   xdg.configFile."herdr/plugins/config/worktrunk/config.toml".text = ''
     show_remote_branches = true
     # picker_placement = "popup"
@@ -513,7 +559,7 @@ in
     autosuggestion.enable = true;
     enableCompletion = true;
     initContent = ''
-      source ${inputs.herdr-automatic-rename}/shell/hook.zsh
+      # source ${inputs.herdr-automatic-rename}/shell/hook.zsh
 
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.

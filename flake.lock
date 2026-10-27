@@ -122,6 +122,22 @@
         "type": "github"
       }
     },
+    "herdr-bar": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1792983080,
+        "narHash": "sha256-CYLnUJ7BQZmtnp7X1vtqTxLjEOaWsFQ2bHyghLG8oM0=",
+        "owner": "jeffarese",
+        "repo": "herdr-bar",
+        "rev": "1ec84901d7922987b4273e4ae98c33bd5d251fab",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jeffarese",
+        "repo": "herdr-bar",
+        "type": "github"
+      }
+    },
     "herdr-nix": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -342,6 +358,7 @@
         "cloudflare-security-audit-skills": "cloudflare-security-audit-skills",
         "darwin": "darwin",
         "herdr-automatic-rename": "herdr-automatic-rename",
+        "herdr-bar": "herdr-bar",
         "herdr-nix": "herdr-nix",
         "herdr-worktrunk": "herdr-worktrunk",
         "home-manager": "home-manager",

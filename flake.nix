@@ -67,6 +67,11 @@
       flake = false;
     };
 
+    herdr-bar = {
+      url = "github:jeffarese/herdr-bar";
+      flake = false;
+    };
+
     herdr-automatic-rename = {
       url = "github:qu8n/herdr-automatic-rename";
       flake = false;

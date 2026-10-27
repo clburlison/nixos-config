@@ -96,6 +96,7 @@ in
     pkgs.git-lfs
     pkgs.git-open
     pkgs.go-task
+    pkgs.herdr-agent-icons
     pkgs.htop
     pkgs.jq
     pkgs.kubectl
@@ -477,6 +478,8 @@ in
   xdg.configFile."herdr/plugins/config/herdr-bar/config.json".text = builtins.toJSON {
     auto_titles = true;
     tab_status = true;
+    # Detection only scans the top of ~/Library/Fonts; Home Manager installs to a subdirectory.
+    agent_icons = "font";
   };
   xdg.configFile."herdr/plugins/config/worktrunk/config.toml".text = ''
     show_remote_branches = true

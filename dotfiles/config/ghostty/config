@@ -1,3 +1,4 @@
 theme = TokyoNight
 keybind = super+d=unbind
 keybind = cmd+k=unbind
+font-codepoint-map = U+E1A0-U+E1B7=Herdr Agent Icons Max

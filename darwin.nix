@@ -111,7 +111,6 @@
 
     casks = [
       "1password"
-      "anarlog"
       "claude"
       "discord"
       "firefox"

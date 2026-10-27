@@ -10,13 +10,19 @@
     },
     {
       "provider": "codex",
-      "model": "gpt-5.6-terra"
+      "model": "gpt-6.1-sol"
     },
     {
       "provider": "codex",
-      "model": "gpt-6.1-sol"
+      "model": "gpt-6.1-terra"
     }
   ],
+  "storageCleanup": {
+    "worktreeAfterDays": 8,
+    "worktreeSettledAfterDays": 8,
+    "worktreeOnMerge": true,
+    "worktreeUnchanged": true
+  },
   "worktreesDirectory": "~/dev/worktrees",
   "defaultAutoPull": true,
   "defaultModelSelection": {

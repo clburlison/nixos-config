@@ -158,6 +158,9 @@ in
     GIT_LFS_SKIP_SMUDGE = "1";
     # Remove duplicates and commands that start with space
     HISTCONTROL = "ignoreboth";
+    # oh-my-posh fallback when the per-session config cache is lost (e.g.
+    # after a switch); otherwise running shells render the default theme.
+    POSH_CONFIG = "${config.home.homeDirectory}/.config/ohmyposh/clburlison.toml";
   };
 
   home.file = {

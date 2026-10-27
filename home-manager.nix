@@ -366,6 +366,8 @@ in
     };
     settings = {
       ui.prompt_new_tab_name = false;
+      ui.sidebar_start_collapsed = true;
+      ui.sidebar_collapsed_mode = "hidden";
       theme = {
         name = "tokyo-night";
         auto_switch = false;

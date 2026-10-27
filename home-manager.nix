@@ -161,6 +161,8 @@ in
     # oh-my-posh fallback when the per-session config cache is lost (e.g.
     # after a switch); otherwise running shells render the default theme.
     POSH_CONFIG = "${config.home.homeDirectory}/.config/ohmyposh/clburlison.toml";
+    # Hide Claude Code's "How is Claude doing this session?" survey.
+    CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY = "1";
   };
 
   home.file = {

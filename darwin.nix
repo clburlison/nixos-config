@@ -116,7 +116,6 @@
       "firefox"
       "ghostty"
       "google-chrome"
-      "granola" # unclear on this one
       "hiddenbar"
       "karabiner-elements"
       "linear"

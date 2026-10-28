@@ -478,6 +478,8 @@ in
   xdg.configFile."herdr/plugins/config/herdr-bar/config.json".text = builtins.toJSON {
     auto_titles = true;
     tab_status = true;
+    # Let a new Claude/Codex session in a pane replace the previous session's title.
+    follow_new_sessions = true;
     # Detection only scans the top of ~/Library/Fonts; Home Manager installs to a subdirectory.
     agent_icons = "font";
   };

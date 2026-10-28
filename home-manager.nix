@@ -169,6 +169,7 @@ in
     ".aliases".source = ./dotfiles/aliases;
     ".claude/CLAUDE.md".source = mkLink "${dotfiles}/claude/CLAUDE.md";
     ".claude/keybindings.json".source = mkLink "${dotfiles}/claude/keybindings.json";
+    ".claude/mods".source = mkLink "${dotfiles}/claude/mods";
     ".config/fish/aliases.fish".source = mkLink "${dotfiles}/config/fish/aliases.fish";
     ".config/fish/conf.d".source = mkLink "${dotfiles}/config/fish/config.d";
     ".config/fish/functions".source = mkLink "${dotfiles}/config/fish/functions";
@@ -232,6 +233,11 @@ in
   #---------------------------------------------------------------------
   # Programs
   #---------------------------------------------------------------------
+
+  # Local Claude Code mods, loaded live from the dotfiles symlink.
+  programs.claude-code.plugins = [
+    "${config.home.homeDirectory}/.claude/mods/context-status"
+  ];
 
   programs.bash = {
     enable = true;

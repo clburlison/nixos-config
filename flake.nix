@@ -110,6 +110,7 @@
             gemini-cli = unstable.gemini-cli;
             herdr = unstable.herdr;
             lazygit = unstable.lazygit;
+            nerd-fonts = unstable.nerd-fonts;
             linear-cli = final.callPackage ./packages/linear-cli.nix { };
             ntn = final.callPackage ./packages/ntn.nix { };
             opencode = final.callPackage ./packages/opencode.nix {

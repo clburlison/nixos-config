@@ -1,7 +1,7 @@
 {
   "name": "context-status",
-  "version": "0.4.0",
-  "description": "Shows context window usage above the prompt, exact tokens on hover",
+  "version": "0.6.0",
+  "description": "Model, path, branch, context, cache, usage limits, MCP servers and skills under the prompt",
   "author": { "name": "Clayton Burlison" },
   "types": "./types/index.d.ts"
 }

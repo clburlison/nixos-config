@@ -20,6 +20,12 @@ let
   isDarwin = pkgs.stdenv.isDarwin;
   isLinux = pkgs.stdenv.isLinux;
   mkLink = config.lib.file.mkOutOfStoreSymlink;
+  # Index tabs/workspaces as "1-name" instead of "[1] name".
+  herdrAutomaticRename = pkgs.applyPatches {
+    name = "herdr-automatic-rename";
+    src = inputs.herdr-automatic-rename;
+    patches = [ ./patches/herdr-automatic-rename-dash-index.patch ];
+  };
   mattPocockSkills = {
     # Engineering
     "ask-matt" = false;
@@ -242,7 +248,7 @@ in
       "ignorespace"
     ];
     initExtra = builtins.readFile ./dotfiles/bashrc + ''
-      # source ${inputs.herdr-automatic-rename}/shell/hook.bash
+      source ${herdrAutomaticRename}/shell/hook.bash
     '';
   };
 
@@ -301,7 +307,7 @@ in
 
       if status is-interactive
         ${pkgs.worktrunk}/bin/wt config shell init fish | source
-        # source ${inputs.herdr-automatic-rename}/shell/hook.fish
+        source ${herdrAutomaticRename}/shell/hook.fish
       end
 
       source ~/.config/fish/aliases.fish
@@ -357,7 +363,7 @@ in
       pkgs.python3
       pkgs.worktrunk
     ];
-    # plugins.automatic-rename.source = inputs.herdr-automatic-rename;
+    plugins.automatic-rename.source = herdrAutomaticRename;
     plugins.herdr-bar.source =
       let
         version = "0.12.0";
@@ -476,13 +482,20 @@ in
   # Replace the registries that were previously maintained by the Herdr CLI.
   xdg.configFile."herdr/plugins.json".force = true;
   xdg.configFile."herdr/plugins/config/herdr-bar/config.json".text = builtins.toJSON {
-    auto_titles = true;
-    tab_status = true;
-    # Let a new Claude/Codex session in a pane replace the previous session's title.
-    follow_new_sessions = true;
+    # herdr-automatic-rename owns tab naming; herdr-bar is only the command bar.
+    auto_titles = false;
+    tab_status = false;
     # Detection only scans the top of ~/Library/Fonts; Home Manager installs to a subdirectory.
     agent_icons = "font";
   };
+  xdg.configFile."herdr-automatic-rename/config.sh".text = ''
+    ICONS_ENABLED=1
+    # Herdr Agent Icons Max logos (mapped in Ghostty via font-codepoint-map).
+    ICON_MAP=(
+      "claude="
+      "codex="
+    )
+  '';
   xdg.configFile."herdr/plugins/config/worktrunk/config.toml".text = ''
     show_remote_branches = true
     # picker_placement = "popup"
@@ -564,7 +577,7 @@ in
     autosuggestion.enable = true;
     enableCompletion = true;
     initContent = ''
-      # source ${inputs.herdr-automatic-rename}/shell/hook.zsh
+      source ${herdrAutomaticRename}/shell/hook.zsh
 
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.

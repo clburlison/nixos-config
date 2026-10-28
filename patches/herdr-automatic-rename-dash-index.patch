@@ -1,0 +1,61 @@
+diff -ru a/automatic-rename.sh b/automatic-rename.sh
+--- a/automatic-rename.sh	2026-10-28 09:50:38
++++ b/automatic-rename.sh	2026-10-28 09:51:16
+@@ -273,6 +273,10 @@
+ ar_strip_prefix() {
+   local s=$1 num
+   case "$s" in
++    [1-9]-*)
++      num=${s%%-*}
++      printf '%s' "${s#"$num-"}"
++      ;;
+     \[[0-9]*\]\ *|\[[0-9]*\])
+       num=${s#\[}; num=${num%%\]*}
+       case "$num" in
+@@ -290,15 +294,9 @@
+ # ar_index_prefix <label> -> the leading "[<digits>] " or "" when absent. Used by
+ # the fast path to carry an existing number forward without recomputing position.
+ ar_index_prefix() {
+-  local s=$1 num
++  local s=$1
+   case "$s" in
+-    \[[0-9]*\]\ *|\[[0-9]*\])
+-      num=${s#\[}; num=${num%%\]*}
+-      case "$num" in
+-        ''|*[!0-9]*) printf '' ;;
+-        *)           printf '[%s] ' "$num" ;;
+-      esac
+-      ;;
++    [1-9]-*) printf '%s-' "${s%%-*}" ;;
+     *) printf '' ;;
+   esac
+ }
+@@ -435,6 +433,7 @@
+     if [ "$s" = "$prev" ] && [ "$2" = "1" ]; then
+       case "$s" in
+         *"$sep"\[[0-9]*\]\ *) s=${s#*"$sep"\[[0-9]*\] } ;;
++        *"$sep"[1-9]-*) s=${s#*"$sep"[1-9]-} ;;
+       esac
+     fi
+   done
+@@ -455,7 +454,7 @@
+     # An empty base (a HIDE_SHELL tab) is numbered "[3]", not "[3] " -- herdr
+     # would drop the trailing space anyway, and ar_strip_prefix reads the bare
+     # form back as the empty base it came from.
+-    printf '[%d]%s' "$n" "${base:+ $base}"
++    printf '%d-%s' "$n" "$base"
+   else
+     printf '%s' "$base"
+   fi
+diff -ru a/naming.sh b/naming.sh
+--- a/naming.sh	2026-10-28 09:50:38
++++ b/naming.sh	2026-10-28 09:51:16
+@@ -959,7 +959,7 @@
+     # "[12]\tparser" here, passed a check looking for a literal space, and
+     # reached the tab as "[12] parser" -- the shape, arriving one step later.
+     | if . != "" and (length <= ($orig | length))
+-         and ((test("^\\[[0-9]+\\]([[:space:][:cntrl:]]|$)")) | not)
++         and ((test("^[1-9]-")) | not)
+       then . else "" end
+   ' 2>/dev/null
+ }

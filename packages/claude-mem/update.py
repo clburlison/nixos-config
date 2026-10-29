@@ -65,7 +65,8 @@ def runtime_manifest(source, selected):
         'name': 'claude-mem', 'version': selected, 'private': True, 'type': 'module',
         'dependencies': merge(root.get('dependencies', {}), plugin.get('dependencies', {})),
         'overrides': merge(root.get('overrides', {}), plugin.get('overrides', {})),
-        'engines': merge(root.get('engines', {}), plugin.get('engines', {})),
+        # Root engines describe the published package; plugin ranges may lag.
+        'engines': plugin.get('engines', {}) | root.get('engines', {}),
     }
 
 

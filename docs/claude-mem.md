@@ -1,6 +1,6 @@
 # Shared AI-agent memory
 
-`modules/home/claude-mem.nix` enables claude-mem **13.40.0** for Claude Code,
+`modules/home/claude-mem.nix` enables claude-mem **15.6.0** for Claude Code,
 Codex, and OpenCode V2. `packages/claude-mem.nix` packages the published npm
 bundles and a packaging-maintained runtime dependency lock. Nothing invokes the
 upstream installer during Home Manager activation.
@@ -27,7 +27,7 @@ upstream installer during Home Manager activation.
 Claude loads the Nix plugin through Home Manager's `--plugin-dir` wrapper.
 Codex's wrapper supplies inline hook and MCP `--config` overrides, leaving your
 existing `~/.codex/config.toml`, `hooks.json`, trust records, and login writable.
-Existing file-based hooks still run. The wrapper takes precedence for the six
+Existing file-based hooks still run. The wrapper takes precedence for the seven
 inline hook event keys it supplies; don't separately configure those same
 claude-mem hooks or install its native Codex plugin.
 
@@ -68,9 +68,13 @@ Claude receives upstream plugin skills; Codex/OpenCode additionally receive
 - Do not run `npx claude-mem install/update/repair` or install a second marketplace
   copy alongside this configuration. Updates are through Nix. The exposed
   `claude-mem` is the **hook launcher**, not npm's installer CLI;
-  `claude-mem --version` prints launcher protocol **1**, not package semver.
+  `claude-mem --version` prints launcher protocol **2**, not package semver.
 - Back up the data directory before upgrades. Database migrations are not
   reversed by rolling back the Nix generation.
+- `CLAUDE_MEM_BACKUP_ENABLED=true` makes the worker snapshot SQLite to
+  `~/.claude-mem/backups` (every 24h, keep 7; tune with
+  `CLAUDE_MEM_BACKUP_INTERVAL_HOURS` / `CLAUDE_MEM_BACKUP_RETAIN_COUNT`).
+  Chroma is a rebuildable index and is not included.
 
 ## Package verification (no system activation)
 
@@ -101,8 +105,8 @@ Use the package task from the repository root:
 
 ```sh
 task packages:update-claude-mem                       # latest npm release
-task packages:update-claude-mem -- 13.40.0             # specific release
-task packages:update-claude-mem -- 13.40.0 --dry-run   # validate without replacing files
+task packages:update-claude-mem -- 15.6.0             # specific release
+task packages:update-claude-mem -- 15.6.0 --dry-run   # validate without replacing files
 ```
 
 The updater verifies registry SHA-512 integrity, checks the actual bundle/hook

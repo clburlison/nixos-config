@@ -50,12 +50,13 @@ codex_path = plugin / 'hooks/codex-hooks.json'
 codex_hooks = json.loads(codex_path.read_text())['hooks']
 expected_events = {
     'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'Stop', 'PostCompact',
+    'SubagentStart',
 }
 assert set(codex_hooks) == expected_events
 for groups in codex_hooks.values():
     for group in groups:
         for hook in group['hooks']:
-            event = re.search(r' hook codex ([a-z-]+)$', hook['command'])
+            event = re.search(r" hook codex ([a-z-]+)'?$", hook['command'])
             assert event, hook
             # The launcher retains the environment-based tool-hook opt-outs.
             hook['command'] = f'{root}/bin/claude-mem-codex-hook {event[1]}'
@@ -111,23 +112,26 @@ if not validate_only:
 write_json(lib_dir / 'languages.json', list(grammars))
 
 # One deliberately narrow bundle patch: use immutable prebuilt grammars instead
-# of compiling them into the user's data directory. This literal is tied to the
+# of compiling them into the user's data directory. This pattern is tied to the
 # fixed-output npm archive, not assumed stable across upstream releases.
 mcp = plugin / 'scripts/mcp-server.cjs'
 text = mcp.read_text()
-old = '(0,Qe.join)(Gt(),"tree-sitter-libs")'
-assert text.count(old) == 1, 'Recheck the grammar lookup patch for this release'
-mcp.write_text(text.replace(old, json.dumps(str(lib_dir))))
+# Minified identifiers change between releases, so match them by shape.
+ident = r'[A-Za-z_$][\w$]*'
+text, count = re.subn(rf'\(0,{ident}\.join\)\({ident}\(\),"tree-sitter-libs"\)',
+                      lambda _: json.dumps(str(lib_dir)), text)
+assert count == 1, 'Recheck the grammar lookup patch for this release'
+mcp.write_text(text)
 
 # Keep Chroma's lifecycle, compatibility guard, prewarm, and MCP arguments, but
 # launch our pinned Python bridge directly. No uvx resolution/provisioning is
 # involved. The two command resolvers are manager spawn and dependency preflight.
 worker = plugin / 'scripts/worker-service.cjs'
 text = worker.read_text()
-prefix = ('static buildLauncherPrefix(e){let r=vT.flatMap(n=>["--with",n]);'
-          'return["--python",e,...r,"--from",`chroma-mcp==${YD}`,"chroma-mcp"]}')
-assert text.count(prefix) == 1, 'Recheck the Chroma launcher-prefix patch'
-text = text.replace(prefix, 'static buildLauncherPrefix(e){return[]}')
+prefix = (rf'static buildLauncherPrefix\(e\){{let r={ident}\.flatMap\(n=>\["--with",n\]\);'
+          rf'return\["--python",e,\.\.\.r,"--from",`chroma-mcp==\$\{{{ident}\}}`,"chroma-mcp"\]}}')
+text, count = re.subn(prefix, 'static buildLauncherPrefix(e){return[]}', text)
+assert count == 1, 'Recheck the Chroma launcher-prefix patch'
 resolver = 'if(e!=="win32")return"uvx"'
 assert text.count(resolver) == 2, 'Recheck the Chroma executable resolvers'
 text = text.replace(resolver, 'if(e!=="win32")return' + json.dumps(chroma))
@@ -135,9 +139,9 @@ text = text.replace(resolver, 'if(e!=="win32")return' + json.dumps(chroma))
 # uvx even for a local Chroma client. Keep its system-keychain merge behavior,
 # but supply Nix's CA bundle without executing Python/package managers.
 certificate_probe = (
-    '(0,mm.execSync)(\'uvx --with certifi python -c "import certifi; print(certifi.where())"\','
-    '{encoding:"utf8",stdio:["pipe","pipe","pipe"],timeout:1e4}).trim()'
+    rf'\(0,{ident}\.execSync\)\(\'uvx --with certifi python -c "import certifi; print\(certifi\.where\(\)\)"\','
+    r'\{encoding:"utf8",stdio:\["pipe","pipe","pipe"\],timeout:1e4\}\)\.trim\(\)'
 )
-assert text.count(certificate_probe) == 1, 'Recheck the Chroma certificate lookup patch'
-text = text.replace(certificate_probe, json.dumps(ca_bundle))
+text, count = re.subn(certificate_probe, lambda _: json.dumps(ca_bundle), text)
+assert count == 1, 'Recheck the Chroma certificate lookup patch'
 worker.write_text(text)

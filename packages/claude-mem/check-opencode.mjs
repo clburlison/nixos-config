@@ -27,7 +27,7 @@ const cleanup = await plugin.setup({
   session: { hook },
 });
 assert.deepEqual(registered, ['execute.after', 'prompt', 'context', 'compaction', 'tools']);
-assert.deepEqual(tools, ['claude_mem_search']);
+assert.deepEqual(tools, ['claude_mem_search', 'claude_mem_timeline', 'claude_mem_get_observations']);
 await cleanup();
 assert.deepEqual(disposed, registered);
 console.log('OpenCode V2 plugin setup/cleanup passed');

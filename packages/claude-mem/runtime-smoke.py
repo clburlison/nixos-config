@@ -102,7 +102,7 @@ with tempfile.TemporaryDirectory(prefix='claude-mem-smoke-', dir=os.environ.get(
             process.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
             process.stdin.flush()
             tools = request('tools/list', {})
-            assert {'mem_search', 'save_memory', 'smart_outline'} <= {
+            assert {'search', 'timeline', 'get_observations', 'save_memory', 'smart_outline'} <= {
                 t['name'] for t in tools['tools']
             }
             outline = tool('smart_outline', {'file_path': str(source)})

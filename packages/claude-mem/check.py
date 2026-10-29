@@ -14,7 +14,7 @@ plugin = root / 'share/claude-mem/plugin'
 hooks = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks']
 assert set(hooks) == {
     'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
-    'PostToolUseFailure', 'Stop', 'SessionEnd',
+    'PostToolUseFailure', 'Stop', 'SubagentStop', 'SessionEnd',
 }
 for groups in hooks.values():
     for group in groups:
@@ -25,8 +25,8 @@ assert len(hooks['SessionStart']) == 2
 mcp = json.loads((plugin / '.mcp.json').read_text())['mcpServers']['claude-mem']
 assert mcp['command'] == str(root / 'bin/claude-mem-mcp')
 codex = json.loads((plugin / 'hooks/codex-hooks.json').read_text())['hooks']
-assert len(codex) == 6
-assert codex['PostToolUse'][0]['hooks'][0]['timeout'] == 120
+assert len(codex) == 7
+assert codex['PostToolUse'][0]['hooks'][0]['timeout'] == 5
 assert 'CLAUDE_MEM_CODEX_HOOK' in (root / 'bin/claude-mem-codex-hook').read_text()
 assert (plugin / 'node_modules/zod/package.json').is_file()
 assert (plugin / 'node_modules/better-auth/package.json').is_file()

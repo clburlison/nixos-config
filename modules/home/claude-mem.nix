@@ -67,6 +67,8 @@ in
     CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT = "false";
     # Key projects by git remote slug so worktrees share the parent project.
     CLAUDE_MEM_PROJECT_NAME_SOURCE = "git-remote";
+    # Worker snapshots the SQLite store to ~/.claude-mem/backups (daily, keep 7).
+    CLAUDE_MEM_BACKUP_ENABLED = "true";
   };
 
   programs.claude-code = {

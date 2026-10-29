@@ -31,6 +31,20 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             update.merge({'a': '1'}, {'a': '2'})
 
+    def test_root_engines_win(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp)
+            (source / 'plugin').mkdir()
+            (source / 'package.json').write_text(json.dumps({
+                'version': '1.0.0', 'engines': {'node': '^20.19.0 || >=22.12.0'},
+            }))
+            (source / 'plugin/package.json').write_text(json.dumps({
+                'version': '1.0.0', 'engines': {'node': '>=20.12.0', 'bun': '>=1.1.31'},
+            }))
+            self.assertEqual(update.runtime_manifest(source, '1.0.0')['engines'], {
+                'node': '^20.19.0 || >=22.12.0', 'bun': '>=1.1.31',
+            })
+
     def test_combined_runtime_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp)

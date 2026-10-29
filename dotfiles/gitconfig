@@ -65,9 +65,24 @@
 		git remote update origin --prune; \
 		}; f"
 
+	# Delete local branches merged, rebase-merged, or squash-merged into origin/main.
+	# Never deletes main, the current branch, or branches checked out in a worktree.
 	dma = "!f() { \
-		git branch | grep -v "$(git symbolic-ref --short HEAD)" | xargs git branch -D && \
-		git remote update origin --prune; \
+		git fetch origin --prune || return 1; \
+		current=$(git symbolic-ref --short HEAD); \
+		git for-each-ref --format='%(if)%(worktreepath)%(then)%(else)%(refname:short)%(end)' refs/heads/ | \
+		while read -r b; do \
+			[ -z \"$b\" ] || [ \"$b\" = main ] || [ \"$b\" = \"$current\" ] && continue; \
+			if git merge-base --is-ancestor \"$b\" origin/main; then \
+				git branch -D \"$b\"; \
+			elif ! git cherry origin/main \"$b\" | grep -q '^+'; then \
+				git branch -D \"$b\"; \
+			else \
+				base=$(git merge-base origin/main \"$b\") && \
+				tmp=$(git commit-tree \"$b^{tree}\" -p \"$base\" -m _) && \
+				case $(git cherry origin/main \"$tmp\") in -*) git branch -D \"$b\";; esac; \
+			fi; \
+		done; \
 		}; f"
 
 	# Pull a PR locally

@@ -24,6 +24,7 @@
     "worktreeUnchanged": true
   },
   "worktreesDirectory": "~/dev/worktrees",
+  "enableProviderUpdateChecks": false,
   "defaultAutoPull": true,
   "defaultModelSelection": {
     "instanceId": "claudeAgent",
@@ -33,5 +34,15 @@
   "idleCompaction": "onReturn",
   "defaultThreadEnvMode": "local",
   "addProjectBaseDirectory": "~/dev",
-  "branchNamingMode": "semantic"
+  "branchNamingMode": "semantic",
+  "sourceControlWriterModelSelection": {
+    "instanceId": "claudeAgent",
+    "model": "claude-haiku-5-5",
+    "options": [
+      {
+        "id": "effort",
+        "value": "low"
+      }
+    ]
+  }
 }

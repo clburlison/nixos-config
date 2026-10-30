@@ -61,6 +61,7 @@ in
   imports = [
     ./modules/home/claude-mem.nix
     (import ./modules/home/herdr.nix { inherit inputs hostName; })
+    ./modules/home/agent-git.nix
     (builtins.fetchurl {
       url = "https://raw.githubusercontent.com/nix-community/home-manager/f53f3267f5d009dd8f99443505e609389d7ff267/modules/programs/uv.nix";
       sha256 = "sha256-rvf6gkV/jDiaxHaeXA25tpQ+2gw2VPQGsRwPjrYI0K4=";

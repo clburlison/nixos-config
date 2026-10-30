@@ -80,8 +80,11 @@ An authentication key can reach every repository your account can.
 - Name: `agents`
 - Vault: `Agents`, **read** only. Grant access when creating it; you may not be
   able to change vault access afterwards.
-- Copy the token. 1Password shows it once. Save it in your Private vault, not
-  `Agents`, so you can paste it on each machine.
+- Copy the token. 1Password shows it once. Save it as an API Credential in
+  your Private vault, not `Agents`. The current item is
+  `op://Private/ztezaqx7cdcf65dgxtawptugaq/credential` in the `my` account.
+  The reference only locates the item; reading it still requires your
+  1Password access.
 
 All machines share this one token.
 
@@ -99,12 +102,11 @@ Signed in to `op` (see "Before you start"), pipe the token from your Private
 vault:
 
 ```sh
-op read "op://Private/<token item>/credential" | agent-git-set-token
+op read --account my "op://Private/ztezaqx7cdcf65dgxtawptugaq/credential" | agent-git-set-token
 agent-git-check
 ```
 
-Use `/password` instead of `/credential` if you saved it as a Password item.
-With several 1Password accounts, add `--account <shorthand>` to `op read`.
+If you recreate the token item, update this reference and the one in step 3.
 Without a pipe, `agent-git-set-token` reads the clipboard.
 
 `agent-git-set-token` reads stdin (or the clipboard), checks the

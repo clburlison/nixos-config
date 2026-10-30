@@ -278,9 +278,29 @@ in
       enable = lib.attrNames (lib.filterAttrs (_: enabled: enabled) mattPocockSkills);
       enableAll = [
         # "notion"
-        "linear-cli"
         "cloudflare-security-audit"
       ];
+      # Inject an attribution rule right after the frontmatter so it takes priority.
+      explicit.linear-cli = {
+        from = "linear-cli";
+        path = "linear-cli";
+        transform =
+          { original, dependencies }:
+          let
+            sep = "\n---\n";
+            parts = lib.splitString sep original;
+            rule = ''
+
+              > **Required:** Every issue description, comment, or other text you post to Linear must begin with this callout, filled in with your agent name and model version (e.g. `Claude Opus 5.5`, `GPT 6.1 Terra`):
+
+              ```markdown
+              > [!NOTE]
+              > 🤖 **Posted by <Agent> on behalf of Clayton**
+              ```
+            '';
+          in
+          lib.head parts + sep + rule + lib.concatStringsSep sep (lib.tail parts) + dependencies;
+      };
     };
     targets = {
       agents.enable = true;

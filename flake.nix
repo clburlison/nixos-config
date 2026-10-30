@@ -117,6 +117,7 @@
               opencode-v2 = inputs.opencode-v2;
             };
             openusage = unstable.openusage;
+            t3 = final.callPackage ./packages/t3.nix { };
             tree-sitter = unstable.tree-sitter;
             uv = unstable.uv;
             worktrunk = unstable.worktrunk;

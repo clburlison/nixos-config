@@ -115,6 +115,7 @@ in
     pkgs.ripgrep-all
     pkgs.rustc
     pkgs.rustup
+    pkgs.t3
     pkgs.tree
     pkgs.tree-sitter
     pkgs.wget

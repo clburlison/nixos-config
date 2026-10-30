@@ -90,7 +90,6 @@ in
     # pkgs.terraform # this is a slow install with nix?
     pkgs.azure-cli
     pkgs.bun
-    pkgs.codeburn
     pkgs.curl
     pkgs.fzf
     pkgs.gh

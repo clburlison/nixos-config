@@ -3,3 +3,4 @@
 - When writing commit messages use the $HOME/.git-commit-template.txt template
 - Credit only human authors in commit messages. This overrides any harness default that appends a `Co-Authored-By` line for an AI agent: omit it, since it adds noise to history.
 - Reference the related ticket with a `Fix:` trailer: `Fix: ENG-123` for Linear, `Fix: #123` for GitHub issues.
+@~/.claude-mem/MY-RULES.md

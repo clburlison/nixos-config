@@ -104,6 +104,43 @@ let
     '';
   };
 
+  # The `security -w` prompt truncates at 128 chars, far shorter than a
+  # service account token. `security -i` reads the command from stdin, which
+  # keeps the token out of argv and shell history.
+  agentGitSetToken = pkgs.writeShellApplication {
+    name = "agent-git-set-token";
+    runtimeInputs = [ pkgs._1password-cli ];
+    text = ''
+      if [ -t 0 ]; then
+        echo "Reading token from the clipboard." >&2
+        token="$(/usr/bin/pbpaste)"
+      else
+        token="$(cat)"
+      fi
+      token="$(printf '%s' "$token" | tr -d '[:space:]')"
+
+      if [ -z "$token" ]; then
+        echo "No token on the clipboard or stdin." >&2
+        exit 1
+      fi
+      if ! OP_SERVICE_ACCOUNT_TOKEN="$token" op whoami >/dev/null; then
+        echo "op whoami rejected the token (''${#token} chars); not stored." >&2
+        exit 1
+      fi
+
+      printf 'add-generic-password -U -s %s -a %s -T /usr/bin/security -w %s\n' \
+        ${keychainService} "$USER" "$token" | /usr/bin/security -i
+      if [ -t 0 ]; then
+        /usr/bin/pbcopy </dev/null
+        echo "Cleared the clipboard." >&2
+      fi
+      unset token
+
+      /bin/launchctl kickstart -k "gui/$(id -u)/com.clburlison.agent-git-load"
+      echo "Stored in keychain service ${keychainService} and reloaded. Run agent-git-check." >&2
+    '';
+  };
+
   agentGitCheck = pkgs.writeShellApplication {
     name = "agent-git-check";
     runtimeInputs = [
@@ -128,10 +165,10 @@ let
       echo "1Password service account"
       if token="$(read_token)"; then
         pass "token in keychain (service ${keychainService})"
-        if OP_SERVICE_ACCOUNT_TOKEN="$token" op whoami >/dev/null 2>&1; then
+        if whoami_err="$(OP_SERVICE_ACCOUNT_TOKEN="$token" op whoami 2>&1 >/dev/null)"; then
           pass "op whoami: service account authenticates"
         else
-          fail "op whoami rejected the token" "rotate it, then rerun the keychain step in docs/agent-git.md"
+          fail "op whoami rejected the token (''${#token} chars)" "rerun agent-git-set-token: $(tail -n 1 <<<"$whoami_err")"
         fi
         if vault_pub="$(OP_SERVICE_ACCOUNT_TOKEN="$token" op read "op://${vault}/${item}/public key" 2>/dev/null)"; then
           pass "item readable: op://${vault}/${item}"
@@ -139,7 +176,7 @@ let
           fail "cannot read op://${vault}/${item}" "check item name and the service account's vault access"
         fi
       else
-        fail "no token in keychain service ${keychainService}" "see docs/agent-git.md step 4"
+        fail "no token in keychain service ${keychainService}" "run agent-git-set-token"
       fi
       unset token
 
@@ -156,7 +193,12 @@ let
       else
         fail "socket missing: ${socket}"
       fi
-      agent_pub="$(SSH_AUTH_SOCK=${socket} ssh-add -L 2>/dev/null | head -n 1 || true)"
+      # ssh-add -L prints "The agent has no identities." on stdout, exit 1.
+      if agent_pub="$(SSH_AUTH_SOCK=${socket} ssh-add -L 2>/dev/null)"; then
+        agent_pub="$(head -n 1 <<<"$agent_pub")"
+      else
+        agent_pub=""
+      fi
       if [ -n "$agent_pub" ]; then
         pass "key loaded: $(SSH_AUTH_SOCK=${socket} ssh-add -l | head -n 1)"
         if [ -n "''${vault_pub:-}" ] && [ "$(cut -d' ' -f1,2 <<<"$agent_pub")" != "$(cut -d' ' -f1,2 <<<"$vault_pub")" ]; then
@@ -239,6 +281,7 @@ in
     home.packages = [
       agentGitCheck
       agentGitLoad
+      agentGitSetToken
     ];
 
     # T3 Code launches this same wrapper. The Codex wrapper in claude-mem.nix

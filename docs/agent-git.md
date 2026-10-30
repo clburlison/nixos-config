@@ -25,6 +25,34 @@ How it works on each Mac:
 
 Darwin only. All machines share one key.
 
+## Before you start: sign in to `op`
+
+Setup reads the service account token from your Private vault with `op`. Sign
+in first in the terminal you'll use:
+
+```sh
+eval $(op signin)   # zsh/bash
+eval (op signin)    # fish
+```
+
+With 1Password's CLI integration this prompts for Touch ID and prints nothing.
+Otherwise it asks for your account password and exports a session for that
+shell only.
+
+If `op` acts as if 1Password isn't installed (it says to run `eval $(op
+signin)`, or `op read` reports "You are not currently signed in"), macOS is
+blocking your terminal from 1Password's data. `op --debug whoami` shows
+`settings.json: operation not permitted`. Either use the `eval` sign-in above,
+or grant the terminal access and restart it:
+
+```sh
+tccutil reset SystemPolicyAppData com.mitchellh.ghostty
+```
+
+Then run any `op` command and click **Allow** on "Ghostty would like to access
+data from other apps". The toggle is under System Settings > Privacy &
+Security.
+
 ## One-time setup
 
 ### 1. Vault and SSH key item
@@ -59,23 +87,30 @@ All machines share this one token.
 
 ## Per machine
 
-### 4. Token in the keychain
-
-As your user. The command prompts for the token so it stays out
-of shell history:
-
-```sh
-security add-generic-password -U -s op-agents-service-account -a "$USER" -T /usr/bin/security -w
-```
-
-`-T /usr/bin/security` lets the loader read it without a prompt.
-
-### 5. Apply and verify
+### 4. Apply
 
 ```sh
 task switch
+```
+
+### 5. Token in the keychain and verify
+
+Signed in to `op` (see "Before you start"), pipe the token from your Private
+vault:
+
+```sh
+op read "op://Private/<token item>/credential" | agent-git-set-token
 agent-git-check
 ```
+
+Use `/password` instead of `/credential` if you saved it as a Password item.
+With several 1Password accounts, add `--account <shorthand>` to `op read`.
+Without a pipe, `agent-git-set-token` reads the clipboard.
+
+`agent-git-set-token` reads stdin (or the clipboard), checks the
+token with `op whoami`, stores it, clears the clipboard, and reloads the key.
+Don't use `security add-generic-password -w` at its prompt: the prompt
+truncates input at 128 characters and service account tokens are longer.
 
 `agent-git-check` tests each link: keychain token, `op whoami`, item access,
 launchd jobs, socket, loaded key matches the item, a signed and verified test
@@ -110,7 +145,8 @@ still need approval.
   1 and 2, then on each machine run
   `SSH_AUTH_SOCK=~/.ssh/agent-git.sock ssh-add -D` and reload.
 - **Rotate token**: create a new token for the service account, update it in
-  your Private vault, rerun step 4 on every machine, then revoke the old one.
+  your Private vault, run `agent-git-set-token` on every machine, then revoke
+  the old one.
 - **Machine compromised**: rotate the token and the key. Every machine needs
   the new token.
 

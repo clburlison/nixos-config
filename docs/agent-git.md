@@ -1,9 +1,10 @@
 # Agent git signing while 1Password is locked
 
-Coding agents sign commits and push over SSH through 1Password's agent, which
-fails while the app is locked. `modules/home/agent-git.nix` gives agents a
-separate key that works locked. Your own shells keep the 1Password agent and
-personal key.
+Signing commits and pushing over SSH through 1Password's agent fails while the
+app is locked. `modules/home/agent-git.nix` adds a separate key that works
+locked and makes it the default for every session and app: shells, herdr
+remote sessions, Claude Code, Codex and T3 Code. 1Password and the personal
+key are the fallback.
 
 How it works on each Mac:
 
@@ -14,14 +15,15 @@ How it works on each Mac:
    the token, pipes it into that agent, and writes the public key to
    `~/.ssh/agent-git.pub`. The private key never touches disk. launchd reruns it
    every 5 minutes, which is a no-op once loaded.
-4. Nix wraps `claude` (which T3 Code also launches) and `codex` so their
-   shells get `SSH_AUTH_SOCK` and `GIT_CONFIG_*`. Git then signs through
-   `agent-git-sign` instead of `op-ssh-sign`. `dotfiles/ssh/config` skips the
-   1Password agent whenever `SSH_AUTH_SOCK` offers keys, so pushes use the
-   agent key too.
+4. `~/.config/git/agent-git`, included last from `dotfiles/gitconfig`, points
+   git at `agent-git-sign` and the agent public key. `dotfiles/ssh/config`
+   sends `github.com` to the agent socket when it holds a key. Both are config
+   files, not env vars, so they apply to any process regardless of the
+   environment it inherits.
 5. If the agent key isn't loaded, `agent-git-sign` falls back to `op-ssh-sign`
-   and your personal key, and SSH falls back to the 1Password agent. A machine
-   that isn't set up yet behaves as before.
+   and your personal key, and SSH to GitHub falls back to the 1Password agent.
+   SSH to other hosts is unchanged. A machine that isn't set up yet behaves as
+   before.
 
 Darwin only. All machines share one key.
 
@@ -116,28 +118,15 @@ truncates input at 128 characters and service account tokens are longer.
 
 `agent-git-check` tests each link: keychain token, `op whoami`, item access,
 launchd jobs, socket, loaded key matches the item, a signed and verified test
-commit, and SSH auth to GitHub. It exits non-zero on any failure. The "This
-shell" lines are informational; outside an agent session they report your
-personal setup.
+commit, SSH auth to GitHub, and that git and SSH resolve to the agent key. It
+exits non-zero on any failure.
 
 Run it with the screen locked (for example from an agent or over SSH) to prove
 the point of the setup.
 
-### 6. Restart agents
-
-Restart Claude Code, Codex, and T3 Code so they pick up the new wrappers. Run
-`agent-git-check` from inside an agent session; the "This shell" lines should
-pass.
-
-The environment lives in `agentEnv` in `modules/home/agent-git.nix`. Claude's
-wrapper sets it as process env. The Codex wrapper in
-`modules/home/claude-mem.nix` passes it as `shell_environment_policy.set`
-overrides, because Codex strips `*KEY*` variables such as `GIT_CONFIG_KEY_0`
-from inherited env. Neither touches `~/.claude/settings.json` or
-`~/.codex/config.toml`.
-
-Codex's sandbox may block the agent socket or network. Pushes from Codex can
-still need approval.
+No restart needed: git and SSH read the config on each call, including in
+already running apps. Codex's sandbox may still block the agent socket or
+network, so pushes from Codex can need approval.
 
 ## Operations
 
@@ -156,7 +145,7 @@ still need approval.
 
 - Needs a logged-in user session. After a reboot with FileVault, nothing loads
   until you log in.
-- Agents can sign and push without approval. That is the goal, but it also
-  means any process running as you on that machine can, too.
+- Anything can sign and push without approval. That is the goal, but it means
+  any process running as you on that machine can.
 - Without a token, the loader logs and exits 0, so machines not yet set up stay
   quiet.

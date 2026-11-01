@@ -5,8 +5,9 @@
   ...
 }:
 
-# Unattended git signing and SSH push for coding agents while 1Password is
-# locked. A 1Password service account reads one SSH key, shared by all
+# Git signing and GitHub SSH push with an agent key that works while 1Password
+# is locked. Every session uses it; 1Password and the personal key are the
+# fallback when it isn't loaded. A 1Password service account reads one SSH key, shared by all
 # machines, from the Agents vault and loads it into a dedicated ssh-agent. See
 # docs/agent-git.md.
 let
@@ -18,23 +19,7 @@ let
   keychainService = "op-agents-service-account";
   logFile = "${home}/Library/Logs/agent-git.log";
 
-  # Claude Code and Codex get these to sign and push with the agent key. Your
-  # interactive shells keep the 1Password agent and personal key.
-  agentEnv = {
-    SSH_AUTH_SOCK = socket;
-    GIT_CONFIG_COUNT = "3";
-    GIT_CONFIG_KEY_0 = "gpg.format";
-    GIT_CONFIG_VALUE_0 = "ssh";
-    GIT_CONFIG_KEY_1 = "gpg.ssh.program";
-    GIT_CONFIG_VALUE_1 = "${agentGitSign}/bin/agent-git-sign";
-    GIT_CONFIG_KEY_2 = "user.signingkey";
-    GIT_CONFIG_VALUE_2 = publicKeyFile;
-  };
-  exportAgentEnv = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (k: v: "export ${k}=${lib.escapeShellArg v}") agentEnv
-  );
-
-  # git's gpg.ssh.program for agents. Signs with the agent key when loaded.
+  # git's gpg.ssh.program. Signs with the agent key when loaded.
   # Otherwise falls back to 1Password and the personal key from ~/.gitconfig,
   # so machines without the agent key keep today's behavior.
   agentGitSign = pkgs.writeShellApplication {
@@ -46,7 +31,7 @@ let
     text = ''
       if [ "''${1:-}" != "-Y" ] || [ "''${2:-}" != "sign" ] \
         || SSH_AUTH_SOCK=${socket} ssh-add -L >/dev/null 2>&1; then
-        exec /usr/bin/ssh-keygen "$@"
+        SSH_AUTH_SOCK=${socket} exec /usr/bin/ssh-keygen "$@"
       fi
 
       personal="$(mktemp)"
@@ -152,9 +137,6 @@ let
     ];
     text = ''
       ${readToken}
-      # Captured before the signing test exports the agent env.
-      caller_sock="''${SSH_AUTH_SOCK:-}"
-      caller_signingkey="$(git config --get user.signingkey || true)"
       failures=0
       pass() { printf '  \033[32mok\033[0m   %s\n' "$1"; }
       fail() { printf '  \033[31mFAIL\033[0m %s\n' "$1"; [ -n "''${2:-}" ] && printf '       %s\n' "$2"; failures=$((failures + 1)); }
@@ -218,9 +200,7 @@ let
         tmp="$(mktemp -d)"
         trap 'rm -rf "$tmp"' EXIT
         printf 'agent@localhost %s\n' "$agent_pub" > "$tmp/allowed_signers"
-        # Same environment agent sessions get.
         if (
-          ${exportAgentEnv}
           cd "$tmp"
           git init -q repo && cd repo
           git -c user.name=agent-git -c user.email=agent@localhost \
@@ -247,16 +227,18 @@ let
         info "skipped: no key loaded"
       fi
 
-      echo "This shell"
-      if [ "$caller_sock" = ${socket} ]; then
-        pass "SSH_AUTH_SOCK points at agent-git"
-      else
-        info "SSH_AUTH_SOCK is not agent-git (expected outside agent sessions)"
-      fi
-      if [ "$caller_signingkey" = ${publicKeyFile} ]; then
+      echo "Config"
+      if [ "$(git config --get user.signingkey || true)" = ${publicKeyFile} ]; then
         pass "git signs with agent-git"
       else
-        info "git signs with your personal key (expected outside agent sessions)"
+        fail "git does not sign with agent-git" "check ~/.config/git/agent-git is included from ~/.gitconfig"
+      fi
+      if [ -n "$agent_pub" ]; then
+        if ssh -G github.com | grep -qx "identityagent ${socket}"; then
+          pass "ssh to github.com uses agent-git"
+        else
+          fail "ssh to github.com does not use agent-git" "check dotfiles/ssh/config"
+        fi
       fi
 
       if [ "$failures" -eq 0 ]; then
@@ -269,35 +251,18 @@ let
   };
 in
 {
-  options.agentGit.env = lib.mkOption {
-    type = lib.types.attrsOf lib.types.str;
-    default = { };
-    description = "Environment agent wrappers set to sign and push with the agent key.";
-  };
-
   config = lib.mkIf pkgs.stdenv.isDarwin {
-    agentGit.env = agentEnv;
-
     home.packages = [
       agentGitCheck
       agentGitLoad
       agentGitSetToken
     ];
 
-    # T3 Code launches this same wrapper. The Codex wrapper in claude-mem.nix
-    # reads agentGit.env.
-    programs.claude-code.package = pkgs.symlinkJoin {
-      name = "claude-code-agent-git";
-      paths = [ pkgs.claude-code ];
-      nativeBuildInputs = [ pkgs.makeWrapper ];
-      postBuild = ''
-        rm $out/bin/claude
-        makeWrapper ${pkgs.claude-code}/bin/claude $out/bin/claude \
-          ${lib.concatStringsSep " " (
-            lib.mapAttrsToList (k: v: "--set ${k} ${lib.escapeShellArg v}") agentEnv
-          )}
-      '';
-      inherit (pkgs.claude-code) meta version;
+    # Included last from dotfiles/gitconfig, so it overrides the 1Password
+    # signer there. agent-git-sign falls back to it.
+    xdg.configFile."git/agent-git".text = lib.generators.toGitINI {
+      user.signingkey = publicKeyFile;
+      gpg.ssh.program = "${agentGitSign}/bin/agent-git-sign";
     };
 
     launchd.agents.agent-git-ssh-agent = {

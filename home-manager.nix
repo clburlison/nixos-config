@@ -199,10 +199,6 @@ in
       source = mkLink "${dotfiles}/t3code/keybindings.json";
       force = true;
     };
-    ".t3/userdata/settings.json" = {
-      source = mkLink "${dotfiles}/t3code/settings.json";
-      force = true;
-    };
   };
 
   home.activation.authorizeSshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

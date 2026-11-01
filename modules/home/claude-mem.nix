@@ -39,13 +39,6 @@ let
       esac
     done
   '';
-  # Use `set`, not process env: Codex drops *KEY* vars like GIT_CONFIG_KEY_0
-  # from shells by default. See modules/home/agent-git.nix.
-  codexAgentGitArgs = lib.concatStringsSep " " (
-    lib.mapAttrsToList (
-      k: v: "-c ${lib.escapeShellArg "shell_environment_policy.set.${k}=${builtins.toJSON v}"}"
-    ) config.agentGit.env
-  );
   memorySkills = [
     "mem-search"
     "smart-explore"
@@ -61,7 +54,6 @@ in
         -c 'tui.keymap.composer.submit=["enter"]' \
         -c 'tui.keymap.editor.insert_newline=["shift-enter"]' \
         -c 'mcp_servers.claude-mem.default_tools_approval_mode="approve"' \
-        ${codexAgentGitArgs} \
         "$@"
     '')
   ];

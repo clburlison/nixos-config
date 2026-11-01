@@ -281,7 +281,7 @@ in
         # "notion"
         "cloudflare-security-audit"
       ];
-      # Inject an attribution rule right after the frontmatter so it takes priority.
+      # Inject attribution and relationship rules right after the frontmatter so they take priority.
       explicit.linear-cli = {
         from = "linear-cli";
         path = "linear-cli";
@@ -298,6 +298,8 @@ in
               > [!NOTE]
               > 🤖 **Posted by <Agent> on behalf of Clayton**
               ```
+
+              > **Required:** Set parent, sub-issue, blocking, and related issues only through Linear's native fields (`--parent`, `linear issue relation add`), and keep descriptions about the work itself. Linear shows these relationships in the issue sidebar, so a description section listing them (e.g. "Prerequisites", "Blocked by", "Sub-issues") is noise.
             '';
           in
           lib.head parts + sep + rule + lib.concatStringsSep sep (lib.tail parts) + dependencies;

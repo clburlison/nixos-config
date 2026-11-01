@@ -26,7 +26,7 @@ let
     "code-review" = true;
     "codebase-design" = false;
     "diagnosing-bugs" = false;
-    "domain-modeling" = false;
+    "domain-modeling" = true;
     "grill-with-docs" = true;
     "implement" = true;
     "implement-spec" = true;

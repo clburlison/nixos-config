@@ -29,30 +29,29 @@ name:
   system,
   platform,
   user,
-  machine ? name,
   wsl ? false,
 }:
 
 let
-  nixpkgs = inputs.nixpkgs;
+  inherit (inputs.nixpkgs) lib;
   nixpkgsSettings = import ./nixpkgs.nix { inherit inputs; };
-  darwin = platform == "darwin";
+  isDarwin = platform == "darwin";
 
-  # True if this is a WSL system.
-  isWSL = wsl;
-
-  # The config files for this system.
-  machineConfig = ../machines/${machine}.nix;
-  userOSConfig = ../${if darwin then "darwin" else "nixos"}.nix;
-  userHMConfig = ../home-manager.nix;
+  hostSystem = ../hosts/${name}/system.nix;
+  hostHome = ../hosts/${name}/home.nix;
 
   # NixOS vs nix-darwin functions
-  systemFunc = if darwin then inputs.darwin.lib.darwinSystem else nixpkgs.lib.nixosSystem;
+  systemFunc = if isDarwin then inputs.darwin.lib.darwinSystem else inputs.nixpkgs.lib.nixosSystem;
   home-manager =
-    if darwin then inputs.home-manager.darwinModules else inputs.home-manager.nixosModules;
+    if isDarwin then inputs.home-manager.darwinModules else inputs.home-manager.nixosModules;
+
+  hostIdentity = {
+    clb.host = { inherit name user; };
+  };
 in
-systemFunc rec {
+systemFunc {
   inherit system;
+  specialArgs = { inherit inputs; };
 
   modules = [
     # Apply our overlays. Overlays are keyed by system type so we have
@@ -64,39 +63,33 @@ systemFunc rec {
     }
 
     ./host-option.nix
-    { clb.host = { inherit name user; }; }
-
-    # Bring in WSL if this is a WSL build
-    (if isWSL then inputs.nixos-wsl.nixosModules.wsl else { })
-
-    # nix-darwin's homebrew module manages packages, but nix-homebrew
-    # installs and owns Homebrew itself.
-    (if darwin then inputs.nix-homebrew.darwinModules.nix-homebrew else { })
-
-    machineConfig
-    userOSConfig
+    hostIdentity
+  ]
+  ++ (
+    if isDarwin then
+      [ ../roles/darwin.nix ]
+    else if wsl then
+      [
+        inputs.nixos-wsl.nixosModules.wsl
+        ../machines/wsl.nix
+        { _module.args.currentSystemUser = user; }
+      ]
+    else
+      [ ]
+  )
+  ++ lib.optional (builtins.pathExists hostSystem) hostSystem
+  ++ [
     home-manager.home-manager
     {
       home-manager.useGlobalPkgs = true;
       home-manager.useUserPackages = true;
       home-manager.extraSpecialArgs = { inherit inputs; };
-      home-manager.users.${user} = import userHMConfig {
-        isWSL = isWSL;
-        inputs = inputs;
-        hostName = name;
-      };
-    }
-
-    # We expose some extra arguments so that our modules can parameterize
-    # better based on these values.
-    {
-      config._module.args = {
-        currentSystem = system;
-        currentSystemName = name;
-        currentSystemUser = user;
-        isWSL = isWSL;
-        inputs = inputs;
-      };
+      home-manager.users.${user}.imports = [
+        ./host-option.nix
+        hostIdentity
+        ../modules/common
+      ]
+      ++ lib.optional (builtins.pathExists hostHome) hostHome;
     }
   ];
 }

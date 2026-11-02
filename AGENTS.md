@@ -13,12 +13,15 @@
 
 - **Formatting**: Use 2 spaces for indentation in both Nix and Lua files.
 - **Lua**: Prefer single quotes (`'`) and avoid call parentheses where possible.
-- **Nix**: Follow `flake.nix` patterns; use `mkSystem` wrapper for new hosts.
-- **Structure**:
-  - `machines/`: Host-specific configurations.
+- **Nix**: Follow `flake.nix` patterns; add new hosts to the host table in `flake.nix`.
+- **Structure** (terms defined in `CONTEXT.md`):
+  - `lib/`: Builders (`mksystem.nix`) and shared data (`nixpkgs.nix`, `host-option.nix`, `ssh-keys.nix`).
+  - `modules/common/`: Home Manager configuration shared by every host; branches only on `pkgs.stdenv`.
+  - `modules/darwin/`: Darwin platform aggregator.
+  - `roles/`: Roles; import platform aggregators only.
+  - `hosts/<name>/`: Host override files (`system.nix`, `home.nix`).
   - `dotfiles/`: User-space application configs (Neovim, Fish, etc.).
-  - `lib/`: Shared Nix functions.
-- **Changes**: When adding packages, check `overlays` in `flake.nix` first. Use `unstable` only if necessary.
+- **Changes**: When adding packages, check `overlays` in `lib/nixpkgs.nix` first. Use `unstable` only if necessary. No module compares host names; put host-specific settings in a host override file.
 
 ## Agent skills
 

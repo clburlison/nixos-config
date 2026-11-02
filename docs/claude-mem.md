@@ -1,6 +1,6 @@
 # Shared AI-agent memory
 
-`modules/home/claude-mem.nix` enables claude-mem **15.6.0** for Claude Code,
+`modules/common/programs/claude-mem.nix` enables claude-mem **15.6.0** for Claude Code,
 Codex, and OpenCode V2. `packages/claude-mem.nix` packages the published npm
 bundles and a packaging-maintained runtime dependency lock. Nothing invokes the
 upstream installer during Home Manager activation.

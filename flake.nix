@@ -131,8 +131,6 @@
         wsl = true;
       };
 
-      darwinConfigurations = lib.mapAttrs (
-        name: host: mkSystem name (host // { machine = "darwin-default"; })
-      ) (hostsFor "darwin");
+      darwinConfigurations = lib.mapAttrs mkSystem (hostsFor "darwin");
     };
 }

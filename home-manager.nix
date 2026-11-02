@@ -204,7 +204,7 @@ in
   home.activation.authorizeSshKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     sshDir="${config.home.homeDirectory}/.ssh"
     authorizedKeys="$sshDir/authorized_keys"
-    key='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC187yAHL5GQ2BzAFFA9b0otVM3asoW0JFg8CPR1m5tU'
+    key=${lib.escapeShellArg (lib.head (import ./lib/ssh-keys.nix))}
 
     ${pkgs.coreutils}/bin/install -d -m 700 "$sshDir"
     if [ ! -e "$authorizedKeys" ]; then

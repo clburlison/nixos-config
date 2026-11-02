@@ -20,30 +20,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # https://github.com/mitchellh/nixos-config
-# This function creates a NixOS system based on our VM setup for a
-# particular architecture.
-{
-  overlays,
-  nixpkgs,
-  inputs,
-}:
+# This function creates a nix-darwin or NixOS system for one Host table
+# entry.
+{ inputs }:
 
 name:
 {
   system,
+  platform,
   user,
-  hostName ? name,
-  nixConfigUser ? "clburlison",
-  darwin ? false,
+  machine ? name,
   wsl ? false,
 }:
 
 let
+  nixpkgs = inputs.nixpkgs;
+  nixpkgsSettings = import ./nixpkgs.nix { inherit inputs; };
+  darwin = platform == "darwin";
+
   # True if this is a WSL system.
   isWSL = wsl;
 
   # The config files for this system.
-  machineConfig = ../machines/${name}.nix;
+  machineConfig = ../machines/${machine}.nix;
   userOSConfig = ../${if darwin then "darwin" else "nixos"}.nix;
   userHMConfig = ../home-manager.nix;
 
@@ -59,10 +58,13 @@ systemFunc rec {
     # Apply our overlays. Overlays are keyed by system type so we have
     # to go through and apply our system type. We do this first so
     # the overlays are available globally.
-    { nixpkgs.overlays = overlays; }
+    {
+      nixpkgs.overlays = nixpkgsSettings.overlays;
+      nixpkgs.config = nixpkgsSettings.config;
+    }
 
-    # Allow unfree packages.
-    { nixpkgs.config.allowUnfree = true; }
+    ./host-option.nix
+    { clb.host = { inherit name user; }; }
 
     # Bring in WSL if this is a WSL build
     (if isWSL then inputs.nixos-wsl.nixosModules.wsl else { })
@@ -81,7 +83,7 @@ systemFunc rec {
       home-manager.users.${user} = import userHMConfig {
         isWSL = isWSL;
         inputs = inputs;
-        hostName = hostName;
+        hostName = name;
       };
     }
 

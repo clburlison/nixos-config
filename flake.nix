@@ -88,56 +88,30 @@
       ...
     }@inputs:
     let
+      inherit (nixpkgs) lib;
 
-      # Overlays for the packages in which we want the latest version
-      overlays = [
-        (
-          final: prev:
-          let
-            system = prev.stdenv.hostPlatform.system;
-            unstable = import inputs.nixpkgs-unstable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          in
-          {
-            bun = unstable.bun;
-            claude-code = unstable.claude-code;
-            claude-mem = final.callPackage ./packages/claude-mem.nix { };
-            herdr-agent-icons = final.callPackage ./packages/herdr-agent-icons.nix { };
-            codex = unstable.codex;
-            gemini-cli = unstable.gemini-cli;
-            herdr = unstable.herdr;
-            lazygit = unstable.lazygit;
-            nerd-fonts = unstable.nerd-fonts;
-            linear-cli = final.callPackage ./packages/linear-cli.nix { };
-            ntn = final.callPackage ./packages/ntn.nix { };
-            opencode = final.callPackage ./packages/opencode.nix {
-              opencode-v2 = inputs.opencode-v2;
-            };
-            openusage = unstable.openusage;
-            t3 = final.callPackage ./packages/t3.nix { };
-            tree-sitter = unstable.tree-sitter;
-            uv = unstable.uv;
-            worktrunk = unstable.worktrunk;
-            zellij = unstable.zellij;
-            zoxide = unstable.zoxide;
-          }
-        )
-      ];
-
-      mkSystem = import ./lib/mksystem.nix {
-        inherit overlays nixpkgs inputs;
+      # Host table: the canonical source of host identity.
+      hosts = {
+        vm-clayton-mac = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
+        clb-work = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
+        clb-mini = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
       };
 
-      mkDarwin =
-        hostName:
-        mkSystem "darwin-default" {
-          inherit hostName;
-          system = "aarch64-darwin";
-          user = "clburlison";
-          darwin = true;
-        };
+      hostsFor = platform: lib.filterAttrs (_: host: host.platform == platform) hosts;
+
+      mkSystem = import ./lib/mksystem.nix { inherit inputs; };
     in
     {
       # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
@@ -152,14 +126,13 @@
 
       nixosConfigurations."wsl" = mkSystem "wsl" {
         system = "x86_64-linux";
+        platform = "nixos";
         user = "clburlison";
         wsl = true;
       };
 
-      darwinConfigurations = nixpkgs.lib.genAttrs [
-        "vm-clayton-mac"
-        "clb-work"
-        "clb-mini"
-      ] mkDarwin;
+      darwinConfigurations = lib.mapAttrs (
+        name: host: mkSystem name (host // { machine = "darwin-default"; })
+      ) (hostsFor "darwin");
     };
 }

@@ -30,8 +30,8 @@ in
     ];
   };
 
-  # Wheel sudo asks for the user's password. Set it once during install
-  # (see hosts/srv-devbox/README.md); it is not stored in this repo.
+  # Wheel sudo asks for the user's password. It is not stored in this repo;
+  # set it once with `passwd` when installing a host.
   users.users.${user} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];

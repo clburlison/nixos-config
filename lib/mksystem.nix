@@ -50,9 +50,8 @@ systemFunc {
   specialArgs = { inherit inputs; };
 
   modules = [
-    # Apply our overlays. Overlays are keyed by system type so we have
-    # to go through and apply our system type. We do this first so
-    # the overlays are available globally.
+    # Overlays and nixpkgs config from lib/nixpkgs.nix, shared with
+    # mkhome.nix.
     {
       nixpkgs.overlays = nixpkgsSettings.overlays;
       nixpkgs.config = nixpkgsSettings.config;
@@ -61,8 +60,6 @@ systemFunc {
     ./host-option.nix
     hostIdentity
   ]
-  # Darwin hosts take a role; NixOS hosts import the platform aggregator
-  # directly until a NixOS role exists.
-  ++ [ (if isDarwin then ../roles/darwin.nix else ../modules/nixos) ]
+  ++ [ ../roles/${platform}.nix ]
   ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

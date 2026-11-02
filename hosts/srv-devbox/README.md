@@ -1,6 +1,6 @@
 # srv-devbox
 
-Headless NixOS dev box: a Proxmox VM, x86_64, reached over SSH. Defined by
+Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. Defined by
 the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
 aggregator (`modules/nixos/`), and the host override files in this
 directory.
@@ -37,10 +37,10 @@ mount /dev/disk/by-label/nixos /mnt
 mount --mkdir -o umask=077 /dev/disk/by-label/boot /mnt/boot
 ```
 
-## 3. Generate and commit the hardware file
+## 3. Generate and push the hardware file (required)
 
-`hardware-configuration.nix` in this directory is a placeholder. Replace it
-with the generated file:
+`hardware-configuration.nix` in this directory is a placeholder. Generate the
+real one:
 
 ```sh
 nix-shell -p git
@@ -51,8 +51,19 @@ nixos-generate-config --root /mnt --show-hardware-config \
 git add hosts/srv-devbox/hardware-configuration.nix
 ```
 
-Commit and push it (from here or by copying the file to a Mac) so the repo
-matches the installed machine.
+Commit and push it **before installing**. Step 5 clones from GitHub, so
+every later `task system` uses the placeholder otherwise. The installer
+has no GitHub credentials, so copy the file to a Mac and push from there.
+On the installer, run `passwd` so root can accept SSH, then on the Mac:
+
+```sh
+cd ~/dev/me/nixos-config
+scp root@<installer-ip>:/tmp/nixos-config/hosts/srv-devbox/hardware-configuration.nix \
+  hosts/srv-devbox/
+git add hosts/srv-devbox/hardware-configuration.nix
+git commit -m "feat(srv-devbox): Add hardware configuration"
+git push
+```
 
 ## 4. Install
 
@@ -80,6 +91,13 @@ git clone https://github.com/clburlison/nixos-config ~/dev/me/nixos-config
 cd ~/dev/me/nixos-config
 ```
 
+Check that the clone has the generated hardware file, not the placeholder:
+
+```sh
+! grep -q 'TEMPORARY PLACEHOLDER' hosts/srv-devbox/hardware-configuration.nix \
+  || echo 'Push the generated hardware file first (step 3)'
+```
+
 ## 6. Bootstrap Home Manager
 
 The first run installs `home-manager` into `~/.nix-profile`:
@@ -97,3 +115,9 @@ After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 - If the Determinate module fails on `nixos-26.05`, drop
   `determinate.nixosModules.default` from `modules/nixos/default.nix` and keep
   the stock `nix.settings`.
+- `homeConfigurations."clburlison@srv-devbox".activationPackage` can't be
+  evaluated from a Mac without an `x86_64-linux` builder. `agent-skills-nix`
+  reads each transformed `SKILL.md` (our `linear-cli` skill) from a
+  derivation built for the target system, which is import from derivation.
+  `config.home-files` and the rest of the config evaluate fine. On the host
+  itself, `task test-home` and `task home` evaluate and build normally.

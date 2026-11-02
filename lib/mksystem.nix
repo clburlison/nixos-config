@@ -60,6 +60,8 @@ systemFunc {
     ./host-option.nix
     hostIdentity
   ]
-  ++ [ ../roles/${platform}.nix ]
+  # Platform aggregator for the host's platform (modules/darwin or
+  # modules/nixos), then the optional host override file.
+  ++ [ ../modules/${platform} ]
   ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

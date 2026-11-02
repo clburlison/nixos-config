@@ -3,12 +3,11 @@
 {
   _class = "darwin";
 
-  # nix-darwin's homebrew module manages packages, but nix-homebrew
-  # installs and owns Homebrew itself.
+  # Installs and owns Homebrew itself. Casks and Mac App Store apps are
+  # installed by Home Manager (modules/common/programs/homebrew.nix) so
+  # they apply with `task home`, no sudo.
   imports = [ inputs.nix-homebrew.darwinModules.nix-homebrew ];
 
-  # Install Homebrew itself. nix-darwin's `homebrew` module below only
-  # manages packages in an existing Homebrew installation.
   nix-homebrew = {
     enable = true;
     user = config.clb.host.user;
@@ -20,49 +19,5 @@
     # Keep taps writable so normal Homebrew casks work without pinning the
     # homebrew-core and homebrew-cask repositories as separate flake inputs.
     mutableTaps = true;
-  };
-
-  homebrew = {
-    enable = true;
-
-    # Avoid changing unrelated packages on every system rebuild. Declared
-    # packages are still installed when missing.
-    onActivation = {
-      autoUpdate = false;
-      cleanup = "none";
-      upgrade = false;
-    };
-
-    casks = [
-      "1password"
-      "claude"
-      "discord"
-      "firefox"
-      "ghostty"
-      "google-chrome"
-      "hiddenbar"
-      "karabiner-elements"
-      "linear"
-      "loom"
-      "notion"
-      "openusage"
-      "orbstack"
-      "raycast"
-      "slack"
-      "spotify"
-      "suspicious-package"
-      "tableplus"
-      "t3-code"
-      "tailscale-app"
-      "tower"
-      "utm"
-      "zed"
-      "zen"
-      "zoom"
-    ];
-
-    masApps = {
-      Amphetamine = 937984704;
-    };
   };
 }

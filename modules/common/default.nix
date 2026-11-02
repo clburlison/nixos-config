@@ -29,6 +29,7 @@ in
     ./programs/herdr.nix
     ./programs/agent-git.nix
     ./programs/agent-skills.nix
+    ./programs/homebrew.nix
   ];
 
   # The state version is required and should stay at the version you

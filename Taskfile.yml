@@ -138,12 +138,6 @@ tasks:
       - nix-store --optimise
       - sudo nix-collect-garbage -d
 
-  wsl:
-    desc: Build a WSL installer for Windows
-    internal: true
-    cmds:
-      - nix build ".#nixosConfigurations.wsl.config.system.build.installer"
-
   rename-mac:
     desc: Rename macOS computer names (HostName, ComputerName, LocalHostName)
     platforms: [darwin]

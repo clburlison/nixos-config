@@ -16,10 +16,6 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
-    # Build a custom WSL installer
-    nixos-wsl.url = "github:nix-community/NixOS-WSL";
-    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
-
     # https://github.com/nix-community/home-manager/branches/all?query=release
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -115,22 +111,7 @@
       mkHome = import ./lib/mkhome.nix { inherit inputs; };
     in
     {
-      # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
-      #   system = "aarch64-linux";
-      #   user   = "clburlison";
-      # };
-
-      # nixosConfigurations."vm-intel" = mkSystem "vm-intel" rec {
-      #   system = "x86_64-linux";
-      #   user   = "clburlison";
-      # };
-
-      nixosConfigurations."wsl" = mkSystem "wsl" {
-        system = "x86_64-linux";
-        platform = "nixos";
-        user = "clburlison";
-        wsl = true;
-      };
+      nixosConfigurations = lib.mapAttrs mkSystem (hostsFor "nixos");
 
       darwinConfigurations = lib.mapAttrs mkSystem (hostsFor "darwin");
 

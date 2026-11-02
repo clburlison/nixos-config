@@ -96,14 +96,6 @@ Change shell to `fish`
 </p>
 </details>
 
-<details><summary>Installation Windows Subsystem for Linux (WSL)</summary>
-<p>
-
-Coming soon...
-
-</p>
-</details>
-
 </p>
 </details>
 

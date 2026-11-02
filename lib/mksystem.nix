@@ -29,7 +29,6 @@ name:
   system,
   platform,
   user,
-  wsl ? false,
 }:
 
 let
@@ -62,17 +61,6 @@ systemFunc {
     ./host-option.nix
     hostIdentity
   ]
-  ++ (
-    if isDarwin then
-      [ ../roles/darwin.nix ]
-    else if wsl then
-      [
-        inputs.nixos-wsl.nixosModules.wsl
-        ../machines/wsl.nix
-        { _module.args.currentSystemUser = user; }
-      ]
-    else
-      [ ]
-  )
+  ++ lib.optional isDarwin ../roles/darwin.nix
   ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

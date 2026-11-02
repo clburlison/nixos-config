@@ -17,7 +17,7 @@
 - **Structure** (terms defined in `CONTEXT.md`):
   - `lib/`: Builders (`mksystem.nix`, `mkhome.nix`) and shared data (`nixpkgs.nix`, `host-option.nix`, `ssh-keys.nix`).
   - `modules/common/`: Home Manager configuration shared by every host; branches only on `pkgs.stdenv`.
-  - `modules/darwin/`: Darwin platform aggregator.
+  - `modules/darwin/`, `modules/nixos/`: Platform aggregators.
   - `roles/`: Roles; import platform aggregators only.
   - `hosts/<name>/`: Host override files (`system.nix`, `home.nix`).
   - `dotfiles/`: User-space application configs (Neovim, Fish, etc.).

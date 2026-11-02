@@ -20,6 +20,9 @@
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    # Determinate Nix on NixOS hosts. No nixpkgs follows, per Determinate.
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
+
     darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -101,6 +104,11 @@
         clb-mini = {
           system = "aarch64-darwin";
           platform = "darwin";
+          user = "clburlison";
+        };
+        srv-devbox = {
+          system = "x86_64-linux";
+          platform = "nixos";
           user = "clburlison";
         };
       };

@@ -61,6 +61,8 @@ systemFunc {
     ./host-option.nix
     hostIdentity
   ]
-  ++ lib.optional isDarwin ../roles/darwin.nix
+  # Darwin hosts take a role; NixOS hosts import the platform aggregator
+  # directly until a NixOS role exists.
+  ++ [ (if isDarwin then ../roles/darwin.nix else ../modules/nixos) ]
   ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

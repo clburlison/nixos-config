@@ -112,6 +112,7 @@
       hostsFor = platform: lib.filterAttrs (_: host: host.platform == platform) hosts;
 
       mkSystem = import ./lib/mksystem.nix { inherit inputs; };
+      mkHome = import ./lib/mkhome.nix { inherit inputs; };
     in
     {
       # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
@@ -132,5 +133,9 @@
       };
 
       darwinConfigurations = lib.mapAttrs mkSystem (hostsFor "darwin");
+
+      homeConfigurations = lib.mapAttrs' (
+        name: host: lib.nameValuePair "${host.user}@${name}" (mkHome name host)
+      ) hosts;
     };
 }

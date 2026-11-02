@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -14,8 +13,7 @@
 
   # Determinate Nix includes this file from /etc/nix/nix.conf. nix-darwin's
   # nix.settings are inactive because nix.enable is false above.
-  # Runs first in postActivation, before Home Manager activation.
-  system.activationScripts.postActivation.text = lib.mkBefore (
+  system.activationScripts.postActivation.text =
     let
       nixCustomConf = pkgs.writeText "nix.custom.conf" ''
         trusted-users = root ${config.clb.host.user}
@@ -31,6 +29,5 @@
         install -m 0644 ${nixCustomConf} /etc/nix/nix.custom.conf
         launchctl kickstart -k system/systems.determinate.nix-daemon
       fi
-    ''
-  );
+    '';
 }

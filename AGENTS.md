@@ -2,8 +2,8 @@
 
 ## Build & Test
 
-- **Apply Config**: `task switch` (builds and switches system config)
-- **Verify/Test**: `task test` (builds and runs `darwin-rebuild check` or `nixos-rebuild test`)
+- **Apply Config**: `task switch` (`task system` with sudo, then `task home` for standalone Home Manager)
+- **Verify/Test**: `task test` (`task test-system` runs `darwin-rebuild check` or `nixos-rebuild test`; `task test-home` runs `home-manager build`)
 - **Agent Verification**: Do not run full system builds or apply/test commands such as `task switch` or `task test`; they can be slow and require interactive `sudo` authentication. Incremental Nix builds for individual packages and hash generation are allowed. Run `nixfmt` for modified Nix files.
 - **Linting**:
   - Lua: `stylua` (config in `dotfiles/config/nvim/.stylua.toml`)
@@ -15,7 +15,7 @@
 - **Lua**: Prefer single quotes (`'`) and avoid call parentheses where possible.
 - **Nix**: Follow `flake.nix` patterns; add new hosts to the host table in `flake.nix`.
 - **Structure** (terms defined in `CONTEXT.md`):
-  - `lib/`: Builders (`mksystem.nix`) and shared data (`nixpkgs.nix`, `host-option.nix`, `ssh-keys.nix`).
+  - `lib/`: Builders (`mksystem.nix`, `mkhome.nix`) and shared data (`nixpkgs.nix`, `host-option.nix`, `ssh-keys.nix`).
   - `modules/common/`: Home Manager configuration shared by every host; branches only on `pkgs.stdenv`.
   - `modules/darwin/`: Darwin platform aggregator.
   - `roles/`: Roles; import platform aggregators only.

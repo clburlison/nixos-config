@@ -21,7 +21,7 @@
 # SOFTWARE.
 # https://github.com/mitchellh/nixos-config
 # This function creates a nix-darwin or NixOS system for one Host table
-# entry.
+# entry. Home Manager is standalone; see mkhome.nix.
 { inputs }:
 
 name:
@@ -38,12 +38,9 @@ let
   isDarwin = platform == "darwin";
 
   hostSystem = ../hosts/${name}/system.nix;
-  hostHome = ../hosts/${name}/home.nix;
 
   # NixOS vs nix-darwin functions
   systemFunc = if isDarwin then inputs.darwin.lib.darwinSystem else inputs.nixpkgs.lib.nixosSystem;
-  home-manager =
-    if isDarwin then inputs.home-manager.darwinModules else inputs.home-manager.nixosModules;
 
   hostIdentity = {
     clb.host = { inherit name user; };
@@ -77,19 +74,5 @@ systemFunc {
     else
       [ ]
   )
-  ++ lib.optional (builtins.pathExists hostSystem) hostSystem
-  ++ [
-    home-manager.home-manager
-    {
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.extraSpecialArgs = { inherit inputs; };
-      home-manager.users.${user}.imports = [
-        ./host-option.nix
-        hostIdentity
-        ../modules/common
-      ]
-      ++ lib.optional (builtins.pathExists hostHome) hostHome;
-    }
-  ];
+  ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

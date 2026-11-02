@@ -43,11 +43,15 @@ My nix and dotfile configurations.
    ./task rename-mac
    ```
 
-7. Run nix switch to configure the system
+7. Configure the system, then bootstrap Home Manager
 
    ```sh
-   ./task switch
+   ./task system
+   nix run home-manager/release-26.05 -- switch --flake ".#$USER@$(hostname)"
    ```
+
+   The first Home Manager run installs `home-manager` into `~/.nix-profile`.
+   After that, `task switch` applies both.
 
 8. Cleanup
 
@@ -59,6 +63,17 @@ My nix and dotfile configurations.
    ```
 
 Future runs can use the global install of `task`.
+
+| Task | What it does |
+| --- | --- |
+| `task home` | `home-manager switch` for `$USER@$NIXNAME`, no sudo |
+| `task system` | `darwin-rebuild switch` / `nixos-rebuild switch` (sudo) |
+| `task switch` | `system`, then `home` |
+| `task test-home` | `home-manager build`, no activation |
+| `task test-system` | `darwin-rebuild check` / `nixos-rebuild test` (sudo) |
+| `task test` | `test-system`, then `test-home` |
+
+`NIXNAME` defaults to `hostname`.
 
 <details><summary>Extra</summary>
 <p>

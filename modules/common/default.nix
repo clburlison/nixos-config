@@ -223,6 +223,8 @@ in
   programs.mise = {
     enable = true;
     enableFishIntegration = true;
+    # Repos here load tools through direnv (`use flake`); keep mise out of the way
+    globalConfig.settings.ignored_config_paths = [ "${config.home.homeDirectory}/dev/worktrees" ];
   };
 
   # Make cursor not tiny on HiDPI screens

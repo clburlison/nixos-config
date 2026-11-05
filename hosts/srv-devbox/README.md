@@ -158,6 +158,21 @@ In the Tailscale admin console, open the machine and choose **Disable key
 expiry**, or it drops off the tailnet when the key expires (180 days by
 default).
 
+## 9. T3 Code server
+
+The `t3-serve` user service (`home.nix`) runs `t3 serve` on loopback and
+publishes it over HTTPS on the tailnet with Tailscale Serve. Lingering starts
+it at boot. It needs step 8 done and HTTPS certificates enabled for the
+tailnet (admin console > DNS > HTTPS Certificates).
+
+After `task system` and `task home`:
+
+```sh
+systemctl --user status t3-serve
+journalctl --user -u t3-serve    # Serve URL and pairing details
+t3 pair                          # pairing token and QR code for a client
+```
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it

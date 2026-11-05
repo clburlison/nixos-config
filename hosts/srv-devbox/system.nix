@@ -19,6 +19,9 @@
   services.tailscale = {
     enable = true;
     openFirewall = true;
+    # Lets the host user run `tailscale serve` without sudo, for t3-serve
+    # in home.nix.
+    extraSetFlags = [ "--operator=${config.clb.host.user}" ];
   };
 
   # agent-git (docs/agent-git.md): the 1Password service account token,

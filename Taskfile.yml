@@ -105,7 +105,7 @@ tasks:
       - 'git commit -S -m "chore(nix): Update deps"'
 
   update:
-    desc: "Update flake inputs and commit the lock. Names as args (task update -- clb-skills), or pick with fzf"
+    desc: "Update flake inputs (commits the lock) or run packages:update-* tasks. Names as args (task update -- clb-skills packages:update-t3), or pick with fzf"
     aliases: [update-input]
     interactive: true
     preconditions:
@@ -116,8 +116,12 @@ tasks:
         if [ -n "{{.CLI_ARGS}}" ]; then
           set -- {{.CLI_ARGS}}
         else
-          inputs=$(jq -r '.nodes[.root].inputs | keys[]' flake.lock)
-          if selected=$(printf '%s\n' "$inputs" | fzf --multi --prompt='Update input> ' --header='Tab: select multiple | Enter: update | Esc: cancel'); then
+          # Flake inputs, then the package updaters, which commit on their own.
+          choices=$(
+            jq -r '.nodes[.root].inputs | keys[]' flake.lock
+            task --list --json | jq -r '.tasks[].name | select(startswith("packages:update-"))'
+          )
+          if selected=$(printf '%s\n' "$choices" | fzf --multi --prompt='Update> ' --header='Tab: select multiple | Enter: update | Esc: cancel'); then
             [ -n "$selected" ] || exit 0
             set --
             while IFS= read -r input; do
@@ -133,6 +137,17 @@ tasks:
             esac
           fi
         fi
+
+        inputs=""
+        for name in "$@"; do
+          case "$name" in
+            packages:update-*) task "$name" ;;
+            *) inputs="$inputs $name" ;;
+          esac
+        done
+        [ -n "$inputs" ] || exit 0
+        set -- $inputs
+
         nix flake update "$@"
         git add flake.lock
         if git diff --cached --quiet -- flake.lock; then

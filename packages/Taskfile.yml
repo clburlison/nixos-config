@@ -3,14 +3,26 @@ version: "3"
 
 tasks:
   update-claude-mem:
-    desc: Update claude-mem bundles, runtime lock, and hashes (latest or specified version)
+    desc: Update claude-mem bundles, runtime lock, and hashes (latest or specified version), then commit
     env:
       CLAUDE_MEM_UPDATE_ARGS: "{{.CLI_ARGS}}"
     cmds:
       - python3 claude-mem/update.py
+      # A --dry-run leaves the files unchanged, so nothing is committed.
+      - |
+        set -eu
+
+        FILES="claude-mem.nix claude-mem/package.json claude-mem/package-lock.json"
+        VERSION="$(sed -n 's/^  version = "\(.*\)";$/\1/p' claude-mem.nix)"
+        git add -- $FILES
+        if git diff --cached --quiet -- $FILES; then
+          printf 'claude-mem already at %s; nothing to commit.\n' "$VERSION"
+        else
+          git commit -S -m "chore(claude-mem): Update to $VERSION" -- $FILES
+        fi
 
   update-opencode:
-    desc: Update OpenCode to the latest v2 release or a specified version
+    desc: Update OpenCode to the latest v2 release or a specified version, then commit
     cmds:
       - |
         set -eu
@@ -42,10 +54,16 @@ tasks:
         mv "$TMP_DIR/flake.nix" "$FLAKE"
         nix flake update --flake .. opencode-v2
         nixfmt "$FLAKE"
+        git add -- "$FLAKE" ../flake.lock
+        if git diff --cached --quiet -- "$FLAKE" ../flake.lock; then
+          printf 'OpenCode already at v%s; nothing to commit.\n' "$VERSION"
+        else
+          git commit -S -m "chore(opencode): Update to v$VERSION" -- "$FLAKE" ../flake.lock
+        fi
         printf 'Updated OpenCode to v%s. Run task test to verify the configuration.\n' "$VERSION"
 
   update-linear-cli:
-    desc: Update Linear CLI to the latest npm release or a specified version
+    desc: Update Linear CLI to the latest npm release or a specified version, then commit
     cmds:
       - |
         set -eu
@@ -106,10 +124,16 @@ tasks:
         chmod 644 "$UPDATED"
         mv "$UPDATED" "$PACKAGE"
         nixfmt "$PACKAGE"
+        git add -- "$PACKAGE"
+        if git diff --cached --quiet -- "$PACKAGE"; then
+          printf 'Linear CLI already at %s; nothing to commit.\n' "$VERSION"
+        else
+          git commit -S -m "chore(linear-cli): Update to $VERSION" -- "$PACKAGE"
+        fi
         printf 'Updated Linear CLI to %s. Run task test to verify the configuration.\n' "$VERSION"
 
   update-ntn:
-    desc: Update ntn to the latest release or a specified version
+    desc: Update ntn to the latest release or a specified version, then commit
     cmds:
       - |
         set -eu
@@ -170,10 +194,16 @@ tasks:
         chmod 644 "$UPDATED"
         mv "$UPDATED" "$PACKAGE"
         nixfmt "$PACKAGE"
+        git add -- "$PACKAGE"
+        if git diff --cached --quiet -- "$PACKAGE"; then
+          printf 'ntn already at %s; nothing to commit.\n' "$VERSION"
+        else
+          git commit -S -m "chore(ntn): Update to $VERSION" -- "$PACKAGE"
+        fi
         printf 'Updated ntn to %s. Run task test to verify the configuration.\n' "$VERSION"
 
   update-t3:
-    desc: Update the T3 Code CLI to the latest npm release or a specified version
+    desc: Update the T3 Code CLI to the latest npm release or a specified version, then commit
     cmds:
       - |
         set -eu
@@ -233,4 +263,10 @@ tasks:
         chmod 644 "$UPDATED"
         mv "$UPDATED" "$PACKAGE"
         nixfmt "$PACKAGE"
+        git add -- "$PACKAGE"
+        if git diff --cached --quiet -- "$PACKAGE"; then
+          printf 'T3 Code CLI already at %s; nothing to commit.\n' "$VERSION"
+        else
+          git commit -S -m "chore(t3): Update to $VERSION" -- "$PACKAGE"
+        fi
         printf 'Updated T3 Code CLI to %s. Run task test to verify the configuration.\n' "$VERSION"

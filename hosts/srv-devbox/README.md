@@ -22,9 +22,11 @@ Attach the Determinate NixOS installer ISO (from
 
 ## 2. Partition and mount
 
-From the installer console, as root. Replace `/dev/sda` with the VM disk.
+From the installer console. It logs in as `nixos`, so become root first;
+steps 2 through 4 all run as root. Replace `/dev/sda` with the VM disk.
 
 ```sh
+sudo -i
 parted /dev/sda -- mklabel gpt
 parted /dev/sda -- mkpart ESP fat32 1MiB 1GiB
 parted /dev/sda -- set 1 esp on
@@ -36,6 +38,9 @@ mkfs.ext4 -L nixos /dev/sda2
 mount /dev/disk/by-label/nixos /mnt
 mount --mkdir -o umask=077 /dev/disk/by-label/boot /mnt/boot
 ```
+
+`parted` prints "You may need to update /etc/fstab" after each change.
+Ignore it. Step 3 records the mounts in `hardware-configuration.nix`.
 
 ## 3. Generate and push the hardware file (required)
 

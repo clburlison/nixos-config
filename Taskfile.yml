@@ -98,14 +98,15 @@ tasks:
       - curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 
   update-all:
-    desc: Update external flakes
+    desc: Update every flake input and commit the lock
     cmds:
       - nix flake update
       - git add flake.lock
       - 'git commit -S -m "chore(nix): Update deps"'
 
-  update-input:
-    desc: "Update flake inputs and commit the lock. Names as args (task update-input -- clb-skills), or pick with fzf"
+  update:
+    desc: "Update flake inputs and commit the lock. Names as args (task update -- clb-skills), or pick with fzf"
+    aliases: [update-input]
     interactive: true
     preconditions:
       - sh: command -v jq && command -v nix && { [ -n "{{.CLI_ARGS}}" ] || command -v fzf; }
@@ -143,7 +144,7 @@ tasks:
   skills:
     desc: "Ship pushed clb-skills commits: update the lock, commit, push, then task home"
     cmds:
-      - task: update-input
+      - task: update
         vars: { CLI_ARGS: clb-skills }
       - git push
       - task: home

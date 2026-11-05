@@ -1,9 +1,8 @@
-{ inputs, hostName }:
-
 {
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -12,10 +11,12 @@ let
   herdrAutomaticRename = pkgs.applyPatches {
     name = "herdr-automatic-rename";
     src = inputs.herdr-automatic-rename;
-    patches = [ ../../patches/herdr-automatic-rename-dash-index.patch ];
+    patches = [ ../../../patches/herdr-automatic-rename-dash-index.patch ];
   };
 in
 {
+  _class = "homeManager";
+
   imports = [ inputs.herdr-nix.homeModules.default ];
 
   home.packages = [ pkgs.herdr-agent-icons ];
@@ -81,15 +82,11 @@ in
         cp ${binary} $out/bin/herdr-bar
         chmod +x $out/bin/herdr-bar
       '';
-    plugins.layouts.source = ../../plugins/herdr-layouts;
+    plugins.layouts.source = ../../../plugins/herdr-layouts;
     plugins.smart-splits.source = inputs.smart-splits-nvim;
     plugins.worktrunk.source = inputs.herdr-worktrunk;
-    machines = lib.optionalAttrs (hostName != "clb-mini") {
-      clb-mini = {
-        id = "9197ad236dbec9f5a454ec297ab15b4c";
-        target = "clb-mini";
-      };
-    };
+    # Managed catalog; host override files add machines.
+    machines = { };
     settings = {
       ui.prompt_new_tab_name = false;
       ui.sidebar_start_collapsed = true;

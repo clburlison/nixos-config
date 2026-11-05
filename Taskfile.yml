@@ -12,47 +12,69 @@ vars:
 
 tasks:
   switch:
-    desc: Run nix to configure the local system
+    desc: Apply the system config (sudo), then the Home Manager config
     aliases: [run]
     cmds:
-      - task: switch-darwin
-      - task: switch-nixos
+      - task: system
+      - task: home
+
+  system:
+    desc: Apply the system config (sudo)
+    cmds:
+      - task: system-darwin
+      - task: system-nixos
     status:
       - "false"
 
-  switch-darwin:
+  system-darwin:
     internal: true
     platforms: [darwin]
     cmds:
       - nix build --extra-experimental-features nix-command --extra-experimental-features flakes ".#darwinConfigurations.{{.NIXNAME}}.system"
       - sudo ./result/sw/bin/darwin-rebuild switch --flake "$(pwd)#{{.NIXNAME}}"
 
-  switch-nixos:
+  system-nixos:
     internal: true
     platforms: [linux]
     cmds:
       - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild switch --flake ".#{{.NIXNAME}}"
 
-  test:
-    desc: Build and test nix
+  home:
+    desc: Apply the Home Manager config (no sudo)
     cmds:
-      - task: test-darwin
-      - task: test-nixos
+      - home-manager switch --flake ".#$USER@{{.NIXNAME}}"
+
+  test:
+    desc: Build and test the system config (sudo), then the Home Manager config
+    cmds:
+      - task: test-system
+      - task: test-home
+
+  test-system:
+    desc: Build and test the system config (sudo)
+    cmds:
+      - task: test-system-darwin
+      - task: test-system-nixos
     status:
       - "false"
 
-  test-darwin:
+  test-system-darwin:
     internal: true
     platforms: [darwin]
     cmds:
       - nix build --extra-experimental-features nix-command --extra-experimental-features flakes ".#darwinConfigurations.{{.NIXNAME}}.system"
       - sudo ./result/sw/bin/darwin-rebuild check --flake "$(pwd)#{{.NIXNAME}}"
 
-  test-nixos:
+  test-system-nixos:
     internal: true
     platforms: [linux]
     cmds:
       - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild test --flake ".#{{.NIXNAME}}"
+
+  test-home:
+    desc: Build the Home Manager config without activating it (no sudo)
+    cmds:
+      - home-manager build --flake ".#$USER@{{.NIXNAME}}"
 
   install:
     desc: Initial install of nix
@@ -115,12 +137,6 @@ tasks:
     cmds:
       - nix-store --optimise
       - sudo nix-collect-garbage -d
-
-  wsl:
-    desc: Build a WSL installer for Windows
-    internal: true
-    cmds:
-      - nix build ".#nixosConfigurations.wsl.config.system.build.installer"
 
   rename-mac:
     desc: Rename macOS computer names (HostName, ComputerName, LocalHostName)

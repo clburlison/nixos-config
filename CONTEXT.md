@@ -20,10 +20,6 @@ _Avoid_: Machine list, host registry
 The entry point for everything every host of one platform (Darwin or NixOS) gets.
 _Avoid_: Baseline, base module, platform defaults
 
-**Role**:
-A thin layer between a host and its platform aggregator, grouping configuration shared by some but not all hosts of a platform.
-_Avoid_: Profile, preset
-
 **Host override file**:
 An optional per-host file holding only facts and choices specific to that one host.
 _Avoid_: Host config, machine config

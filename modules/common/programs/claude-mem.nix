@@ -45,6 +45,8 @@ let
   ];
 in
 {
+  _class = "homeManager";
+
   home.packages = [
     claudeMem
     # Keep config.toml, hooks.json, project trusts, and login state writable.
@@ -89,7 +91,7 @@ in
         [
           "${claudeMem}/bin/claude-mem-mcp"
         ]
-        (builtins.readFile ../../dotfiles/config/opencode/opencode.jsonc);
+        (builtins.readFile ../../../dotfiles/config/opencode/opencode.jsonc);
   }
   // lib.listToAttrs (
     lib.concatMap (name: [

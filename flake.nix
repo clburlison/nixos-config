@@ -16,13 +16,12 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 
-    # Build a custom WSL installer
-    nixos-wsl.url = "github:nix-community/NixOS-WSL";
-    nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
-
     # https://github.com/nix-community/home-manager/branches/all?query=release
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    # Determinate Nix on NixOS hosts. No nixpkgs follows, per Determinate.
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
 
     darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -88,78 +87,44 @@
       ...
     }@inputs:
     let
+      inherit (nixpkgs) lib;
 
-      # Overlays for the packages in which we want the latest version
-      overlays = [
-        (
-          final: prev:
-          let
-            system = prev.stdenv.hostPlatform.system;
-            unstable = import inputs.nixpkgs-unstable {
-              inherit system;
-              config.allowUnfree = true;
-            };
-          in
-          {
-            bun = unstable.bun;
-            claude-code = unstable.claude-code;
-            claude-mem = final.callPackage ./packages/claude-mem.nix { };
-            herdr-agent-icons = final.callPackage ./packages/herdr-agent-icons.nix { };
-            codex = unstable.codex;
-            gemini-cli = unstable.gemini-cli;
-            herdr = unstable.herdr;
-            lazygit = unstable.lazygit;
-            nerd-fonts = unstable.nerd-fonts;
-            linear-cli = final.callPackage ./packages/linear-cli.nix { };
-            ntn = final.callPackage ./packages/ntn.nix { };
-            opencode = final.callPackage ./packages/opencode.nix {
-              opencode-v2 = inputs.opencode-v2;
-            };
-            openusage = unstable.openusage;
-            t3 = final.callPackage ./packages/t3.nix { };
-            tree-sitter = unstable.tree-sitter;
-            uv = unstable.uv;
-            worktrunk = unstable.worktrunk;
-            zellij = unstable.zellij;
-            zoxide = unstable.zoxide;
-          }
-        )
-      ];
-
-      mkSystem = import ./lib/mksystem.nix {
-        inherit overlays nixpkgs inputs;
+      # Host table: the canonical source of host identity.
+      hosts = {
+        vm-clayton-mac = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
+        clb-work = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
+        clb-mini = {
+          system = "aarch64-darwin";
+          platform = "darwin";
+          user = "clburlison";
+        };
+        srv-devbox = {
+          system = "x86_64-linux";
+          platform = "nixos";
+          user = "clburlison";
+        };
       };
 
-      mkDarwin =
-        hostName:
-        mkSystem "darwin-default" {
-          inherit hostName;
-          system = "aarch64-darwin";
-          user = "clburlison";
-          darwin = true;
-        };
+      hostsFor = platform: lib.filterAttrs (_: host: host.platform == platform) hosts;
+
+      mkSystem = import ./lib/mksystem.nix { inherit inputs; };
+      mkHome = import ./lib/mkhome.nix { inherit inputs; };
     in
     {
-      # nixosConfigurations."vm-aarch64" = mkSystem "vm-aarch64" {
-      #   system = "aarch64-linux";
-      #   user   = "clburlison";
-      # };
+      nixosConfigurations = lib.mapAttrs mkSystem (hostsFor "nixos");
 
-      # nixosConfigurations."vm-intel" = mkSystem "vm-intel" rec {
-      #   system = "x86_64-linux";
-      #   user   = "clburlison";
-      # };
+      darwinConfigurations = lib.mapAttrs mkSystem (hostsFor "darwin");
 
-      nixosConfigurations."wsl" = mkSystem "wsl" {
-        system = "x86_64-linux";
-        user = "clburlison";
-        wsl = true;
-      };
-
-      darwinConfigurations = nixpkgs.lib.genAttrs [
-        "vm-clayton-mac"
-        "clb-work"
-        "clb-mini"
-      ] mkDarwin;
+      homeConfigurations = lib.mapAttrs' (
+        name: host: lib.nameValuePair "${host.user}@${name}" (mkHome name host)
+      ) hosts;
     };
 }

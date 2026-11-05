@@ -24,6 +24,9 @@
     extraSetFlags = [ "--operator=${config.clb.host.user}" ];
   };
 
+  # Direct access to t3-serve (home.nix) from the LAN and the tailnet.
+  networking.firewall.allowedTCPPorts = [ 3773 ];
+
   # agent-git (docs/agent-git.md): the 1Password service account token,
   # encrypted to this host's SSH host key (.sops.yaml). Lingering starts
   # the user's agent-git services at boot, before anyone logs in.

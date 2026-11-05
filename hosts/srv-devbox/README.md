@@ -160,17 +160,22 @@ default).
 
 ## 9. T3 Code server
 
-The `t3-serve` user service (`home.nix`) runs `t3 serve` on loopback and
-publishes it over HTTPS on the tailnet with Tailscale Serve. Lingering starts
-it at boot. It needs step 8 done and HTTPS certificates enabled for the
-tailnet (admin console > DNS > HTTPS Certificates).
+The `t3-serve` user service (`home.nix`) runs `t3 serve` on port 3773 on
+all interfaces and also publishes it over HTTPS on the tailnet with
+Tailscale Serve. Lingering starts it at boot. Serve needs step 8 done and
+HTTPS certificates enabled for the tailnet (admin console > DNS > HTTPS
+Certificates).
+
+- Direct: `http://srv-devbox:3773` from the LAN or the tailnet (plain HTTP).
+- Tailnet HTTPS: the `https://srv-devbox.<tailnet>.ts.net` URL.
 
 After `task system` and `task home`:
 
 ```sh
 systemctl --user status t3-serve
-journalctl --user -u t3-serve    # Serve URL and pairing details
-t3 pair                          # pairing token and QR code for a client
+journalctl --user -u t3-serve
+t3 pair --tailscale   # pairing link through the tailnet HTTPS URL
+t3 pair               # direct; swap the printed host for srv-devbox:3773
 ```
 
 ## Notes

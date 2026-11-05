@@ -4,14 +4,14 @@
 {
   _class = "homeManager";
 
-  # T3 Code server, reachable over HTTPS on the tailnet through Tailscale
-  # Serve. Lingering (system.nix) starts it at boot; the host user is a
-  # Tailscale operator so it can configure Serve. Pair a client with
-  # `t3 pair`. See README step 9.
+  # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
+  # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
+  # (system.nix) starts it at boot; the host user is a Tailscale operator so
+  # it can configure Serve. system.nix opens the port. See README step 9.
   systemd.user.services.t3-serve = {
     Unit.Description = "T3 Code server on the tailnet";
     Service = {
-      ExecStart = "${pkgs.t3}/bin/t3 serve --host 127.0.0.1 --tailscale-serve --no-browser %h/dev";
+      ExecStart = "${pkgs.t3}/bin/t3 serve --host 0.0.0.0 --port 3773 --tailscale-serve --no-browser %h/dev";
       # User services get a bare PATH; agents need git, claude, codex and
       # the rest of the user's tools.
       Environment = [

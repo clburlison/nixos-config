@@ -98,7 +98,7 @@ in
 
               > **Required:** Set parent, sub-issue, blocking, and related issues only through Linear's native fields (`--parent`, `linear issue relation add`), and keep descriptions about the work itself. Linear shows these relationships in the issue sidebar, so a description section listing them (e.g. "Prerequisites", "Blocked by", "Sub-issues") is noise.
 
-              > **Required:** Before opening a bug issue, offer to search for existing ones: `linear issue query --all-teams --search "<key terms>"`. Results include completed and canceled issues. Report duplicates (comment there instead of filing), closed fixes the bug regresses (link with `linear issue relation add`), and past decisions that bear on it.
+              > **Required:** Before opening a bug issue, offer to search for existing ones: `linear issue query --all-teams --search "<key terms>"`. Results include completed and canceled issues. Report duplicates (comment there instead of filing), closed fixes the bug regresses (link with `linear issue relation add`), and past decisions relevant to the bug.
 
               **Create a label inside a label group.** `linear label create` has no parent flag. Look up the group's ID, then create the label with `linear api`:
 

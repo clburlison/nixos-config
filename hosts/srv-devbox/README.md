@@ -94,12 +94,23 @@ Detach the ISO and reboot.
 
 ## 5. SSH in and clone
 
-Password SSH is off; log in with the key from `lib/ssh-keys.nix`:
+Password SSH is off; log in with the key from `lib/ssh-keys.nix`.
+
+Step 6 fetches the private `clb-skills` input over SSH, so forward the
+agent-git agent from the Mac (`docs/agent-git.md`). Plain `ssh -A`
+forwards the empty launchd agent instead:
 
 ```sh
-ssh clburlison@srv-devbox
+ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@srv-devbox
+ssh-add -l   # lists the agent-git key
+```
+
+Git comes from Home Manager, so steps 5 and 6 borrow it with
+`nix shell nixpkgs#git -c`:
+
+```sh
 mkdir -p ~/dev/me
-git clone https://github.com/clburlison/nixos-config ~/dev/me/nixos-config
+nix shell nixpkgs#git -c git clone https://github.com/clburlison/nixos-config ~/dev/me/nixos-config
 cd ~/dev/me/nixos-config
 ```
 
@@ -112,10 +123,14 @@ Check that the clone has the generated hardware file, not the placeholder:
 
 ## 6. Bootstrap Home Manager
 
-The first run installs `home-manager` into `~/.nix-profile`:
+The first run installs `home-manager` into `~/.nix-profile`. Git must be
+on `PATH`: without it, Nix fetches `clb-skills` with its built-in git
+library, which can't use the forwarded agent and fails with
+"authentication required but no callback set".
 
 ```sh
-nix run home-manager/release-26.05 -- switch --flake .#clburlison@srv-devbox
+nix shell nixpkgs#git -c nix run home-manager/release-26.05 -- \
+  switch --flake .#clburlison@srv-devbox
 ```
 
 After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.

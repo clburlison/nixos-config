@@ -1,4 +1,4 @@
-console_title_template = '{{ .Shell }} in {{ .Folder }}'
+console_title_template = '{{ .HostName }}: {{ .Shell }} in {{ .Folder }}'
 version = 3
 final_space = true
 
@@ -22,6 +22,14 @@ final_space = true
   [[blocks.segments]]
     template = "{{ if eq .Env.FISH__BIND_MODE \"default\" }}<red>[N]</>{{ else if eq .Env.FISH__BIND_MODE \"insert\" }}<green>[I]</>{{ else if eq .Env.FISH__BIND_MODE \"replace_one\" }}<green>[R]</>{{ else if eq .Env.FISH__BIND_MODE \"visual\"}}<brmagenta>[V]</>{{ else }}<red>[?]</>{{ end }}"
     type = "text"
+
+  # Hostname, to tell machines apart over SSH.
+  [[blocks.segments]]
+    template = ' {{ .HostName }} '
+    foreground = 'yellow'
+    background = 'transparent'
+    type = 'session'
+    style = 'plain'
 
   [[blocks.segments]]
     template = '{{ .Path }}'

@@ -33,6 +33,14 @@
   system.defaults.CustomUserPreferences."com.apple.finder".DesktopViewSettings.GroupBy = "Kind"; # Use Stacks on the desktop
   system.defaults.ActivityMonitor.ShowCategory = 100; # Show all processes
 
+  # Standalone Tailscale (tailscale-app cask) updates itself with Sparkle.
+  # The Homebrew cask is auto_updates, so `brew bundle --no-upgrade` leaves
+  # updates to the app.
+  system.defaults.CustomUserPreferences."io.tailscale.ipn.macsys" = {
+    SUEnableAutomaticChecks = true;
+    SUAutomaticallyUpdate = true;
+  };
+
   system.defaults.dock = {
     autohide = true;
     orientation = "left";

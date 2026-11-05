@@ -39,6 +39,7 @@
   system.defaults.CustomUserPreferences."io.tailscale.ipn.macsys" = {
     SUEnableAutomaticChecks = true;
     SUAutomaticallyUpdate = true;
+    HideDockIcon = true;
   };
 
   system.defaults.dock = {

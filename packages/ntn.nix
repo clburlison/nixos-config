@@ -9,19 +9,19 @@ let
   sources = {
     aarch64-darwin = {
       target = "aarch64-apple-darwin";
-      hash = "sha256-sL+DvlpRi4TdvQs3JOmiabOoDSATPk974UM+4TuLUzA=";
+      hash = "sha256-l1XK+f6qqiYrANqE2U0FcaHn3VVMjFMZLAw5454MZkM=";
     };
     x86_64-darwin = {
       target = "x86_64-apple-darwin";
-      hash = "sha256-Qwif6bWj5QsNG1g7XhEDz8j+9rWFhY6b6Xc6FD0PM5I=";
+      hash = "sha256-Ed6euf0o4El9sNBenDWMQ8z8PZCVk65WV10yi7gPVHE=";
     };
     aarch64-linux = {
       target = "aarch64-unknown-linux-musl";
-      hash = "sha256-xpXV49iQeCUwKCYxMR4iYBCe05BZ70bzfS8g4AcMk+0=";
+      hash = "sha256-xcsq26txS7wNzIOkAhb74xzXQt+X+Ry3KUrRUx91KTE=";
     };
     x86_64-linux = {
       target = "x86_64-unknown-linux-musl";
-      hash = "sha256-i6nqY5gdgiZUKGB98bXAjFQa/sQPfRVqKsf6vNBtTOA=";
+      hash = "sha256-y73AMRe3hsMeHJJE+I1TWL7y+QkW/s2cLgYDre8C+2Q=";
     };
   };
   source =
@@ -30,7 +30,7 @@ let
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "ntn";
-  version = "0.23.19";
+  version = "0.23.28";
 
   src = fetchurl {
     url = "https://ntn.dev/releases/v${finalAttrs.version}/ntn-${source.target}.tar.gz";

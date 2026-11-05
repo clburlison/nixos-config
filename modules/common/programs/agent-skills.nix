@@ -97,6 +97,14 @@ in
               ```
 
               > **Required:** Set parent, sub-issue, blocking, and related issues only through Linear's native fields (`--parent`, `linear issue relation add`), and keep descriptions about the work itself. Linear shows these relationships in the issue sidebar, so a description section listing them (e.g. "Prerequisites", "Blocked by", "Sub-issues") is noise.
+
+              **Create a label inside a label group.** `linear label create` has no parent flag. Look up the group's ID, then create the label with `linear api`:
+
+              ```bash
+              linear api '{ issueLabels(first: 50, filter: {isGroup: {eq: true}}) { nodes { id name } } }'
+              linear api --variable parent=<group-id> --variable name=<label> \
+                'mutation($parent: String!, $name: String!) { issueLabelCreate(input: {name: $name, parentId: $parent}) { success issueLabel { id name } } }'
+              ```
             '';
           in
           lib.head parts + sep + rule + lib.concatStringsSep sep (lib.tail parts) + dependencies;

@@ -1,0 +1,4 @@
+# Keys trusted to sign commits, for `git log --show-signature` / `%G?`.
+# Personal key (1Password) and the agent-git key (see docs/agent-git.md).
+* namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC187yAHL5GQ2BzAFFA9b0otVM3asoW0JFg8CPR1m5tU
+* namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMCs6wkUcX8LT+8BmsjB5Pp5xPxSo9C58dKjhlchn8vY

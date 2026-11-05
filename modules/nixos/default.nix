@@ -12,7 +12,10 @@ in
 {
   _class = "nixos";
 
-  imports = [ inputs.determinate.nixosModules.default ];
+  imports = [
+    inputs.determinate.nixosModules.default
+    inputs.sops-nix.nixosModules.sops
+  ];
 
   networking.hostName = config.clb.host.name;
 

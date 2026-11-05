@@ -23,6 +23,12 @@
     # Determinate Nix on NixOS hosts. No nixpkgs follows, per Determinate.
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
 
+    # NixOS secrets, encrypted to each host's SSH host key (.sops.yaml).
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-26.05";
     darwin.inputs.nixpkgs.follows = "nixpkgs";
 

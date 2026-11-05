@@ -565,7 +565,8 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "notion-skills": "notion-skills",
         "opencode-v2": "opencode-v2",
-        "smart-splits-nvim": "smart-splits-nvim"
+        "smart-splits-nvim": "smart-splits-nvim",
+        "sops-nix": "sops-nix"
       }
     },
     "smart-splits-nvim": {
@@ -581,6 +582,26 @@
       "original": {
         "owner": "smart-splits-nvim",
         "repo": "smart-splits.nvim",
+        "type": "github"
+      }
+    },
+    "sops-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793657466,
+        "narHash": "sha256-GoOvpdsjO5hqZuO6T6ok9u6sJEjO0iPli2zRr9oNUNw=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "b18e01ce148eb3efff5de2f2d3181ca53b2b2a54",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
         "type": "github"
       }
     },

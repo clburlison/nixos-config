@@ -231,6 +231,6 @@
 # [url "git@github.com:"]
 # 	insteadOf = https://github.com/
 
-# Agent signing key on Darwin (modules/home/agent-git.nix). Must stay last.
+# Agent signing key (modules/common/programs/agent-git.nix). Must stay last.
 [include]
 	path = ~/.config/git/agent-git

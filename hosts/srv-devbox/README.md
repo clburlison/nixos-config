@@ -135,6 +135,14 @@ nix shell nixpkgs#git -c nix run home-manager/release-26.05 -- \
 
 After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 
+## 7. agent-git
+
+Lets the host sign commits and reach GitHub without a forwarded agent. The
+token is a sops-nix secret (`secrets.yaml`, encrypted to this host's key in
+`.sops.yaml`); see "NixOS hosts" in `docs/agent-git.md`. After a reinstall,
+the host key changes: redo "Add a NixOS host" there before `task system`, or
+sops-nix can't decrypt the secret.
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it

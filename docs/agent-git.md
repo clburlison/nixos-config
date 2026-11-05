@@ -25,7 +25,8 @@ How it works on each Mac:
    SSH to other hosts is unchanged. A machine that isn't set up yet behaves as
    before.
 
-Darwin only. All machines share one key.
+All machines share one key. NixOS hosts work the same way, except the token
+comes from a sops-nix secret instead of the keychain; see "NixOS hosts" below.
 
 ## Before you start: sign in to `op`
 
@@ -128,23 +129,77 @@ No restart needed: git and SSH read the config on each call, including in
 already running apps. Codex's sandbox may still block the agent socket or
 network, so pushes from Codex can need approval.
 
+## NixOS hosts
+
+A headless host has no keychain or 1Password app, so the token is a
+[sops-nix](https://github.com/Mic92/sops-nix) secret instead:
+
+- `hosts/<name>/secrets.yaml` holds the token under `agent-git-token`,
+  encrypted to the host's SSH host key. `.sops.yaml` lists each host's key,
+  converted to age. Only that host can decrypt it.
+- At boot sops-nix decrypts it to `/run/secrets/agent-git-token` (tmpfs, mode
+  0400, owned by the host user). It never sits decrypted on disk.
+- systemd user services replace the launchd jobs: `agent-git-ssh-agent` and an
+  `agent-git-load` timer every 5 minutes. The host enables lingering, so they
+  start at boot without a login.
+- If the agent key isn't loaded, `agent-git-sign` falls back to the personal
+  key through the session agent, such as one forwarded over SSH. There is no
+  1Password app to fall back to.
+
+The host override file wires it up (`sops.secrets.agent-git-token` and
+`users.users.<user>.linger`; see `hosts/srv-devbox/system.nix`).
+
+### Add a NixOS host
+
+1. On the host, convert its SSH host key to an age recipient:
+
+   ```sh
+   nix run nixpkgs#ssh-to-age -- < /etc/ssh/ssh_host_ed25519_key.pub
+   ```
+
+   Add it to `.sops.yaml` under `keys`, with a `creation_rules` entry for
+   `hosts/<name>/secrets.yaml`.
+
+2. On a Mac signed in to `op`, in the repo root, encrypt the token to it. The
+   token only passes through pipes:
+
+   ```sh
+   op read --account my "op://Private/ztezaqx7cdcf65dgxtawptugaq/credential" \
+     | sed 's/^/agent-git-token: /' \
+     | nix run nixpkgs#sops -- encrypt --filename-override hosts/<name>/secrets.yaml \
+       --input-type yaml --output-type yaml /dev/stdin > hosts/<name>/secrets.yaml
+   ```
+
+   No one but the host can decrypt the file, so to change it, rerun this
+   instead of `sops edit`.
+
+3. Commit, push, and pull on the host. Then `task system` (decrypts the
+   secret, enables lingering) and `task home` (installs the services).
+4. Run `agent-git-check` on the host.
+
+Reinstalling a host changes its host key. Repeat steps 1 to 3 with the new key.
+
 ## Operations
 
-- **Logs**: `~/Library/Logs/agent-git.log`.
-- **Reload now**: `launchctl kickstart -k gui/$(id -u)/com.clburlison.agent-git-load`.
+- **Logs**: `~/Library/Logs/agent-git.log` on Darwin;
+  `journalctl --user -u agent-git-load` on NixOS.
+- **Reload now**: `launchctl kickstart -k gui/$(id -u)/com.clburlison.agent-git-load`
+  on Darwin; `systemctl --user start agent-git-load` on NixOS.
 - **Rotate key**: delete both GitHub keys and the `git-agent` item, redo steps
   1 and 2, then on each machine run
   `SSH_AUTH_SOCK=~/.ssh/agent-git.sock ssh-add -D` and reload.
 - **Rotate token**: create a new token for the service account, update it in
-  your Private vault, run `agent-git-set-token` on every machine, then revoke
-  the old one.
+  your Private vault, run `agent-git-set-token` on every Mac and redo step 2
+  of "Add a NixOS host" for each NixOS host, then revoke the old one.
 - **Machine compromised**: rotate the token and the key. Every machine needs
   the new token.
 
 ## Limits
 
-- Needs a logged-in user session. After a reboot with FileVault, nothing loads
-  until you log in.
+- Darwin needs a logged-in user session. After a reboot with FileVault, nothing
+  loads until you log in. NixOS hosts load at boot.
+- On NixOS, root on the running host can read the decrypted token in
+  `/run/secrets`.
 - Anything can sign and push without approval. That is the goal, but it means
   any process running as you on that machine can.
 - Without a token, the loader logs and exits 0, so machines not yet set up stay

@@ -1,6 +1,6 @@
 Include ~/.ssh/hosts/*
 
-# GitHub uses the agent-git key (modules/home/agent-git.nix) whenever it is
+# GitHub uses the agent-git key (modules/common/programs/agent-git.nix) whenever it is
 # loaded, so pushes work while 1Password is locked and from any session or app.
 # Matched first because the first IdentityAgent wins.
 Match host github.com exec "SSH_AUTH_SOCK=%d/.ssh/agent-git.sock ssh-add -l >/dev/null 2>&1"

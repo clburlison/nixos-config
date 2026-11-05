@@ -6,11 +6,14 @@
 }:
 
 # Git signing and GitHub SSH push with an agent key that works while 1Password
-# is locked. Every session uses it; 1Password and the personal key are the
-# fallback when it isn't loaded. A 1Password service account reads one SSH key, shared by all
-# machines, from the Agents vault and loads it into a dedicated ssh-agent. See
-# docs/agent-git.md.
+# is locked, or on a headless host without 1Password. Every session uses it;
+# 1Password and the personal key are the fallback when it isn't loaded. A
+# 1Password service account reads one SSH key, shared by all machines, from the
+# Agents vault and loads it into a dedicated ssh-agent. Darwin keeps the
+# service account token in the login keychain; NixOS gets it from a sops-nix
+# secret. See docs/agent-git.md.
 let
+  inherit (pkgs.stdenv) isDarwin isLinux;
   home = config.home.homeDirectory;
   vault = "Agents";
   item = "git-agent";
@@ -18,10 +21,22 @@ let
   publicKeyFile = "${home}/.ssh/agent-git.pub";
   keychainService = "op-agents-service-account";
   logFile = "${home}/Library/Logs/agent-git.log";
+  # Decrypted by sops-nix from hosts/<name>/secrets.yaml.
+  tokenFile = "/run/secrets/agent-git-token";
+
+  sshKeygen = if isDarwin then "/usr/bin/ssh-keygen" else "${pkgs.openssh}/bin/ssh-keygen";
+  # Signs with the personal key when the agent key isn't loaded. Linux has no
+  # 1Password app, so it uses the session agent, e.g. one forwarded over SSH.
+  fallbackSigner =
+    if isDarwin then "/Applications/1Password.app/Contents/MacOS/op-ssh-sign" else sshKeygen;
+  tokenSource = if isDarwin then "keychain service ${keychainService}" else tokenFile;
+  tokenFix =
+    if isDarwin then "run agent-git-set-token" else "add the sops secret (docs/agent-git.md)";
+  logHint = if isDarwin then logFile else "journalctl --user -u agent-git-load";
 
   # git's gpg.ssh.program. Signs with the agent key when loaded.
-  # Otherwise falls back to 1Password and the personal key from ~/.gitconfig,
-  # so machines without the agent key keep today's behavior.
+  # Otherwise falls back to the personal key from ~/.gitconfig, so machines
+  # without the agent key keep today's behavior.
   agentGitSign = pkgs.writeShellApplication {
     name = "agent-git-sign";
     runtimeInputs = [
@@ -31,7 +46,7 @@ let
     text = ''
       if [ "''${1:-}" != "-Y" ] || [ "''${2:-}" != "sign" ] \
         || SSH_AUTH_SOCK=${socket} ssh-add -L >/dev/null 2>&1; then
-        SSH_AUTH_SOCK=${socket} exec /usr/bin/ssh-keygen "$@"
+        SSH_AUTH_SOCK=${socket} exec ${sshKeygen} "$@"
       fi
 
       personal="$(mktemp)"
@@ -49,16 +64,24 @@ let
           shift
         fi
       done
-      /Applications/1Password.app/Contents/MacOS/op-ssh-sign "''${args[@]}"
+      ${fallbackSigner} "''${args[@]}"
     '';
   };
 
   # Shared by the loader and the check script.
-  readToken = ''
-    read_token() {
-      /usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w 2>/dev/null
-    }
-  '';
+  readToken =
+    if isDarwin then
+      ''
+        read_token() {
+          /usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w 2>/dev/null
+        }
+      ''
+    else
+      ''
+        read_token() {
+          cat ${tokenFile} 2>/dev/null
+        }
+      '';
 
   agentGitLoad = pkgs.writeShellApplication {
     name = "agent-git-load";
@@ -78,7 +101,7 @@ let
       fi
 
       if ! OP_SERVICE_ACCOUNT_TOKEN="$(read_token)"; then
-        echo "$(date -u +%FT%TZ) no token in keychain service ${keychainService}; skipping" >&2
+        echo "$(date -u +%FT%TZ) no token in ${tokenSource}; skipping" >&2
         exit 0
       fi
       export OP_SERVICE_ACCOUNT_TOKEN
@@ -126,6 +149,28 @@ let
     '';
   };
 
+  checkServices =
+    if isDarwin then
+      ''
+        for label in com.clburlison.agent-git-ssh-agent com.clburlison.agent-git-load; do
+          if launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then
+            pass "launchd job loaded: $label"
+          else
+            fail "launchd job missing: $label" "run task switch"
+          fi
+        done
+      ''
+    else
+      ''
+        for unit in agent-git-ssh-agent.service agent-git-load.timer; do
+          if systemctl --user is-active --quiet "$unit"; then
+            pass "systemd user unit active: $unit"
+          else
+            fail "systemd user unit inactive: $unit" "run task home; check loginctl show-user $USER -p Linger"
+          fi
+        done
+      '';
+
   agentGitCheck = pkgs.writeShellApplication {
     name = "agent-git-check";
     runtimeInputs = [
@@ -146,11 +191,11 @@ let
 
       echo "1Password service account"
       if token="$(read_token)"; then
-        pass "token in keychain (service ${keychainService})"
+        pass "token in ${tokenSource}"
         if whoami_err="$(OP_SERVICE_ACCOUNT_TOKEN="$token" op whoami 2>&1 >/dev/null)"; then
           pass "op whoami: service account authenticates"
         else
-          fail "op whoami rejected the token (''${#token} chars)" "rerun agent-git-set-token: $(tail -n 1 <<<"$whoami_err")"
+          fail "op whoami rejected the token (''${#token} chars)" "${tokenFix}: $(tail -n 1 <<<"$whoami_err")"
         fi
         if vault_pub="$(OP_SERVICE_ACCOUNT_TOKEN="$token" op read "op://${vault}/${item}/public key" 2>/dev/null)"; then
           pass "item readable: op://${vault}/${item}"
@@ -158,18 +203,12 @@ let
           fail "cannot read op://${vault}/${item}" "check item name and the service account's vault access"
         fi
       else
-        fail "no token in keychain service ${keychainService}" "run agent-git-set-token"
+        fail "no token in ${tokenSource}" "${tokenFix}"
       fi
       unset token
 
       echo "ssh-agent"
-      for label in com.clburlison.agent-git-ssh-agent com.clburlison.agent-git-load; do
-        if launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then
-          pass "launchd job loaded: $label"
-        else
-          fail "launchd job missing: $label" "run task switch"
-        fi
-      done
+      ${checkServices}
       if [ -S ${socket} ]; then
         pass "socket exists: ${socket}"
       else
@@ -187,7 +226,7 @@ let
           fail "loaded key differs from 1Password item" "ssh-add -D against the socket, then agent-git-load"
         fi
       else
-        fail "no key in agent" "run agent-git-load; logs: ${logFile}"
+        fail "no key in agent" "run agent-git-load; logs: ${logHint}"
       fi
       if [ -s ${publicKeyFile} ]; then
         pass "public key file: ${publicKeyFile}"
@@ -253,47 +292,90 @@ in
 {
   _class = "homeManager";
 
-  config = lib.mkIf pkgs.stdenv.isDarwin {
-    home.packages = [
-      agentGitCheck
-      agentGitLoad
-      agentGitSetToken
-    ];
+  config = lib.mkMerge [
+    {
+      home.packages = [
+        agentGitCheck
+        agentGitLoad
+      ];
 
-    # Included last from dotfiles/gitconfig, so it overrides the 1Password
-    # signer there. agent-git-sign falls back to it.
-    xdg.configFile."git/agent-git".text = lib.generators.toGitINI {
-      user.signingkey = publicKeyFile;
-      gpg.ssh.program = "${agentGitSign}/bin/agent-git-sign";
-    };
+      # Included last from dotfiles/gitconfig, so it overrides the 1Password
+      # signer there. agent-git-sign falls back to it.
+      xdg.configFile."git/agent-git".text = lib.generators.toGitINI {
+        user.signingkey = publicKeyFile;
+        gpg.ssh.program = "${agentGitSign}/bin/agent-git-sign";
+      };
+    }
 
-    launchd.agents.agent-git-ssh-agent = {
-      enable = true;
-      config = {
-        Label = "com.clburlison.agent-git-ssh-agent";
-        ProgramArguments = [
-          "/bin/sh"
-          "-c"
+    (lib.mkIf isDarwin {
+      home.packages = [ agentGitSetToken ];
+
+      launchd.agents.agent-git-ssh-agent = {
+        enable = true;
+        config = {
+          Label = "com.clburlison.agent-git-ssh-agent";
+          ProgramArguments = [
+            "/bin/sh"
+            "-c"
+            # A stale socket from a crash blocks ssh-agent from binding.
+            "rm -f ${socket}; exec ${pkgs.openssh}/bin/ssh-agent -D -a ${socket}"
+          ];
+          RunAtLoad = true;
+          KeepAlive = true;
+          StandardErrorPath = logFile;
+        };
+      };
+
+      # Retries after boot, network loss, or an ssh-agent restart. A no-op once
+      # the key is loaded.
+      launchd.agents.agent-git-load = {
+        enable = true;
+        config = {
+          Label = "com.clburlison.agent-git-load";
+          ProgramArguments = [ "${agentGitLoad}/bin/agent-git-load" ];
+          RunAtLoad = true;
+          StartInterval = 300;
+          StandardErrorPath = logFile;
+        };
+      };
+    })
+
+    # User services start at boot when the host enables lingering, so the key
+    # loads before anyone logs in.
+    (lib.mkIf isLinux {
+      systemd.user.services.agent-git-ssh-agent = {
+        Unit.Description = "ssh-agent for the agent-git key";
+        Service = {
           # A stale socket from a crash blocks ssh-agent from binding.
-          "rm -f ${socket}; exec ${pkgs.openssh}/bin/ssh-agent -D -a ${socket}"
-        ];
-        RunAtLoad = true;
-        KeepAlive = true;
-        StandardErrorPath = logFile;
+          ExecStartPre = "${pkgs.coreutils}/bin/rm -f ${socket}";
+          ExecStart = "${pkgs.openssh}/bin/ssh-agent -D -a ${socket}";
+          Restart = "always";
+        };
+        Install.WantedBy = [ "default.target" ];
       };
-    };
 
-    # Retries after boot, network loss, or an ssh-agent restart. A no-op once
-    # the key is loaded.
-    launchd.agents.agent-git-load = {
-      enable = true;
-      config = {
-        Label = "com.clburlison.agent-git-load";
-        ProgramArguments = [ "${agentGitLoad}/bin/agent-git-load" ];
-        RunAtLoad = true;
-        StartInterval = 300;
-        StandardErrorPath = logFile;
+      systemd.user.services.agent-git-load = {
+        Unit = {
+          Description = "Load the agent-git key from 1Password";
+          After = [ "agent-git-ssh-agent.service" ];
+          Requires = [ "agent-git-ssh-agent.service" ];
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = "${agentGitLoad}/bin/agent-git-load";
+        };
       };
-    };
-  };
+
+      # Retries after boot, network loss, or an ssh-agent restart. A no-op once
+      # the key is loaded.
+      systemd.user.timers.agent-git-load = {
+        Unit.Description = "Retry loading the agent-git key";
+        Timer = {
+          OnStartupSec = "10s";
+          OnUnitActiveSec = "5min";
+        };
+        Install.WantedBy = [ "timers.target" ];
+      };
+    })
+  ];
 }

@@ -22,7 +22,6 @@ let
     "loom"
     "notion"
     "openusage"
-    "orbstack"
     "raycast"
     "slack"
     "spotify"

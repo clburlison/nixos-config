@@ -1,6 +1,8 @@
 {
   lib,
+  autoPatchelfHook,
   fetchurl,
+  stdenv,
   stdenvNoCC,
   versionCheckHook,
 }:
@@ -41,6 +43,11 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   dontConfigure = true;
   dontBuild = true;
+
+  # The Linux release links against the FHS loader and libgcc_s, which
+  # NixOS doesn't provide at those paths.
+  nativeBuildInputs = lib.optionals stdenvNoCC.hostPlatform.isLinux [ autoPatchelfHook ];
+  buildInputs = lib.optionals stdenvNoCC.hostPlatform.isLinux [ stdenv.cc.cc.lib ];
 
   installPhase = ''
     runHook preInstall

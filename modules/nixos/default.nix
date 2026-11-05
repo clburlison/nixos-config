@@ -46,6 +46,10 @@ in
   # Mirrors modules/darwin/shells.nix.
   programs.fish.enable = true;
 
+  # Runs prebuilt generic-Linux binaries that expect the FHS loader, such as
+  # uv-managed Python (modules/common/programs/uv.nix) and t3.
+  programs.nix-ld.enable = true;
+
   services.openssh = {
     enable = true;
     settings = {

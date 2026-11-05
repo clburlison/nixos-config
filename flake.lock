@@ -52,6 +52,22 @@
         "type": "github"
       }
     },
+    "clb-skills": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793849928,
+        "narHash": "sha256-cCqTiUaXzeg7ZaRKA5d7gGwxBZA4XMvnuCGTMq29TxY=",
+        "ref": "refs/heads/main",
+        "rev": "d4b8686f336b0ab61a8b655ca36a7f60957e575f",
+        "revCount": 6,
+        "type": "git",
+        "url": "ssh://git@github.com/clburlison/clb-skills"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/clburlison/clb-skills"
+      }
+    },
     "cloudflare-security-audit-skills": {
       "flake": false,
       "locked": {
@@ -533,6 +549,7 @@
     "root": {
       "inputs": {
         "agent-skills": "agent-skills",
+        "clb-skills": "clb-skills",
         "cloudflare-security-audit-skills": "cloudflare-security-audit-skills",
         "darwin": "darwin",
         "determinate": "determinate",

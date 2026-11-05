@@ -115,8 +115,9 @@ These are the files that changed most often over the past year, mapped to where 
 | Add or remove a macOS app (cask / App Store) | `modules/common/programs/homebrew.nix` | `task home` |
 | Change macOS settings, dock, keyboard | `modules/darwin/defaults.nix` | `task system` |
 | Pull a package from `nixpkgs-unstable` | `lib/nixpkgs.nix` (overlays) | `task home` |
-| Add a flake input or bump a pinned version | `flake.nix`, then `nix flake update <input>` | both |
+| Add a flake input or bump a pinned version | `flake.nix`, then `task update-input -- <input>` | both |
 | Turn AI agent skills on or off | `modules/common/programs/agent-skills.nix` | `task home` |
+| Ship a pushed clb-skills change | nothing here (`clb-skills` input is pinned in `flake.lock`) | `task skills` (`task home` alone keeps the old pin) |
 | Change herdr, worktrunk, claude-mem, agent-git, fish, zsh | `modules/common/programs/<name>.nix` | `task home` |
 | Link a new dotfile into `$HOME` | `modules/common/default.nix` (`home.file`) | `task home` |
 | Edit Neovim, fish functions, Ghostty, SSH, Claude config | `dotfiles/config/...`, `dotfiles/ssh/`, `dotfiles/claude/` | nothing (live symlink) |

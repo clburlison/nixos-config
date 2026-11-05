@@ -51,6 +51,11 @@
       flake = false;
     };
 
+    clb-skills = {
+      url = "git+ssh://git@github.com/clburlison/clb-skills";
+      flake = false;
+    };
+
     herdr-nix = {
       url = "github:kevinpita/herdr-nix";
       inputs.nixpkgs.follows = "nixpkgs";

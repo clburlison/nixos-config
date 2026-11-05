@@ -66,12 +66,17 @@ in
       input = "cloudflare-security-audit-skills";
       subdir = "skills";
     };
+    sources.clb = {
+      input = "clb-skills";
+      subdir = "skills";
+    };
     skills = {
       # Set individual Matt Pocock skills to true as needed.
       enable = lib.attrNames (lib.filterAttrs (_: enabled: enabled) mattPocockSkills);
       enableAll = [
         # "notion"
         "cloudflare-security-audit"
+        "clb"
       ];
       # Inject attribution and relationship rules right after the frontmatter so they take priority.
       explicit.linear-cli = {

@@ -9,8 +9,8 @@ directory.
 
 | Setting | Value |
 | --- | --- |
-| Machine | `q35` |
-| BIOS | OVMF (UEFI), with an EFI disk |
+| Machine | Default (`i440fx`). The committed hardware file matches it |
+| BIOS | OVMF (UEFI), with an EFI disk. Uncheck "Pre-Enroll keys" |
 | CPU type | `host` |
 | SCSI controller | VirtIO SCSI (`virtio-scsi-pci` or `virtio-scsi-single`) |
 | Disk | On the VirtIO SCSI controller |
@@ -19,6 +19,11 @@ directory.
 
 Attach the Determinate NixOS installer ISO (from
 <https://docs.determinate.systems>) and boot it.
+
+Pre-enrolled keys turn on Secure Boot, which rejects the unsigned ISO and
+systemd-boot with `BdsDxe: ... Access Denied`. If the EFI disk already
+has keys, press Esc at boot and turn off Device Manager > Secure Boot
+Configuration > Attempt Secure Boot.
 
 ## 2. Partition and mount
 
@@ -71,6 +76,8 @@ git push
 ```
 
 ## 4. Install
+
+Still as root (`sudo -i` again if you left the root shell for step 3):
 
 ```sh
 nixos-install --flake /tmp/nixos-config#srv-devbox

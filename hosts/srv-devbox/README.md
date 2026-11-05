@@ -143,6 +143,21 @@ token is a sops-nix secret (`secrets.yaml`, encrypted to this host's key in
 the host key changes: redo "Add a NixOS host" there before `task system`, or
 sops-nix can't decrypt the secret.
 
+## 8. Tailscale
+
+`tailscaled` starts at boot (`services.tailscale` in `system.nix`). Log in
+once after the first `task system`; the node key in `/var/lib/tailscale`
+reconnects it on every boot after that:
+
+```sh
+sudo tailscale up
+tailscale status
+```
+
+In the Tailscale admin console, open the machine and choose **Disable key
+expiry**, or it drops off the tailnet when the key expires (180 days by
+default).
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it

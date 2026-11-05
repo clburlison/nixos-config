@@ -12,6 +12,15 @@
 
   services.qemuGuest.enable = true;
 
+  # tailscaled starts at boot and reconnects with the node key in
+  # /var/lib/tailscale. Log in once with `sudo tailscale up` (README step 8).
+  # openFirewall allows the UDP port for direct connections instead of DERP
+  # relays.
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
+
   # agent-git (docs/agent-git.md): the 1Password service account token,
   # encrypted to this host's SSH host key (.sops.yaml). Lingering starts
   # the user's agent-git services at boot, before anyone logs in.

@@ -188,6 +188,14 @@ in
     nix-direnv.enable = true;
     silent = true;
     config.whitelist.prefix = [ "${config.home.homeDirectory}/dev/worktrees/" ];
+    # `use mise` in an .envrc loads mise.toml tools, like `use flake` for Nix.
+    # `direnv allow` is the trust gate, so mise trusts the .envrc directory.
+    stdlib = ''
+      use_mise() {
+        watch_file mise.toml .mise.toml mise.lock .tool-versions
+        MISE_TRUSTED_CONFIG_PATHS="$PWD" direnv_load mise direnv exec
+      }
+    '';
   };
 
   programs.git = {
@@ -223,9 +231,13 @@ in
 
   programs.mise = {
     enable = true;
-    enableFishIntegration = true;
-    # Repos here load tools through direnv (`use flake`); keep mise out of the way
-    globalConfig.settings.ignored_config_paths = [ "${config.home.homeDirectory}/dev/worktrees" ];
+    # Repos load tools through direnv (`use flake`), so never activate mise in
+    # the shell. The CLI stays available for explicit `mise install`/`mise x`.
+    # (`ignored_config_paths` only matches exact files, not directories.)
+    enableBashIntegration = false;
+    enableZshIntegration = false;
+    enableFishIntegration = false;
+    enableNushellIntegration = false;
   };
 
   # Make cursor not tiny on HiDPI screens

@@ -5,7 +5,6 @@
 # docs/srv-devbox.md step 10 and https://docs.claude-mem.ai/hosted-server.
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -19,16 +18,20 @@ let
     hash = "sha256-gtIt9Q/eFWkKdDXm8SHiTPkQE7xHJp1n9MbLq5sD/Is=";
   };
 
-  # Upstream's compose file passes only the provider choice and API keys
-  # to the worker. Also pass the model (the `openrouter` provider's default
-  # is a free model) and the Claude subscription token from the sops env
-  # file. No credential leaves the worker idle.
-  passthrough = [
-    "CLAUDE_MEM_SERVER_MODEL"
-    "CLAUDE_CODE_OAUTH_TOKEN"
-  ];
+  # The worker generates through the CLIProxyAPI hub on this host
+  # (cliproxyapi.nix), with the OpenAI subscription logins there. The
+  # `openrouter` provider takes any OpenAI-compatible base URL. Inside the
+  # container 127.0.0.1 is the container, so the hub is reached through the
+  # Docker host gateway. Literal values here win over the env files.
   override = (pkgs.formats.yaml { }).generate "claude-mem-server-override.yml" {
-    services.claude-mem-worker.environment = lib.genAttrs passthrough (name: "\${${name}:-}");
+    services.claude-mem-worker = {
+      environment = {
+        CLAUDE_MEM_SERVER_PROVIDER = "openrouter";
+        CLAUDE_MEM_OPENROUTER_BASE_URL = "http://host.docker.internal:8317/v1";
+        CLAUDE_MEM_SERVER_MODEL = "gpt-6-luna";
+      };
+      extra_hosts = [ "host.docker.internal:host-gateway" ];
+    };
     services.postgres.ports = [ "${tailnetIp}:5432:5432" ];
   };
 
@@ -48,6 +51,7 @@ let
       --file ${override} \
       --env-file ${stateDir}/postgres.env \
       --env-file ${config.sops.secrets.claude-mem-server-env.path} \
+      --env-file ${config.sops.templates.claude-mem-server-cliproxy-env.path} \
       "$@"
   '';
 in
@@ -67,6 +71,12 @@ in
     format = "binary";
   };
 
+  # The hub's client access key, as the worker's OpenRouter key. The last
+  # env file, so it wins over any OPENROUTER_API_KEY above.
+  sops.templates.claude-mem-server-cliproxy-env.content = ''
+    OPENROUTER_API_KEY=${config.sops.placeholder.cliproxyapi-api-key}
+  '';
+
   # Wraps compose with this stack's files for operations as root:
   # `sudo claude-mem-server-compose ps`, `logs -f`, `exec ...`.
   environment.systemPackages = [ compose ];
@@ -74,6 +84,7 @@ in
   systemd.services.claude-mem-server = {
     description = "claude-mem hosted server (Docker Compose)";
     after = [
+      "cliproxyapi.service"
       "docker.service"
       "network-online.target"
       "tailscaled.service"
@@ -81,7 +92,10 @@ in
     requires = [ "docker.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    restartTriggers = [ config.sops.secrets.claude-mem-server-env.sopsFile ];
+    restartTriggers = [
+      config.sops.secrets.claude-mem-server-env.sopsFile
+      config.sops.secrets.cliproxyapi-api-key.sopsFile
+    ];
 
     # Postgres reads its credentials only when it creates the data volume,
     # so they are generated once on the host and never rotated by Nix. Hex

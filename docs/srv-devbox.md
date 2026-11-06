@@ -198,26 +198,30 @@ Postgres credentials are generated once into
 `/var/lib/claude-mem-server/postgres.env`. Postgres only reads them when it
 creates its volume, so keep that file as long as the volume exists.
 
-The worker generates observations through OpenRouter: prepaid credits, so
-access stops instead of billing on when they run out. Create a key at
-<https://openrouter.ai/keys>, then encrypt the env file (only the host can
-decrypt, so rewrite the whole file to change it):
+The worker generates observations through the CLIProxyAPI hub on this host
+(step 11), with the OpenAI subscription logins there. `claude-mem-server.nix`
+sets the provider (`openrouter`, which takes any OpenAI-compatible base
+URL), the base URL (`http://host.docker.internal:8317/v1`, the Docker host
+gateway, since 127.0.0.1 in the container is the container) and the model
+(`gpt-6-luna`; list the hub's models with `GET /v1/models`). The key is the
+hub's client access key, rendered from `cliproxyapi.yaml` by sops.
+
+`claude-mem-server.env.sops` (sops binary dotenv, encrypted whole) holds
+any other worker env. To replace it (only the host can decrypt, so rewrite
+the whole file):
 
 ```sh
 printf '%s\n' \
-  'CLAUDE_MEM_SERVER_PROVIDER=openrouter' \
-  'OPENROUTER_API_KEY=<key>' \
-  'CLAUDE_MEM_SERVER_MODEL=~anthropic/claude-haiku-latest' \
+  'OPENROUTER_API_KEY=<openrouter.ai key, unused while the hub is set>' \
   | nix run nixpkgs#sops -- encrypt \
     --filename-override hosts/srv-devbox/claude-mem-server.env.sops \
     --input-type binary --output-type binary /dev/stdin \
   > hosts/srv-devbox/claude-mem-server.env.sops
 ```
 
-The model tracks the newest Haiku, like the local plugin's default
-(upstream recommends Haiku for compression). A Claude subscription
-(`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, provider `claude`)
-also works.
+To go back to openrouter.ai, drop `CLAUDE_MEM_OPENROUTER_BASE_URL` and the
+rendered key env file, and set the model to an OpenRouter one (for example
+`~anthropic/claude-haiku-latest`).
 
 Commit, pull on the host, and `task system`; the secret change restarts
 the service.

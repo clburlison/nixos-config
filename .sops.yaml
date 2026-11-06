@@ -12,3 +12,7 @@ creation_rules:
     key_groups:
       - age:
           - *srv-devbox
+  - path_regex: ^hosts/srv-devbox/cliproxyapi\.yaml$
+    key_groups:
+      - age:
+          - *srv-devbox

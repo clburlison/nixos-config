@@ -8,6 +8,7 @@
   imports = [
     ./hardware-configuration.nix
     ./claude-mem-server.nix
+    ./cliproxyapi.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

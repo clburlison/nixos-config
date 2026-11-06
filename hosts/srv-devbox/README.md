@@ -260,6 +260,66 @@ sudo claude-mem-server-compose exec postgres \
   sh -c 'pg_dumpall -U "$POSTGRES_USER"' > claude-mem-backup.sql
 ```
 
+## 11. CLIProxyAPI hub
+
+`cliproxyapi.nix` runs [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)
+as the `cliproxyapi` system service, following
+<https://gist.github.com/t3dotgg/59a521d2ee8d70aaf90e280c175072af>. Claude
+and Codex accounts sign in here once; every other machine uses this host as
+its API endpoint. It listens on port 8317 on all interfaces (plain HTTP):
+
+- LAN: `http://192.xxx.xxx.xxx:8317` (srv-devbox's LAN IP)
+- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8317`
+
+The module and package come from nixpkgs-unstable. Nix writes
+`/var/lib/cliproxyapi/config.yaml` at every start, so change settings in
+`cliproxyapi.nix`, not the management panel. Account logins live in
+`/var/lib/cliproxyapi` and are kept.
+
+The client access key and management key are in `cliproxyapi.yaml`
+(sops, encrypted to this host). Read them on the host:
+
+```sh
+sudo cat /run/secrets/cliproxyapi-api-key
+sudo cat /run/secrets/cliproxyapi-management-key
+```
+
+To rotate, rewrite the whole file (only the host can decrypt). Commit, pull,
+and `task system`; the change restarts the service. Works in fish and bash;
+the file is only replaced if encryption succeeds:
+
+```sh
+printf 'api-key: sk-%s\nmanagement-key: %s\n' \
+  "$(nix run nixpkgs#openssl -- rand -hex 32)" \
+  "$(nix run nixpkgs#openssl -- rand -hex 32)" \
+  | nix run nixpkgs#sops -- encrypt \
+    --filename-override hosts/srv-devbox/cliproxyapi.yaml \
+    --input-type yaml --output-type yaml /dev/stdin \
+  > cliproxyapi.yaml.tmp \
+  && mv cliproxyapi.yaml.tmp hosts/srv-devbox/cliproxyapi.yaml
+```
+
+Sign accounts in with `sudo cliproxyapi-login`, which runs the binary as
+the service user with the service's config. The running service picks up
+new accounts without a restart. Use the device code flow, easiest on a
+headless box. Run once per account:
+
+```sh
+sudo cliproxyapi-login -codex-device-login
+```
+
+Check accounts in the panel at `http://srv-devbox:8317/management.html`
+(management key) and verify from another machine:
+
+```sh
+curl -s http://srv-devbox.mermaid-agama.ts.net:8317/v1/models \
+  -H "Authorization: Bearer <api key>" | head -c 300
+```
+
+Point clients at it as in the gist, with the `http://` URL above:
+`ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` in `~/.claude/settings.json`,
+and a `cliproxy` model provider in `~/.codex/config.toml`.
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it

@@ -29,9 +29,14 @@ let
   ];
   override = (pkgs.formats.yaml { }).generate "claude-mem-server-override.yml" {
     services.claude-mem-worker.environment = lib.genAttrs passthrough (name: "\${${name}:-}");
+    services.postgres.ports = [ "${tailnetIp}:5432:5432" ];
   };
 
   stateDir = "/var/lib/claude-mem-server";
+
+  # srv-devbox's tailnet address (stable per node). Postgres is published
+  # only here, so database clients on the tailnet can connect.
+  tailnetIp = "100.75.137.72";
 
   # A fixed project name keeps the volumes (claude-mem_postgres-data, ...)
   # stable when the source store path changes on upgrade.
@@ -71,6 +76,7 @@ in
     after = [
       "docker.service"
       "network-online.target"
+      "tailscaled.service"
     ];
     requires = [ "docker.service" ];
     wants = [ "network-online.target" ];
@@ -106,4 +112,9 @@ in
   # networking.firewall, so the server is reachable from the LAN and the
   # tailnet like t3-serve. Listed here to document the open port.
   networking.firewall.allowedTCPPorts = [ 37877 ];
+
+  # Postgres binds the tailnet address, which tailscaled may not have
+  # assigned yet when the stack starts at boot. Non-local binds let the
+  # port publish succeed before the address exists.
+  boot.kernel.sysctl."net.ipv4.ip_nonlocal_bind" = 1;
 }

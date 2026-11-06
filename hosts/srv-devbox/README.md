@@ -243,6 +243,14 @@ first whenever Tailscale is up, so the same URL works either way. Away from
 home there is no fallback without Tailscale: upstream says not to expose
 the server to the internet.
 
+Postgres is published on the tailnet address only (`tailnetIp` in
+`claude-mem-server.nix`), for database clients. The password is in
+`/var/lib/claude-mem-server/postgres.env`:
+
+```sh
+psql postgres://claude_mem:<password>@100.75.137.72:5432/claude_mem
+```
+
 To upgrade, change `version` and `hash` in `claude-mem-server.nix`. Back up
 first and follow upstream's "Upgrading the Postgres image" when the
 Postgres image changes:

@@ -22,7 +22,8 @@
   # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so
-  # it can configure Serve. system.nix opens the port. See README step 9.
+  # it can configure Serve. system.nix opens the port. See
+  # docs/srv-devbox.md step 9.
   systemd.user.services.t3-serve = {
     Unit.Description = "T3 Code server on the tailnet";
     Service = {

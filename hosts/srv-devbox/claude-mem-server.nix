@@ -1,8 +1,8 @@
 # claude-mem hosted server (beta) on srv-devbox: upstream's Docker Compose
 # stack (Postgres 17 with pgvector and pg_textsearch, Valkey, the HTTP
 # server on port 37877, and the generation worker), pinned to a release tag.
-# Compose builds the images locally from the pinned source. See README
-# step 10 and https://docs.claude-mem.ai/hosted-server.
+# Compose builds the images locally from the pinned source. See
+# docs/srv-devbox.md step 10 and https://docs.claude-mem.ai/hosted-server.
 {
   config,
   lib,
@@ -60,8 +60,8 @@ in
   };
 
   # Dotenv file, encrypted whole (sops binary format). Holds the worker's
-  # provider settings and credential. README step 10 shows how to replace
-  # it.
+  # provider settings and credential. docs/srv-devbox.md step 10 shows how
+  # to replace it.
   sops.secrets.claude-mem-server-env = {
     sopsFile = ./claude-mem-server.env.sops;
     format = "binary";

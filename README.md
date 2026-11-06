@@ -99,7 +99,7 @@ Change shell to `fish`
 <details><summary>Installation NixOS</summary>
 <p>
 
-See the `srv-devbox` runbook: [hosts/srv-devbox/README.md](hosts/srv-devbox/README.md).
+See the `srv-devbox` runbook: [docs/srv-devbox.md](docs/srv-devbox.md).
 
 </p>
 </details>

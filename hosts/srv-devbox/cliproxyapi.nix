@@ -2,7 +2,7 @@
 # here, and every other machine points Claude Code and Codex at this one
 # endpoint. Setup follows
 # https://gist.github.com/t3dotgg/59a521d2ee8d70aaf90e280c175072af. See
-# README step 11.
+# docs/srv-devbox.md step 11.
 {
   config,
   inputs,

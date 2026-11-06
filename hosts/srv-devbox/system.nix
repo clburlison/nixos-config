@@ -17,7 +17,8 @@
   services.qemuGuest.enable = true;
 
   # tailscaled starts at boot and reconnects with the node key in
-  # /var/lib/tailscale. Log in once with `sudo tailscale up` (README step 8).
+  # /var/lib/tailscale. Log in once with `sudo tailscale up`
+  # (docs/srv-devbox.md step 8).
   # openFirewall allows the UDP port for direct connections instead of DERP
   # relays.
   services.tailscale = {

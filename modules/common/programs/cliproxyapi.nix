@@ -1,5 +1,5 @@
 # Route Claude Code and Codex through the CLIProxyAPI hub on srv-devbox
-# (hosts/srv-devbox/README.md step 11), on every host. They keep their usual
+# (docs/srv-devbox.md step 11), on every host. They keep their usual
 # config dirs (~/.claude, ~/.codex). The access key is a secret, so it stays
 # out of Nix: the wrappers read it at each run. Darwin keeps it in the login
 # keychain, set from 1Password with cliproxyapi-set-key (like agent-git's

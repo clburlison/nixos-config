@@ -2,7 +2,8 @@
 
 Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. Defined by
 the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
-aggregator (`modules/nixos/`), and the host override files in this
+aggregator (`modules/nixos/`), and the host override files in
+`hosts/srv-devbox/`. Files named below without a path are in that
 directory.
 
 ## 1. Create the Proxmox VM
@@ -49,7 +50,7 @@ Ignore it. Step 3 records the mounts in `hardware-configuration.nix`.
 
 ## 3. Generate and push the hardware file (required)
 
-`hardware-configuration.nix` in this directory is a placeholder. Generate the
+`hardware-configuration.nix` is a placeholder. Generate the
 real one:
 
 ```sh

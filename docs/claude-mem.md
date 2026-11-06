@@ -41,7 +41,7 @@ Claude receives upstream plugin skills; Codex/OpenCode additionally receive
 ## Hosted server
 
 Hooks on every host send to the hosted server on srv-devbox
-(`hosts/srv-devbox/README.md` step 10): `home.sessionVariables` set
+(`docs/srv-devbox.md` step 10): `home.sessionVariables` set
 `CLAUDE_MEM_RUNTIME=server`, the server URL (tailnet name), and the project
 ID. The server stores memory in Postgres and generates observations itself,
 so the local SQLite worker below is only the fallback.
@@ -62,7 +62,7 @@ jq --arg key 'cm_...' '.CLAUDE_MEM_SERVER_API_KEY = $key' \
   && mv ~/.claude-mem/settings.json.new ~/.claude-mem/settings.json
 ```
 
-Create the key on srv-devbox with `server api-key create` (README step 10).
+Create the key on srv-devbox with `server api-key create` (`docs/srv-devbox.md` step 10).
 Keys created without `--project` share the project ID in
 `modules/common/programs/claude-mem.nix`. Existing SQLite memory is not
 migrated: the server has no import path.

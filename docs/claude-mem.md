@@ -46,6 +46,12 @@ Hooks on every host send to the hosted server on srv-devbox
 ID. The server stores memory in Postgres and generates observations itself,
 so the local SQLite worker below is only the fallback.
 
+Session variables only reach agents started from a login shell. Agents
+launched by a launchd/systemd service (e.g. T3 Code) and the worker they spawn
+fall back to `~/.claude-mem/settings.json`, so activation also merges those
+three keys there and stops a running worker when they change. Local routing shows as `ENQUEUED | sessionDbId=...` in
+`~/.claude-mem/logs`.
+
 The API key is the one per-host step. Add it to `~/.claude-mem/settings.json`
 (mode 0600) on each host; a host without it keeps the local SQLite worker:
 

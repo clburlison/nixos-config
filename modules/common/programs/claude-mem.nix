@@ -43,6 +43,14 @@ let
     "mem-search"
     "smart-explore"
   ];
+  # Agents launched outside a login shell (e.g. T3 Code's launchd service)
+  # don't get session variables, so hooks and the worker they spawn read
+  # these from settings.json instead.
+  serverSettings = lib.getAttrs [
+    "CLAUDE_MEM_RUNTIME"
+    "CLAUDE_MEM_SERVER_URL"
+    "CLAUDE_MEM_SERVER_PROJECT_ID"
+  ] config.home.sessionVariables;
 in
 {
   _class = "homeManager";
@@ -60,7 +68,9 @@ in
     '')
   ];
 
-  # Env overrides settings.json, so no machine-specific settings file is managed.
+  # Env overrides settings.json, but only reaches agents started from a login
+  # shell, so server settings are also merged into settings.json
+  # (claudeMemServerSettings below).
   # Run local on purpose: hide the cmem.ai Pro trial welcome hint.
   home.sessionVariables = {
     # Claude MIM owns persistent memory for Claude Code.
@@ -74,13 +84,38 @@ in
     CLAUDE_MEM_BACKUP_ENABLED = "true";
     # Hooks send to the hosted server on srv-devbox (hosts/srv-devbox/README.md
     # step 10). The API key is a secret: add CLAUDE_MEM_SERVER_API_KEY to
-    # ~/.claude-mem/settings.json on each host. Without it, hooks keep using
-    # the local SQLite worker.
+    # ~/.claude-mem/settings.json on each host. Without it, the worker falls
+    # back to local SQLite.
     CLAUDE_MEM_RUNTIME = "server";
     # srv-devbox overrides this with loopback (hosts/srv-devbox/home.nix).
     CLAUDE_MEM_SERVER_URL = lib.mkDefault "http://srv-devbox.mermaid-agama.ts.net:37877";
     CLAUDE_MEM_SERVER_PROJECT_ID = "3bee384a-652b-4947-bd36-027c429b4589";
   };
+
+  # Merge the server settings into the mutable settings.json, keeping the API
+  # key and everything else. Stop a running worker on change so the next hook
+  # starts one that reads them.
+  home.activation.claudeMemServerSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    dataDir="${config.home.homeDirectory}/.claude-mem"
+    settings="$dataDir/settings.json"
+
+    ${pkgs.coreutils}/bin/install -d -m 700 "$dataDir"
+    if [ ! -e "$settings" ]; then
+      printf '{}\n' > "$settings"
+    fi
+    tmp="$(${pkgs.coreutils}/bin/mktemp "$dataDir/settings.json.XXXXXX")"
+    ${pkgs.jq}/bin/jq --argjson server ${lib.escapeShellArg (builtins.toJSON serverSettings)} \
+      '. + $server' "$settings" > "$tmp"
+    if ${pkgs.diffutils}/bin/cmp -s "$tmp" "$settings"; then
+      ${pkgs.coreutils}/bin/rm -f "$tmp"
+    else
+      ${pkgs.coreutils}/bin/chmod 600 "$tmp"
+      ${pkgs.coreutils}/bin/mv "$tmp" "$settings"
+      if [ -e "$dataDir/worker.pid" ]; then
+        ${claudeMem}/bin/claude-mem stop || true
+      fi
+    fi
+  '';
 
   programs.claude-code = {
     enable = true;

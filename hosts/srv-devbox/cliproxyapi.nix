@@ -101,6 +101,13 @@ in
           ];
         }
       ];
+      # Per-request usage records for CPA Usage Keeper
+      # (cpa-usage-keeper.nix), which pulls them from the hub's queue. Keep
+      # them the maximum hour, so a Keeper restart loses nothing.
+      observability.usage = {
+        usage-statistics-enabled = true;
+        redis-usage-queue-retention-seconds = 3600;
+      };
       routing = {
         strategy = "round-robin";
         # Keep a session on one account so its prompt cache is reused.

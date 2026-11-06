@@ -414,3 +414,40 @@ directly on a Mac (e.g. clb-work), delete the key:
   derivation built for the target system, which is import from derivation.
   `config.home-files` and the rest of the config evaluate fine. On the host
   itself, `task test-home` and `task home` evaluate and build normally.
+
+## 12. CPA Usage Keeper
+
+`cpa-usage-keeper.nix` runs [CPA Usage Keeper](https://github.com/Willxup/cpa-usage-keeper)
+as the `cpa-usage-keeper` system service: usage history by model, account,
+and client key, cost estimates, latency, and credential quotas for the hub.
+It subscribes to the hub's usage queue (`observability.usage` in
+`cliproxyapi.nix`; records wait up to an hour) and keeps the history in
+SQLite under `/var/lib/cpa-usage-keeper`, with daily backups there.
+
+Keeper needs CLIProxyAPI 8.0.12 or later, so `packages/cliproxyapi.nix`
+pins a newer release than nixpkgs-unstable. Newer releases need a newer Go
+than unstable has.
+
+The dashboard listens on port 8080 on all interfaces:
+
+- LAN: `http://192.xxx.xxx.xxx:8080`
+- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8080`
+
+It reads the hub with the management key. The login password is in
+`cpa-usage-keeper.yaml` (sops, encrypted to this host):
+
+```sh
+sudo cat /run/secrets/cpa-usage-keeper-login-password
+journalctl -fu cpa-usage-keeper
+```
+
+To rotate the password, rewrite the file:
+
+```sh
+printf 'login-password: %s\n' "$(nix run nixpkgs#openssl -- rand -hex 16)" \
+  | nix run nixpkgs#sops -- encrypt \
+    --filename-override hosts/srv-devbox/cpa-usage-keeper.yaml \
+    --input-type yaml --output-type yaml /dev/stdin \
+  > cpa-usage-keeper.yaml.tmp \
+  && mv cpa-usage-keeper.yaml.tmp hosts/srv-devbox/cpa-usage-keeper.yaml
+```

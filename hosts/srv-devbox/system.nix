@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
     ./claude-mem-server.nix
     ./cliproxyapi.nix
+    ./cpa-usage-keeper.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

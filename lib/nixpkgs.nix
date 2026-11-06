@@ -18,7 +18,8 @@
         bun = unstable.bun;
         claude-code = unstable.claude-code;
         claude-mem = final.callPackage ../packages/claude-mem.nix { };
-        cliproxyapi = unstable.cliproxyapi;
+        cliproxyapi = final.callPackage ../packages/cliproxyapi.nix { inherit (unstable) cliproxyapi; };
+        cpa-usage-keeper = final.callPackage ../packages/cpa-usage-keeper.nix { };
         herdr-agent-icons = final.callPackage ../packages/herdr-agent-icons.nix { };
         codex = unstable.codex;
         gemini-cli = unstable.gemini-cli;

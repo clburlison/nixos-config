@@ -1,5 +1,9 @@
 # Host override file for srv-devbox (Home Manager).
-{ pkgs, ... }:
+{
+  config,
+  pkgs,
+  ...
+}:
 
 {
   _class = "homeManager";
@@ -13,9 +17,16 @@
     Service = {
       ExecStart = "${pkgs.t3}/bin/t3 serve --host 0.0.0.0 --port 3773 --tailscale-serve --no-browser %h/dev";
       # User services get a bare PATH; agents need git, claude, codex and
-      # the rest of the user's tools.
+      # the rest of the user's tools. Also pass the claude-mem hosted server
+      # settings (modules/common/programs/claude-mem.nix), since user
+      # services don't get home.sessionVariables.
       Environment = [
         "PATH=%h/.local/bin:%h/.nix-profile/bin:/etc/profiles/per-user/%u/bin:/run/wrappers/bin:/run/current-system/sw/bin"
+      ]
+      ++ map (name: "${name}=${config.home.sessionVariables.${name}}") [
+        "CLAUDE_MEM_RUNTIME"
+        "CLAUDE_MEM_SERVER_URL"
+        "CLAUDE_MEM_SERVER_PROJECT_ID"
       ];
       Restart = "on-failure";
       RestartSec = 10;

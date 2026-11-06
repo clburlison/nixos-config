@@ -38,6 +38,29 @@ store to substitute an absolute MCP executable path: edit
 Claude receives upstream plugin skills; Codex/OpenCode additionally receive
 `mem-search` and `smart-explore` without replacing their other skills.
 
+## Hosted server
+
+Hooks on every host send to the hosted server on srv-devbox
+(`hosts/srv-devbox/README.md` step 10): `home.sessionVariables` set
+`CLAUDE_MEM_RUNTIME=server`, the server URL (tailnet name), and the project
+ID. The server stores memory in Postgres and generates observations itself,
+so the local SQLite worker below is only the fallback.
+
+The API key is the one per-host step. Add it to `~/.claude-mem/settings.json`
+(mode 0600) on each host; a host without it keeps the local SQLite worker:
+
+```sh
+jq --arg key 'cm_...' '.CLAUDE_MEM_SERVER_API_KEY = $key' \
+  ~/.claude-mem/settings.json > ~/.claude-mem/settings.json.new \
+  && chmod 600 ~/.claude-mem/settings.json.new \
+  && mv ~/.claude-mem/settings.json.new ~/.claude-mem/settings.json
+```
+
+Create the key on srv-devbox with `server api-key create` (README step 10).
+Keys created without `--project` share the project ID in
+`modules/common/programs/claude-mem.nix`. Existing SQLite memory is not
+migrated: the server has no import path.
+
 ## Runtime policy and limitations
 
 - One lazily started worker is shared by the three agents, not three services.

@@ -72,6 +72,13 @@ in
     CLAUDE_MEM_PROJECT_NAME_SOURCE = "git-remote";
     # Worker snapshots the SQLite store to ~/.claude-mem/backups (daily, keep 7).
     CLAUDE_MEM_BACKUP_ENABLED = "true";
+    # Hooks send to the hosted server on srv-devbox (hosts/srv-devbox/README.md
+    # step 10). The API key is a secret: add CLAUDE_MEM_SERVER_API_KEY to
+    # ~/.claude-mem/settings.json on each host. Without it, hooks keep using
+    # the local SQLite worker.
+    CLAUDE_MEM_RUNTIME = "server";
+    CLAUDE_MEM_SERVER_URL = "http://srv-devbox.mermaid-agama.ts.net:37877";
+    CLAUDE_MEM_SERVER_PROJECT_ID = "3bee384a-652b-4947-bd36-027c429b4589";
   };
 
   programs.claude-code = {

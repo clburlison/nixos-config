@@ -39,6 +39,11 @@ in
       sopsFile = ./cliproxyapi.yaml;
       key = "management-key";
     };
+    # OpenRouter upstream key (openrouter.ai/keys), for the models below.
+    cliproxyapi-openrouter-key = {
+      sopsFile = ./openrouter.yaml;
+      key = "api-key";
+    };
   };
 
   services.cliproxyapi = {
@@ -58,6 +63,44 @@ in
         secret-key._secret = config.sops.secrets.cliproxyapi-management-key.path;
       };
       access.api-keys = [ { _secret = config.sops.secrets.cliproxyapi-api-key.path; } ];
+      # OpenRouter as an upstream: clients use the aliases with the hub's
+      # access key, and the hub sends the OpenRouter key. Only listed models
+      # are exposed. The `-free` ones are rate-limited, not billed.
+      # v8 layout: providers go under the top-level `api-keys` map, with
+      # `keys` per group. At the root, the legacy layout ignores `keys`.
+      api-keys.openai-compatibility = [
+        {
+          name = "openrouter";
+          base-url = "https://openrouter.ai/api/v1";
+          keys = [ { api-key._secret = config.sops.secrets.cliproxyapi-openrouter-key.path; } ];
+          models = [
+            {
+              name = "moonshotai/kimi-k3.1-pro";
+              alias = "kimi-k3.1-pro";
+            }
+            {
+              name = "deepseek/deepseek-v4.1-flash";
+              alias = "deepseek-v4.1-flash";
+            }
+            {
+              name = "z-ai/glm-5.3";
+              alias = "glm-5.3";
+            }
+            {
+              name = "x-ai/grok-4.7";
+              alias = "grok-4.7";
+            }
+            {
+              name = "google/gemma-4-31b-it:free";
+              alias = "gemma-4-31b-free";
+            }
+            {
+              name = "cohere/north-mini-code:free";
+              alias = "north-mini-code-free";
+            }
+          ];
+        }
+      ];
       routing = {
         strategy = "round-robin";
         # Keep a session on one account so its prompt cache is reused.
@@ -72,7 +115,10 @@ in
   };
 
   # Restart on key rotation; the config is regenerated at each start.
-  systemd.services.cliproxyapi.restartTriggers = [ ./cliproxyapi.yaml ];
+  systemd.services.cliproxyapi.restartTriggers = [
+    ./cliproxyapi.yaml
+    ./openrouter.yaml
+  ];
 
   # `sudo cliproxyapi-login -claude-login` (and `-codex-login` or
   # `-codex-device-login`): account logins as the service user, saved to

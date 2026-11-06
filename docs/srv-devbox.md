@@ -312,6 +312,25 @@ printf 'api-key: sk-%s\nmanagement-key: %s\n' \
   && mv cliproxyapi.yaml.tmp hosts/srv-devbox/cliproxyapi.yaml
 ```
 
+OpenRouter is also an upstream (`api-keys.openai-compatibility` in
+`cliproxyapi.nix`): clients call the listed aliases (`glm-5.3`,
+`gemma-4-31b-free`, ...) with the hub's access key, and the hub sends the
+OpenRouter key. Only listed models are exposed; add more from
+<https://openrouter.ai/models>. The key is in `openrouter.yaml` (sops,
+encrypted to this host). Create a key at <https://openrouter.ai/keys>, then
+write the file (`read -s` keeps the key out of shell history; in fish use
+`read -s key`):
+
+```sh
+read -rs key
+printf 'api-key: %s\n' "$key" \
+  | nix run nixpkgs#sops -- encrypt \
+    --filename-override hosts/srv-devbox/openrouter.yaml \
+    --input-type yaml --output-type yaml /dev/stdin \
+  > openrouter.yaml.tmp \
+  && mv openrouter.yaml.tmp hosts/srv-devbox/openrouter.yaml
+```
+
 Sign accounts in with `sudo cliproxyapi-login`, which runs the binary as
 the service user with the service's config and `-no-browser`, so each login
 prints a URL to open on your laptop. The running service picks up new

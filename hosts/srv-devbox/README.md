@@ -277,10 +277,11 @@ The module and package come from nixpkgs-unstable. Nix writes
 `/var/lib/cliproxyapi` and are kept.
 
 The client access key and management key are in `cliproxyapi.yaml`
-(sops, encrypted to this host). Read them on the host:
+(sops, encrypted to this host). Read them on the host (the access key is
+owned by the host user, for its own Claude Code and Codex):
 
 ```sh
-sudo cat /run/secrets/cliproxyapi-api-key
+cat /run/secrets/cliproxyapi-api-key
 sudo cat /run/secrets/cliproxyapi-management-key
 ```
 
@@ -300,12 +301,29 @@ printf 'api-key: sk-%s\nmanagement-key: %s\n' \
 ```
 
 Sign accounts in with `sudo cliproxyapi-login`, which runs the binary as
-the service user with the service's config. The running service picks up
-new accounts without a restart. Use the device code flow, easiest on a
-headless box. Run once per account:
+the service user with the service's config and `-no-browser`, so each login
+prints a URL to open on your laptop. The running service picks up new
+accounts without a restart.
+
+Claude's browser login is the annoying one: its OAuth callback lands on
+port 54545 on srv-devbox, not on the laptop with the browser. Fix: open a
+tunnel from the laptop first and keep it open:
 
 ```sh
+ssh -L 54545:localhost:54545 -L 1455:localhost:1455 srv-devbox
+```
+
+Then, in that SSH session on srv-devbox, run once per account:
+
+```sh
+# Claude
+sudo cliproxyapi-login -claude-login
+
+# Codex, either device code
 sudo cliproxyapi-login -codex-device-login
+
+# Or Codex browser login (uses the 1455 tunnel)
+sudo cliproxyapi-login -codex-login
 ```
 
 Check accounts in the panel at `http://srv-devbox:8317/management.html`
@@ -316,9 +334,41 @@ curl -s http://srv-devbox.mermaid-agama.ts.net:8317/v1/models \
   -H "Authorization: Bearer <api key>" | head -c 300
 ```
 
-Point clients at it as in the gist, with the `http://` URL above:
-`ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` in `~/.claude/settings.json`,
-and a `cliproxy` model provider in `~/.codex/config.toml`.
+Claude Code and Codex route through the hub on every host
+(`modules/common/programs/cliproxyapi.nix`), in their usual `~/.claude` and
+`~/.codex`. Their wrappers read the key at each run and set
+`ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN`, and
+`CLAUDE_CODE_PROMPT_CACHE_TTL=1h` for Claude (through a custom base URL it
+otherwise caches for 5 minutes, not the subscription's 1 hour), and a
+`cliproxyapi` model provider for Codex. `settings.json` and `config.toml`
+stay untouched. T3 Code runs the same `claude` and `codex`, so it follows
+too; for Codex, pick **Use existing CLI**.
+
+srv-devbox uses `http://127.0.0.1:8317` and reads the sops secret directly
+(`hosts/srv-devbox/home.nix`). Macs use the tailnet URL and keep the key in
+the login keychain (service `cliproxyapi-api-key`), like agent-git's token
+(`docs/agent-git.md`): the keychain stays unlocked while 1Password is
+locked. 1Password holds the source copy. Once, save the output of
+`cat /run/secrets/cliproxyapi-api-key` on srv-devbox as an API Credential
+named `CLIProxyAPI` in your Private vault. Then on each Mac, signed in to
+`op`, after `task home`:
+
+```sh
+op read --account my "op://Private/CLIProxyAPI/credential" | cliproxyapi-set-key
+```
+
+`cliproxyapi-set-key` reads stdin (or the clipboard), checks the key against
+the hub, and stores it. After rotating the key, update the 1Password item
+and rerun it on each Mac.
+
+Check that cache writes use the 1-hour TTL: run
+`claude -p hello --output-format json` and look for
+`ephemeral_1h_input_tokens` in `usage.cache_creation`. The 1-hour request
+travels partly in the `anthropic-beta` header, so the hub must forward it.
+
+Without the key, a host keeps its own Claude and Codex logins. To sign in
+directly on a Mac (e.g. clb-work), delete the key:
+`security delete-generic-password -s cliproxyapi-api-key`.
 
 ## Notes
 

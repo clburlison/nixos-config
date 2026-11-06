@@ -59,7 +59,10 @@ in
     claudeMem
     # Keep config.toml, hooks.json, project trusts, and login state writable.
     # The package adds its inline hooks/MCP through targeted CLI overrides.
+    # Routes through the CLIProxyAPI hub when its key is present
+    # (cliproxyapi.nix).
     (pkgs.writeShellScriptBin "codex" ''
+      ${config.clb.cliproxyapi.codexEnv}
       exec ${claudeMem}/bin/claude-mem-codex \
         -c 'tui.keymap.composer.submit=["enter"]' \
         -c 'tui.keymap.editor.insert_newline=["shift-enter"]' \

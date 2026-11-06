@@ -25,6 +25,7 @@ in
     ./programs/worktrunk.nix
     ./programs/ssh.nix
     ./programs/claude-mem.nix
+    ./programs/cliproxyapi.nix
     ./programs/uv.nix
     ./programs/herdr.nix
     ./programs/agent-git.nix

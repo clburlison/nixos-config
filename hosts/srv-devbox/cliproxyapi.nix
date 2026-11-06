@@ -25,13 +25,15 @@ in
 {
   imports = [ moduleWithoutDocs ];
 
-  # Client access key and management panel key. Root-owned; the service
-  # reads them through LoadCredential and writes them into its generated
-  # config.yaml.
+  # Client access key and management panel key. The service reads them
+  # through LoadCredential and writes them into its generated config.yaml.
   sops.secrets = {
+    # Readable by the host user: Claude Code and Codex on this host use it
+    # (modules/common/programs/cliproxyapi.nix).
     cliproxyapi-api-key = {
       sopsFile = ./cliproxyapi.yaml;
       key = "api-key";
+      owner = config.clb.host.user;
     };
     cliproxyapi-management-key = {
       sopsFile = ./cliproxyapi.yaml;
@@ -72,9 +74,10 @@ in
   # Restart on key rotation; the config is regenerated at each start.
   systemd.services.cliproxyapi.restartTriggers = [ ./cliproxyapi.yaml ];
 
-  # `sudo cliproxyapi-login -codex-device-login`: account logins as the service
-  # user, saved to the service's auth dir. The running service picks new
-  # accounts up without a restart.
+  # `sudo cliproxyapi-login -claude-login` (and `-codex-login` or
+  # `-codex-device-login`): account logins as the service user, saved to
+  # the service's auth dir. The running service picks new accounts up
+  # without a restart.
   environment.systemPackages = [
     (pkgs.writeShellScriptBin "cliproxyapi-login" ''
       cd /var/lib/cliproxyapi

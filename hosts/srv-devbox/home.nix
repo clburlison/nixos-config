@@ -12,6 +12,13 @@
   # tailnet round trip.
   home.sessionVariables.CLAUDE_MEM_SERVER_URL = "http://127.0.0.1:37877";
 
+  # The CLIProxyAPI hub runs here too (cliproxyapi.nix); its sops secret is
+  # owned by the host user.
+  clb.cliproxyapi = {
+    url = "http://127.0.0.1:8317";
+    apiKeyFile = "/run/secrets/cliproxyapi-api-key";
+  };
+
   # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so

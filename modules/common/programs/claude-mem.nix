@@ -77,7 +77,8 @@ in
     # ~/.claude-mem/settings.json on each host. Without it, hooks keep using
     # the local SQLite worker.
     CLAUDE_MEM_RUNTIME = "server";
-    CLAUDE_MEM_SERVER_URL = "http://srv-devbox.mermaid-agama.ts.net:37877";
+    # srv-devbox overrides this with loopback (hosts/srv-devbox/home.nix).
+    CLAUDE_MEM_SERVER_URL = lib.mkDefault "http://srv-devbox.mermaid-agama.ts.net:37877";
     CLAUDE_MEM_SERVER_PROJECT_ID = "3bee384a-652b-4947-bd36-027c429b4589";
   };
 

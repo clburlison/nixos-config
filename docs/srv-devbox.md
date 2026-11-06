@@ -358,11 +358,11 @@ the login keychain (service `cliproxyapi-api-key`), like agent-git's token
 (`docs/agent-git.md`): the keychain stays unlocked while 1Password is
 locked. 1Password holds the source copy. Once, save the output of
 `cat /run/secrets/cliproxyapi-api-key` on srv-devbox as an API Credential
-named `CLIProxyAPI` in your Private vault. Then on each Mac, signed in to
+named `CLIProxyAPI` in your Agents vault. Then on each Mac, signed in to
 `op`, after `task home`:
 
 ```sh
-op read --account my "op://Private/CLIProxyAPI/credential" | cliproxyapi-set-key
+op read --account my "op://Agents/CLIProxyAPI/cliproxyapi-api-key" | cliproxyapi-set-key
 ```
 
 `cliproxyapi-set-key` reads stdin (or the clipboard), checks the key against

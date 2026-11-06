@@ -143,6 +143,13 @@ token is a sops-nix secret (`secrets.yaml`, encrypted to this host's key in
 the host key changes: redo "Add a NixOS host" there before `task system`, or
 sops-nix can't decrypt the secret.
 
+Once `agent-git-check` passes, switch the clone from step 5 to SSH so pushes
+use the agent-git key:
+
+```sh
+git remote set-url origin git@github.com:clburlison/nixos-config.git
+```
+
 ## 8. Tailscale
 
 `tailscaled` starts at boot (`services.tailscale` in `system.nix`). Log in

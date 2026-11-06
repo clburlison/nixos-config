@@ -167,7 +167,7 @@ HTTPS certificates enabled for the tailnet (admin console > DNS > HTTPS
 Certificates).
 
 - Direct: `http://srv-devbox:3773` from the LAN or the tailnet (plain HTTP).
-- Tailnet HTTPS: the `https://srv-devbox.<tailnet>.ts.net` URL.
+- Tailnet HTTPS: the `https://srv-devbox.mermaid-agama.ts.net` URL.
 
 After `task system` and `task home`:
 
@@ -176,6 +176,80 @@ systemctl --user status t3-serve
 journalctl --user -u t3-serve
 t3 pair --tailscale   # pairing link through the tailnet HTTPS URL
 t3 pair               # direct; swap the printed host for srv-devbox:3773
+```
+
+## 10. claude-mem hosted server
+
+`claude-mem-server.nix` runs upstream's Docker Compose stack
+(<https://docs.claude-mem.ai/hosted-server>) as the `claude-mem-server`
+system service, pinned to a release tag. Compose builds the images locally,
+so the first `task system` start takes several minutes. The server listens
+on port 37877 on all interfaces.
+
+Postgres credentials are generated once into
+`/var/lib/claude-mem-server/postgres.env`. Postgres only reads them when it
+creates its volume, so keep that file as long as the volume exists.
+
+The worker generates observations through OpenRouter: prepaid credits, so
+access stops instead of billing on when they run out. Create a key at
+<https://openrouter.ai/keys>, then encrypt the env file (only the host can
+decrypt, so rewrite the whole file to change it):
+
+```sh
+printf '%s\n' \
+  'CLAUDE_MEM_SERVER_PROVIDER=openrouter' \
+  'OPENROUTER_API_KEY=<key>' \
+  'CLAUDE_MEM_SERVER_MODEL=~anthropic/claude-haiku-latest' \
+  | nix run nixpkgs#sops -- encrypt \
+    --filename-override hosts/srv-devbox/claude-mem-server.env.sops \
+    --input-type binary --output-type binary /dev/stdin \
+  > hosts/srv-devbox/claude-mem-server.env.sops
+```
+
+The model tracks the newest Haiku, like the local plugin's default
+(upstream recommends Haiku for compression). A Claude subscription
+(`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, provider `claude`)
+also works.
+
+Commit, pull on the host, and `task system`; the secret change restarts
+the service.
+
+`sudo claude-mem-server-compose` is `docker compose` with this stack's files:
+
+```sh
+systemctl status claude-mem-server
+sudo claude-mem-server-compose ps
+sudo claude-mem-server-compose logs -f claude-mem-worker
+# First API key (shown once):
+sudo claude-mem-server-compose exec claude-mem-server \
+  bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
+  --name clburlison --scope memories:read,memories:write
+```
+
+Connect a client through the tailnet name. It resolves on and off the home
+network, and at home Tailscale connects directly over the LAN:
+
+```sh
+claude mcp add --scope user --transport http claude-mem \
+  http://srv-devbox.mermaid-agama.ts.net:37877/v1/mcp \
+  --header "Authorization: Bearer cm_..."
+```
+
+That name needs Tailscale running on the client. For a LAN fallback at
+home with Tailscale off, add a local DNS record on the home router for
+`srv-devbox.mermaid-agama.ts.net` pointing to srv-devbox's LAN IP
+(192.xxx.xxx.xxx, from DHCP, so reserve it). Tailscale's MagicDNS answers
+first whenever Tailscale is up, so the same URL works either way. Away from
+home there is no fallback without Tailscale: upstream says not to expose
+the server to the internet.
+
+To upgrade, change `version` and `hash` in `claude-mem-server.nix`. Back up
+first and follow upstream's "Upgrading the Postgres image" when the
+Postgres image changes:
+
+```sh
+sudo claude-mem-server-compose exec postgres \
+  sh -c 'pg_dumpall -U "$POSTGRES_USER"' > claude-mem-backup.sql
 ```
 
 ## Notes

@@ -129,6 +129,7 @@ in
           export CLAUDE_CODE_PROMPT_CACHE_TTL=1h
         fi
         unset key
+        ${config.clb.mcp.claudeEnv}
         exec -a "$0" ${pkgs.claude-code}/bin/claude "$@"
         EOF
         chmod +x $out/bin/claude

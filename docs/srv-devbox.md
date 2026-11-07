@@ -451,3 +451,116 @@ printf 'login-password: %s\n' "$(nix run nixpkgs#openssl -- rand -hex 16)" \
   > cpa-usage-keeper.yaml.tmp \
   && mv cpa-usage-keeper.yaml.tmp hosts/srv-devbox/cpa-usage-keeper.yaml
 ```
+
+## 13. MCP hub
+
+`mcp-hub.nix` puts Slack, Zoom and Intercom MCP access behind one endpoint on
+port 8319 (Caddy, plain HTTP, tailnet interface only). It replaces the
+claude.ai connectors, which an `ANTHROPIC_BASE_URL` setup can't reach. Each
+server is at `http://srv-devbox.mermaid-agama.ts.net:8319/<name>/mcp` and
+every request needs `Authorization: Bearer <hub token>`.
+
+| Server | Upstream | Auth on the hub |
+| --- | --- | --- |
+| `slack` | `https://mcp.slack.com/mcp` | OAuth, your Slack app |
+| `zoom` | `https://mcp.zoom.us/mcp/zoom/streamable` | OAuth, your Zoom app |
+| `intercom` | `https://mcp.intercom.com/mcp` | access token as a bearer token |
+
+Slack and Zoom don't support dynamic client registration, so each needs an
+OAuth app you register. The hub does the OAuth once and refreshes the tokens
+(`mcp-remote`, bridged to HTTP by `mcp-proxy`); clients only ever hold the hub
+token. Intercom with a bearer token has no Fin Operator tools (OAuth only).
+
+Secrets are in 1Password. sops holds one thing: the hub's service account
+token. Each service resolves its `{{ op://... }}` references with
+`op inject` at start, into `/run/mcp-hub` (tmpfs, root only). The OAuth
+tokens themselves are in `/var/lib/mcp-hub/<name>/mcp-auth`.
+
+### OAuth apps
+
+Register this redirect URL on each app (the login callback, see below):
+
+- Slack: `http://localhost:3118/oauth/callback`
+- Zoom: `http://localhost:3119/oauth/callback`
+
+Slack: a confidential app, internal or Marketplace (unlisted apps can't use
+MCP), approved by a workspace admin. Add the user token scopes listed in
+`mcp-hub.nix` to the app; they are read-only. For writes add the write scopes
+to both the app and `scope` there. Zoom: a General app with user-level
+OAuth; the scopes are the ones set on the app, from the Zoom MCP server docs.
+If a provider rejects an `http://localhost` redirect, the login in the next
+section can't complete; that is untested.
+
+### 1Password setup
+
+| Vault | Item | Fields |
+| --- | --- | --- |
+| `MCP` | `slack` | `client-id`, `client-secret` |
+| `MCP` | `zoom` | `client-id`, `client-secret` |
+| `MCP` | `intercom` | `token` |
+| `Agents` | `mcp-hub` | `credential`: the hub token, e.g. `openssl rand -hex 32` |
+
+Create a service account `mcp-hub` with **read** on `MCP` and `Agents` (grant
+access when creating it). Clients read `Agents/mcp-hub` with the existing
+`agents` service account from agent-git, so a compromised client can't read
+the upstream credentials in `MCP`. Write the token into `mcp-hub.yaml` (only
+the host can decrypt; `read -s` keeps it out of shell history, fish: `read -s token`):
+
+```sh
+read -rs token
+printf 'op-token: %s\n' "$token" \
+  | nix run nixpkgs#sops -- encrypt \
+    --filename-override hosts/srv-devbox/mcp-hub.yaml \
+    --input-type yaml --output-type yaml /dev/stdin \
+  > mcp-hub.yaml.tmp \
+  && mv mcp-hub.yaml.tmp hosts/srv-devbox/mcp-hub.yaml
+```
+
+Create this file before the first `task system`: the build fails without it.
+
+### Log in (once per OAuth server)
+
+`mcp-hub-slack` and `mcp-hub-zoom` don't start until they have tokens. On
+srv-devbox:
+
+```sh
+sudo mcp-hub-login slack
+```
+
+It prints the authorization URL and waits for the callback on port 3118
+(`3119` for Zoom). From your machine, forward that port first, then open the
+URL in your browser:
+
+```sh
+ssh -L 3118:localhost:3118 srv-devbox
+```
+
+After the redirect the tokens are saved and the service restarts. If a
+refresh token is ever revoked, run the login again.
+
+### Clients
+
+A host gets servers by listing them in its override file
+(`clb.mcp.servers` in `hosts/<name>/home.nix`); an unlisted host has none.
+`modules/common/programs/mcp.nix` adds them through
+`programs.claude-code.mcpServers`. The `claude` wrapper reads
+`op://Agents/mcp-hub/credential` at each start with the agent-git token
+(keychain on Darwin, `/run/secrets/agent-git-token` on Linux) and exports
+it as `MCP_HUB_TOKEN`. Without that token Claude Code still starts and the
+hub servers show as failed. Check with `/mcp` in Claude Code. The servers
+are namespaced under the `claude-code-home-manager` plugin.
+
+### Operations
+
+```sh
+systemctl status mcp-hub-gateway mcp-hub-slack mcp-hub-zoom
+journalctl -fu mcp-hub-slack
+# After changing a secret in 1Password:
+sudo systemctl restart 'mcp-hub-*'
+```
+
+To add a server, add an entry to `servers` in `mcp-hub.nix`, then list its
+name in the hosts that should have it. To update `mcp-remote`, change
+`mcpRemote` there (`npm view mcp-remote version`) and `task system`. To
+rotate the hub token, change `Agents/mcp-hub`, restart the hub services, and
+restart Claude Code on each client.

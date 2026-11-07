@@ -26,6 +26,7 @@ in
     ./programs/ssh.nix
     ./programs/claude-mem.nix
     ./programs/cliproxyapi.nix
+    ./programs/mcp.nix
     ./programs/uv.nix
     ./programs/herdr.nix
     ./programs/agent-git.nix

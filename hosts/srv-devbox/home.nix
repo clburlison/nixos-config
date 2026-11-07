@@ -19,6 +19,16 @@
     apiKeyFile = "/run/secrets/cliproxyapi-api-key";
   };
 
+  # The MCP hub runs here too (mcp-hub.nix), so skip the tailnet round trip.
+  clb.mcp = {
+    hubUrl = "http://127.0.0.1:8319";
+    servers = [
+      "slack"
+      "intercom"
+      "zoom"
+    ];
+  };
+
   # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so

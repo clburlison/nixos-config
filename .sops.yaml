@@ -24,3 +24,7 @@ creation_rules:
     key_groups:
       - age:
           - *srv-devbox
+  - path_regex: ^hosts/srv-devbox/mcp-hub\.yaml$
+    key_groups:
+      - age:
+          - *srv-devbox

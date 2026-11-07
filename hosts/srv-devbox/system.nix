@@ -10,6 +10,7 @@
     ./claude-mem-server.nix
     ./cliproxyapi.nix
     ./cpa-usage-keeper.nix
+    ./mcp-hub.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

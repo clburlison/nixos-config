@@ -83,6 +83,18 @@ in
       default = null;
       description = "Linux only: file holding the access key. Darwin uses the keychain.";
     };
+    codexProviders = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [
+        "openai"
+        "openrouter"
+      ];
+      description = ''
+        Hub providers (the `owned_by` of /v1/models) whose models the codex
+        wrapper offers. Add a provider here when the hub gets one Codex can
+        use; its models then appear without listing them.
+      '';
+    };
     codexEnv = lib.mkOption {
       type = lib.types.lines;
       readOnly = true;
@@ -106,6 +118,39 @@ in
       if cliproxyapi_key="$(${readKey})" && [ -n "$cliproxyapi_key" ]; then
         export CLIPROXYAPI_API_KEY="$cliproxyapi_key"
         set -- ${lib.escapeShellArgs codexArgs} "$@"
+
+        # A custom model provider makes Codex fall back to its bundled model
+        # list, which lags (no GPT 6.1 Terra). The hub serves a live catalog
+        # in Codex's format, so keep a copy fresh for an hour and hand it
+        # over. It lists every provider, so keep only the models whose
+        # owner (`owned_by` in the plain /v1/models list) is in
+        # codexProviders; Codex can't use e.g. Claude. The catalog is
+        # requested as the wrapped codex's own version, and cached per
+        # version. A failed refresh keeps the last copy.
+        catalog="$HOME/.cache/cliproxyapi/codex-models-${pkgs.codex.version}.json"
+        if [ -z "$(${pkgs.findutils}/bin/find "$catalog" -mmin -60 2>/dev/null)" ]; then
+          mkdir -p "''${catalog%/*}"
+          catalog_tmp="$catalog.$$"
+          hub_get() {
+            ${pkgs.curl}/bin/curl -sf -m 5 -K - -o "$1" "$2" \
+              <<<"header = \"Authorization: Bearer $cliproxyapi_key\""
+          }
+          if hub_get "$catalog_tmp" ${lib.escapeShellArg "${cfg.url}/v1/models?client_version=${pkgs.codex.version}"} \
+            && hub_get "$catalog_tmp.owners" ${lib.escapeShellArg "${cfg.url}/v1/models"} \
+            && ${pkgs.jq}/bin/jq -e \
+              --slurpfile owned "$catalog_tmp.owners" \
+              --argjson providers ${lib.escapeShellArg (builtins.toJSON cfg.codexProviders)} \
+              '($owned[0].data | map(select(.owned_by | IN($providers[])) | .id)) as $ids
+                | .models |= map(select(.slug | IN($ids[])))
+                | select(.models | length > 0)' \
+              "$catalog_tmp" >"$catalog_tmp.json" 2>/dev/null; then
+            mv "$catalog_tmp.json" "$catalog"
+          fi
+          rm -f "$catalog_tmp" "$catalog_tmp.owners" "$catalog_tmp.json"
+        fi
+        if [ -s "$catalog" ]; then
+          set -- -c "model_catalog_json=\"$catalog\"" "$@"
+        fi
       fi
     '';
 

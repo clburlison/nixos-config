@@ -41,7 +41,8 @@ Consumers: agent-git (`docs/agent-git.md`), the CLIProxyAPI client key
 | `cpa-usage-keeper` (Password) | `password` | Keeper dashboard login |
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | claude-mem worker dotenv |
 | `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | claude-mem viewer proxy (Caddy) on srv-devbox |
-| `claude-mem-api-key` (API Credential) | `credential` (`memories:read,memories:write` key) | not read by Nix; copy into each host's claude-mem settings and MCP header |
+| `claude-mem-api-key` (API Credential) | `credential` (`memories:read,memories:write` key) | not read by Nix; in each host's claude-mem settings and MCP header until rotated to `clb-memory-rw` |
+| `clb-memory-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | replacement for `claude-mem-api-key`; not read by Nix |
 
 To add one: create the item in `Agents`, then add it to
 `clb.opAgents.secrets` (system or Home Manager) and point the consumer at its

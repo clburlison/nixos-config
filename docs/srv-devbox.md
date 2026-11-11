@@ -239,6 +239,11 @@ on the existing project (`local-hook-project`,
 `CLAUDE_MEM_SERVER_PROJECT_ID` in `modules/common/programs/claude-mem.nix`);
 without them the CLI bootstraps its own.
 
+Keep the team named `local-hook-team`. Upstream finds it by that name in
+`server keys rotate`, the installer's server bootstrap and `api-key create`
+without `--team`; after a rename each of those creates a new, empty team
+and project.
+
 ```sh
 sudo claude-mem-server-compose exec -T claude-mem-server \
   bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
@@ -249,7 +254,8 @@ sudo claude-mem-server-compose exec -T claude-mem-server \
 
 | 1Password item (Agents) | Scopes | Used by |
 | --- | --- | --- |
-| `claude-mem-api-key` | `memories:read,memories:write` | hooks (`CLAUDE_MEM_SERVER_API_KEY` in `~/.claude-mem/settings.json`) and the `claude-mem` MCP server header, on every host |
+| `claude-mem-api-key` | `memories:read,memories:write` | hooks (`CLAUDE_MEM_SERVER_API_KEY` in `~/.claude-mem/settings.json`) and the `claude-mem` MCP server header, on every host; to be replaced by `clb-memory-rw`, then revoked |
+| `clb-memory-rw` | `memories:read,memories:write` | replacement for `claude-mem-api-key`, not yet on hosts |
 | `claude-mem-viewer` | `memories:read` | the viewer proxy below, through op-agents |
 
 Revoke a key with `server api-key revoke <id>`.

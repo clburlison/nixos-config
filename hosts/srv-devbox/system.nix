@@ -33,14 +33,14 @@
   # Direct access to t3-serve (home.nix) from the LAN and the tailnet.
   networking.firewall.allowedTCPPorts = [ 3773 ];
 
-  # agent-git (docs/agent-git.md): the 1Password service account token,
-  # encrypted to this host's SSH host key (.sops.yaml). Lingering starts
-  # the user's agent-git services at boot, before anyone logs in.
-  sops.secrets.agent-git-token = {
-    sopsFile = ./secrets.yaml;
-    owner = config.clb.host.user;
-    mode = "0400";
-  };
+  # The host's one secret, the op-agents service account token
+  # (docs/op-agents.md), encrypted to this host's SSH host key (.sops.yaml).
+  # Every other secret comes from the Agents vault through it.
+  sops.defaultSopsFile = ./secrets.yaml;
+  # Stored under its old name; renaming means re-encrypting the file.
+  sops.secrets.op-agents-token.key = "agent-git-token";
+  # Lingering starts the user's agent-git services at boot, before anyone
+  # logs in.
   users.users.${config.clb.host.user}.linger = true;
 
   # Set at install time. Read the NixOS release notes before changing.

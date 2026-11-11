@@ -8,8 +8,9 @@ key are the fallback.
 
 How it works on each Mac:
 
-1. A 1Password **service account** token sits in the login keychain. The login
-   keychain stays unlocked while the screen is locked.
+1. The op-agents service account token sits in the login keychain
+   (`docs/op-agents.md`). The login keychain stays unlocked while the screen
+   is locked.
 2. launchd runs a dedicated `ssh-agent` on `~/.ssh/agent-git.sock`.
 3. `agent-git-load` reads `op://Agents/git-agent/private key` with
    the token, pipes it into that agent, and writes the public key to
@@ -78,47 +79,22 @@ An authentication key can reach every repository your account can.
 
 ### 3. Service account
 
-1Password.com > **Developer > Service Accounts > New**:
-
-- Name: `agents`
-- Vault: `Agents`, **read** only. Grant access when creating it; you may not be
-  able to change vault access afterwards.
-- Copy the token. 1Password shows it once. Save it as an API Credential in
-  your Private vault, not `Agents`. The current item is
-  `op://Private/ztezaqx7cdcf65dgxtawptugaq/credential` in the `my` account.
-  The reference only locates the item; reading it still requires your
-  1Password access.
-
-All machines share this one token.
+The `agents` service account from `docs/op-agents.md` reads this item. Set
+it up there once.
 
 ## Per machine
 
-### 4. Apply
+### 4. Apply and set the token
+
+`task switch`, then set the token as in "Mac" in `docs/op-agents.md`
+(`op-agents-set-token` also reloads agent-git), and run:
 
 ```sh
-task switch
-```
-
-### 5. Token in the keychain and verify
-
-Signed in to `op` (see "Before you start"), pipe the token from your Private
-vault:
-
-```sh
-op read --account my "op://Private/ztezaqx7cdcf65dgxtawptugaq/credential" | agent-git-set-token
 agent-git-check
 ```
 
-If you recreate the token item, update this reference and the one in step 3.
-Without a pipe, `agent-git-set-token` reads the clipboard.
-
-`agent-git-set-token` reads stdin (or the clipboard), checks the
-token with `op whoami`, stores it, clears the clipboard, and reloads the key.
-Don't use `security add-generic-password -w` at its prompt: the prompt
-truncates input at 128 characters and service account tokens are longer.
-
-`agent-git-check` tests each link: keychain token, `op whoami`, item access,
-launchd jobs, socket, loaded key matches the item, a signed and verified test
+`agent-git-check` tests each link: token, `op whoami`, item access, launchd
+jobs, socket, loaded key matches the item, a signed and verified test
 commit, SSH auth to GitHub, and that git and SSH resolve to the agent key. It
 exits non-zero on any failure.
 
@@ -131,53 +107,19 @@ network, so pushes from Codex can need approval.
 
 ## NixOS hosts
 
-A headless host has no keychain or 1Password app, so the token is a
-[sops-nix](https://github.com/Mic92/sops-nix) secret instead:
+A headless host has no keychain or 1Password app, so the token is the
+host's sops-nix secret, `/run/secrets/op-agents-token`; see "NixOS host" in
+`docs/op-agents.md` to add one.
 
-- `hosts/<name>/secrets.yaml` holds the token under `agent-git-token`,
-  encrypted to the host's SSH host key. `.sops.yaml` lists each host's key,
-  converted to age. Only that host can decrypt it.
-- At boot sops-nix decrypts it to `/run/secrets/agent-git-token` (tmpfs, mode
-  0400, owned by the host user). It never sits decrypted on disk.
 - systemd user services replace the launchd jobs: `agent-git-ssh-agent` and an
-  `agent-git-load` timer every 5 minutes. The host enables lingering, so they
+  `agent-git-load` timer every 5 minutes. The host enables lingering
+  (`users.users.<user>.linger` in `hosts/srv-devbox/system.nix`), so they
   start at boot without a login.
 - If the agent key isn't loaded, `agent-git-sign` falls back to the personal
   key through the session agent, such as one forwarded over SSH. There is no
   1Password app to fall back to.
 
-The host override file wires it up (`sops.secrets.agent-git-token` and
-`users.users.<user>.linger`; see `hosts/srv-devbox/system.nix`).
-
-### Add a NixOS host
-
-1. On the host, convert its SSH host key to an age recipient:
-
-   ```sh
-   nix run nixpkgs#ssh-to-age -- < /etc/ssh/ssh_host_ed25519_key.pub
-   ```
-
-   Add it to `.sops.yaml` under `keys`, with a `creation_rules` entry for
-   `hosts/<name>/secrets.yaml`.
-
-2. On a Mac signed in to `op`, in the repo root, encrypt the token to it. The
-   token only passes through pipes:
-
-   ```sh
-   op read --account my "op://Private/ztezaqx7cdcf65dgxtawptugaq/credential" \
-     | sed 's/^/agent-git-token: /' \
-     | nix run nixpkgs#sops -- encrypt --filename-override hosts/<name>/secrets.yaml \
-       --input-type yaml --output-type yaml /dev/stdin > hosts/<name>/secrets.yaml
-   ```
-
-   No one but the host can decrypt the file, so to change it, rerun this
-   instead of `sops edit`.
-
-3. Commit, push, and pull on the host. Then `task system` (decrypts the
-   secret, enables lingering) and `task home` (installs the services).
-4. Run `agent-git-check` on the host.
-
-Reinstalling a host changes its host key. Repeat steps 1 to 3 with the new key.
+Run `agent-git-check` on the host once the token is in place.
 
 ## Operations
 
@@ -188,11 +130,8 @@ Reinstalling a host changes its host key. Repeat steps 1 to 3 with the new key.
 - **Rotate key**: delete both GitHub keys and the `git-agent` item, redo steps
   1 and 2, then on each machine run
   `SSH_AUTH_SOCK=~/.ssh/agent-git.sock ssh-add -D` and reload.
-- **Rotate token**: create a new token for the service account, update it in
-  your Private vault, run `agent-git-set-token` on every Mac and redo step 2
-  of "Add a NixOS host" for each NixOS host, then revoke the old one.
-- **Machine compromised**: rotate the token and the key. Every machine needs
-  the new token.
+- **Rotate token**: see `docs/op-agents.md`.
+- **Machine compromised**: rotate the token (`docs/op-agents.md`) and the key.
 
 ## Limits
 

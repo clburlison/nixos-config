@@ -9,9 +9,8 @@
 # is locked, or on a headless host without 1Password. Every session uses it;
 # 1Password and the personal key are the fallback when it isn't loaded. A
 # 1Password service account reads one SSH key, shared by all machines, from the
-# Agents vault and loads it into a dedicated ssh-agent. Darwin keeps the
-# service account token in the login keychain; NixOS gets it from a sops-nix
-# secret. See docs/agent-git.md.
+# Agents vault and loads it into a dedicated ssh-agent. The token comes from
+# op-agents.nix. See docs/agent-git.md.
 let
   inherit (pkgs.stdenv) isDarwin isLinux;
   home = config.home.homeDirectory;
@@ -19,19 +18,14 @@ let
   item = "git-agent";
   socket = "${home}/.ssh/agent-git.sock";
   publicKeyFile = "${home}/.ssh/agent-git.pub";
-  keychainService = "op-agents-service-account";
   logFile = "${home}/Library/Logs/agent-git.log";
-  # Decrypted by sops-nix from hosts/<name>/secrets.yaml.
-  tokenFile = "/run/secrets/agent-git-token";
+  inherit (config.clb.opAgents) readToken tokenSource tokenFix;
 
   sshKeygen = if isDarwin then "/usr/bin/ssh-keygen" else "${pkgs.openssh}/bin/ssh-keygen";
   # Signs with the personal key when the agent key isn't loaded. Linux has no
   # 1Password app, so it uses the session agent, e.g. one forwarded over SSH.
   fallbackSigner =
     if isDarwin then "/Applications/1Password.app/Contents/MacOS/op-ssh-sign" else sshKeygen;
-  tokenSource = if isDarwin then "keychain service ${keychainService}" else tokenFile;
-  tokenFix =
-    if isDarwin then "run agent-git-set-token" else "add the sops secret (docs/agent-git.md)";
   logHint = if isDarwin then logFile else "journalctl --user -u agent-git-load";
 
   # git's gpg.ssh.program. Signs with the agent key when loaded.
@@ -68,21 +62,6 @@ let
     '';
   };
 
-  # Shared by the loader and the check script.
-  readToken =
-    if isDarwin then
-      ''
-        read_token() {
-          /usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w 2>/dev/null
-        }
-      ''
-    else
-      ''
-        read_token() {
-          cat ${tokenFile} 2>/dev/null
-        }
-      '';
-
   agentGitLoad = pkgs.writeShellApplication {
     name = "agent-git-load";
     runtimeInputs = [
@@ -109,43 +88,6 @@ let
       op read "op://${vault}/${item}/private key?ssh-format=openssh" | ssh-add -q -
       ssh-add -L | head -n 1 > ${publicKeyFile}
       echo "$(date -u +%FT%TZ) loaded ${vault}/${item}" >&2
-    '';
-  };
-
-  # The `security -w` prompt truncates at 128 chars, far shorter than a
-  # service account token. `security -i` reads the command from stdin, which
-  # keeps the token out of argv and shell history.
-  agentGitSetToken = pkgs.writeShellApplication {
-    name = "agent-git-set-token";
-    runtimeInputs = [ pkgs._1password-cli ];
-    text = ''
-      if [ -t 0 ]; then
-        echo "Reading token from the clipboard." >&2
-        token="$(/usr/bin/pbpaste)"
-      else
-        token="$(cat)"
-      fi
-      token="$(printf '%s' "$token" | tr -d '[:space:]')"
-
-      if [ -z "$token" ]; then
-        echo "No token on the clipboard or stdin." >&2
-        exit 1
-      fi
-      if ! OP_SERVICE_ACCOUNT_TOKEN="$token" op whoami >/dev/null; then
-        echo "op whoami rejected the token (''${#token} chars); not stored." >&2
-        exit 1
-      fi
-
-      printf 'add-generic-password -U -s %s -a %s -T /usr/bin/security -w %s\n' \
-        ${keychainService} "$USER" "$token" | /usr/bin/security -i
-      if [ -t 0 ]; then
-        /usr/bin/pbcopy </dev/null
-        echo "Cleared the clipboard." >&2
-      fi
-      unset token
-
-      /bin/launchctl kickstart -k "gui/$(id -u)/com.clburlison.agent-git-load"
-      echo "Stored in keychain service ${keychainService} and reloaded. Run agent-git-check." >&2
     '';
   };
 
@@ -308,8 +250,6 @@ in
     }
 
     (lib.mkIf isDarwin {
-      home.packages = [ agentGitSetToken ];
-
       launchd.agents.agent-git-ssh-agent = {
         enable = true;
         config = {

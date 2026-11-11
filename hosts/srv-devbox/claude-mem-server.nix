@@ -50,8 +50,8 @@ let
       --file ${src}/docker-compose.yml \
       --file ${override} \
       --env-file ${stateDir}/postgres.env \
-      --env-file ${config.sops.secrets.claude-mem-server-env.path} \
-      --env-file ${config.sops.templates.claude-mem-server-cliproxy-env.path} \
+      --env-file ${config.clb.opAgents.secrets.claude-mem-server-env.path} \
+      --env-file ${config.clb.opAgents.secrets.claude-mem-server-cliproxy-env.path} \
       "$@"
   '';
 in
@@ -63,19 +63,21 @@ in
     autoPrune.enable = true;
   };
 
-  # Dotenv file, encrypted whole (sops binary format). Holds the worker's
-  # provider settings and credential. docs/srv-devbox.md step 10 shows how
-  # to replace it.
-  sops.secrets.claude-mem-server-env = {
-    sopsFile = ./claude-mem-server.env.sops;
-    format = "binary";
+  clb.opAgents.secrets = {
+    # Dotenv file, kept whole in a Secure Note. Holds the worker's provider
+    # settings and credential. docs/srv-devbox.md step 10 shows how to
+    # replace it.
+    claude-mem-server-env = {
+      reference = "op://Agents/claude-mem-server-env/notesPlain";
+      services = [ "claude-mem-server" ];
+    };
+    # The hub's client access key, as the worker's OpenRouter key. The last
+    # env file, so it wins over any OPENROUTER_API_KEY above.
+    claude-mem-server-cliproxy-env = {
+      template = "OPENROUTER_API_KEY={{ op://Agents/CLIProxyAPI/cliproxyapi-api-key }}";
+      services = [ "claude-mem-server" ];
+    };
   };
-
-  # The hub's client access key, as the worker's OpenRouter key. The last
-  # env file, so it wins over any OPENROUTER_API_KEY above.
-  sops.templates.claude-mem-server-cliproxy-env.content = ''
-    OPENROUTER_API_KEY=${config.sops.placeholder.cliproxyapi-api-key}
-  '';
 
   # Wraps compose with this stack's files for operations as root:
   # `sudo claude-mem-server-compose ps`, `logs -f`, `exec ...`.
@@ -92,10 +94,6 @@ in
     requires = [ "docker.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    restartTriggers = [
-      config.sops.secrets.claude-mem-server-env.sopsFile
-      config.sops.secrets.cliproxyapi-api-key.sopsFile
-    ];
 
     # Postgres reads its credentials only when it creates the data volume,
     # so they are generated once on the host and never rotated by Nix. Hex

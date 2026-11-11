@@ -1,26 +1,11 @@
-# sops-nix recipients (docs/agent-git.md). Each host decrypts with its SSH
+# sops-nix recipients (docs/op-agents.md). Each host decrypts with its SSH
 # host key, converted to age on the host:
 #   nix run nixpkgs#ssh-to-age -- < /etc/ssh/ssh_host_ed25519_key.pub
+# Each host's secrets.yaml holds only the op-agents service account token.
 keys:
   - &srv-devbox age1xcyftsx9j79jup6fg33fpf4xw9lq42kpglt4czcycd6wpwyhgdxqanvd8c
 creation_rules:
   - path_regex: ^hosts/srv-devbox/secrets\.yaml$
-    key_groups:
-      - age:
-          - *srv-devbox
-  - path_regex: ^hosts/srv-devbox/claude-mem-server\.env\.sops$
-    key_groups:
-      - age:
-          - *srv-devbox
-  - path_regex: ^hosts/srv-devbox/cliproxyapi\.yaml$
-    key_groups:
-      - age:
-          - *srv-devbox
-  - path_regex: ^hosts/srv-devbox/openrouter\.yaml$
-    key_groups:
-      - age:
-          - *srv-devbox
-  - path_regex: ^hosts/srv-devbox/cpa-usage-keeper\.yaml$
     key_groups:
       - age:
           - *srv-devbox

@@ -14,16 +14,14 @@ let
   stateDir = "/var/lib/cpa-usage-keeper";
 in
 {
-  # Dashboard login password.
-  sops.secrets.cpa-usage-keeper-login-password = {
-    sopsFile = ./cpa-usage-keeper.yaml;
-    key = "login-password";
+  # The hub's management key and the dashboard login password.
+  clb.opAgents.secrets.cpa-usage-keeper-env = {
+    template = ''
+      CPA_MANAGEMENT_KEY={{ op://Agents/CLIProxyAPI/management-key }}
+      LOGIN_PASSWORD={{ op://Agents/cpa-usage-keeper/password }}
+    '';
+    services = [ "cpa-usage-keeper" ];
   };
-
-  sops.templates.cpa-usage-keeper-env.content = ''
-    CPA_MANAGEMENT_KEY=${config.sops.placeholder.cliproxyapi-management-key}
-    LOGIN_PASSWORD=${config.sops.placeholder.cpa-usage-keeper-login-password}
-  '';
 
   systemd.services.cpa-usage-keeper = {
     description = "CPA Usage Keeper";
@@ -36,8 +34,6 @@ in
       "network-online.target"
     ];
     wantedBy = [ "multi-user.target" ];
-    restartTriggers = [ config.sops.templates.cpa-usage-keeper-env.content ];
-
     environment = {
       # The hub's HTTP API and its usage queue (RESP on the same port).
       CPA_BASE_URL = "http://127.0.0.1:${toString config.services.cliproxyapi.settings.server.port}";
@@ -52,7 +48,7 @@ in
 
     serviceConfig = {
       ExecStart = lib.getExe pkgs.cpa-usage-keeper;
-      EnvironmentFile = config.sops.templates.cpa-usage-keeper-env.path;
+      EnvironmentFile = config.clb.opAgents.secrets.cpa-usage-keeper-env.path;
       DynamicUser = true;
       StateDirectory = "cpa-usage-keeper";
       WorkingDirectory = stateDir;

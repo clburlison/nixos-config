@@ -138,11 +138,12 @@ After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 
 ## 7. agent-git
 
-Lets the host sign commits and reach GitHub without a forwarded agent. The
-token is a sops-nix secret (`secrets.yaml`, encrypted to this host's key in
-`.sops.yaml`); see "NixOS hosts" in `docs/agent-git.md`. After a reinstall,
-the host key changes: redo "Add a NixOS host" there before `task system`, or
-sops-nix can't decrypt the secret.
+Lets the host sign commits and reach GitHub without a forwarded agent. It
+uses the host's one secret, the op-agents service account token
+(`secrets.yaml`, encrypted to this host's key in `.sops.yaml`); every other
+secret on this host comes from the Agents vault through it
+(`docs/op-agents.md`). After a reinstall, the host key changes: redo "NixOS
+host" there before `task system`, or sops-nix can't decrypt the token.
 
 Once `agent-git-check` passes, switch the clone from step 5 to SSH so pushes
 use the agent-git key:
@@ -204,27 +205,20 @@ sets the provider (`openrouter`, which takes any OpenAI-compatible base
 URL), the base URL (`http://host.docker.internal:8317/v1`, the Docker host
 gateway, since 127.0.0.1 in the container is the container) and the model
 (`gpt-6-luna`; list the hub's models with `GET /v1/models`). The key is the
-hub's client access key, rendered from `cliproxyapi.yaml` by sops.
+hub's client access key, filled in from `op://Agents/CLIProxyAPI` by
+op-agents.
 
-`claude-mem-server.env.sops` (sops binary dotenv, encrypted whole) holds
-any other worker env. To replace it (only the host can decrypt, so rewrite
-the whole file):
-
-```sh
-printf '%s\n' \
-  'OPENROUTER_API_KEY=<openrouter.ai key, unused while the hub is set>' \
-  | nix run nixpkgs#sops -- encrypt \
-    --filename-override hosts/srv-devbox/claude-mem-server.env.sops \
-    --input-type binary --output-type binary /dev/stdin \
-  > hosts/srv-devbox/claude-mem-server.env.sops
-```
+The Secure Note `claude-mem-server-env` in the Agents vault holds any other
+worker env as a dotenv, e.g.
+`OPENROUTER_API_KEY=<openrouter.ai key, unused while the hub is set>`. Edit
+the note to change it.
 
 To go back to openrouter.ai, drop `CLAUDE_MEM_OPENROUTER_BASE_URL` and the
 rendered key env file, and set the model to an OpenRouter one (for example
 `~anthropic/claude-haiku-latest`).
 
-Commit, pull on the host, and `task system`; the secret change restarts
-the service.
+op-agents picks up a changed note within the hour and restarts the
+service; `sudo systemctl start op-agents-refresh` does it now.
 
 `sudo claude-mem-server-compose` is `docker compose` with this stack's files:
 
@@ -288,48 +282,27 @@ The module and package come from nixpkgs-unstable. Nix writes
 `cliproxyapi.nix`, not the management panel. Account logins live in
 `/var/lib/cliproxyapi` and are kept.
 
-The client access key and management key are in `cliproxyapi.yaml`
-(sops, encrypted to this host). Read them on the host (the access key is
-owned by the host user, for its own Claude Code and Codex):
+The client access key and management key are the `cliproxyapi-api-key` and
+`management-key` fields of `CLIProxyAPI` in the Agents vault. op-agents
+writes them to `/run/op-agents` (the access key is owned by the host user,
+for its own Claude Code and Codex):
 
 ```sh
-cat /run/secrets/cliproxyapi-api-key
-sudo cat /run/secrets/cliproxyapi-management-key
+cat /run/op-agents/cliproxyapi-api-key
+sudo cat /run/op-agents/cliproxyapi-management-key
 ```
 
-To rotate, rewrite the whole file (only the host can decrypt). Commit, pull,
-and `task system`; the change restarts the service. Works in fish and bash;
-the file is only replaced if encryption succeeds:
-
-```sh
-printf 'api-key: sk-%s\nmanagement-key: %s\n' \
-  "$(nix run nixpkgs#openssl -- rand -hex 32)" \
-  "$(nix run nixpkgs#openssl -- rand -hex 32)" \
-  | nix run nixpkgs#sops -- encrypt \
-    --filename-override hosts/srv-devbox/cliproxyapi.yaml \
-    --input-type yaml --output-type yaml /dev/stdin \
-  > cliproxyapi.yaml.tmp \
-  && mv cliproxyapi.yaml.tmp hosts/srv-devbox/cliproxyapi.yaml
-```
+To rotate, set new values in 1Password (e.g. `sk-` plus
+`openssl rand -hex 32` for the access key, `openssl rand -hex 32` for the
+management key), then `sudo systemctl start op-agents-refresh`, which
+restarts the hub. Macs pick the new access key up within the hour.
 
 OpenRouter is also an upstream (`api-keys.openai-compatibility` in
 `cliproxyapi.nix`): clients call the listed aliases (`glm-5.3`,
 `gemma-4-31b-free`, ...) with the hub's access key, and the hub sends the
 OpenRouter key. Only listed models are exposed; add more from
-<https://openrouter.ai/models>. The key is in `openrouter.yaml` (sops,
-encrypted to this host). Create a key at <https://openrouter.ai/keys>, then
-write the file (`read -s` keeps the key out of shell history; in fish use
-`read -s key`):
-
-```sh
-read -rs key
-printf 'api-key: %s\n' "$key" \
-  | nix run nixpkgs#sops -- encrypt \
-    --filename-override hosts/srv-devbox/openrouter.yaml \
-    --input-type yaml --output-type yaml /dev/stdin \
-  > openrouter.yaml.tmp \
-  && mv openrouter.yaml.tmp hosts/srv-devbox/openrouter.yaml
-```
+<https://openrouter.ai/models>. The key is the `credential` of `OpenRouter`
+in the Agents vault; create one at <https://openrouter.ai/keys>.
 
 Sign accounts in with `sudo cliproxyapi-login`, which runs the binary as
 the service user with the service's config and `-no-browser`, so each login
@@ -375,22 +348,11 @@ otherwise caches for 5 minutes, not the subscription's 1 hour), and a
 stay untouched. T3 Code runs the same `claude` and `codex`, so it follows
 too; for Codex, pick **Use existing CLI**.
 
-srv-devbox uses `http://127.0.0.1:8317` and reads the sops secret directly
-(`hosts/srv-devbox/home.nix`). Macs use the tailnet URL and keep the key in
-the login keychain (service `cliproxyapi-api-key`), like agent-git's token
-(`docs/agent-git.md`): the keychain stays unlocked while 1Password is
-locked. 1Password holds the source copy. Once, save the output of
-`cat /run/secrets/cliproxyapi-api-key` on srv-devbox as an API Credential
-named `CLIProxyAPI` in your Agents vault. Then on each Mac, signed in to
-`op`, after `task home`:
-
-```sh
-op read --account my "op://Agents/CLIProxyAPI/cliproxyapi-api-key" | cliproxyapi-set-key
-```
-
-`cliproxyapi-set-key` reads stdin (or the clipboard), checks the key against
-the hub, and stores it. After rotating the key, update the 1Password item
-and rerun it on each Mac.
+srv-devbox uses `http://127.0.0.1:8317` and reads the op-agents file
+directly (`hosts/srv-devbox/home.nix`). Macs use the tailnet URL and read
+op-agents' keychain cache of `op://Agents/CLIProxyAPI/cliproxyapi-api-key`
+(`docs/op-agents.md`), which works while 1Password is locked. No per-Mac
+step beyond the op-agents token.
 
 Check that cache writes use the 1-hour TTL: run
 `claude -p hello --output-format json` and look for
@@ -398,8 +360,9 @@ Check that cache writes use the 1-hour TTL: run
 travels partly in the `anthropic-beta` header, so the hub must forward it.
 
 Without the key, a host keeps its own Claude and Codex logins. To sign in
-directly on a Mac (e.g. clb-work), delete the key:
-`security delete-generic-password -s cliproxyapi-api-key`.
+directly on a Mac (e.g. clb-work), set `clb.cliproxyapi.enable = false;` in
+its host override file, then drop the cache:
+`security delete-generic-password -s op-agents:cliproxyapi-api-key`.
 
 ## Notes
 
@@ -433,21 +396,13 @@ The dashboard listens on port 8080 on all interfaces:
 - LAN: `http://192.xxx.xxx.xxx:8080`
 - Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8080`
 
-It reads the hub with the management key. The login password is in
-`cpa-usage-keeper.yaml` (sops, encrypted to this host):
+It reads the hub with the management key. The login password is the
+`password` of `cpa-usage-keeper` in the Agents vault:
 
 ```sh
-sudo cat /run/secrets/cpa-usage-keeper-login-password
+sudo cat /run/op-agents/cpa-usage-keeper-env
 journalctl -fu cpa-usage-keeper
 ```
 
-To rotate the password, rewrite the file:
-
-```sh
-printf 'login-password: %s\n' "$(nix run nixpkgs#openssl -- rand -hex 16)" \
-  | nix run nixpkgs#sops -- encrypt \
-    --filename-override hosts/srv-devbox/cpa-usage-keeper.yaml \
-    --input-type yaml --output-type yaml /dev/stdin \
-  > cpa-usage-keeper.yaml.tmp \
-  && mv cpa-usage-keeper.yaml.tmp hosts/srv-devbox/cpa-usage-keeper.yaml
-```
+To rotate the password, change it in 1Password (e.g. `openssl rand -hex 16`),
+then `sudo systemctl start op-agents-refresh`.

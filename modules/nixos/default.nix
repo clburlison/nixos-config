@@ -15,6 +15,7 @@ in
   imports = [
     inputs.determinate.nixosModules.default
     inputs.sops-nix.nixosModules.sops
+    ./op-agents.nix
   ];
 
   networking.hostName = config.clb.host.name;

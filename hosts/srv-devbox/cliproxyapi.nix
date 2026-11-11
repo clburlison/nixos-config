@@ -25,24 +25,24 @@ in
 {
   imports = [ moduleWithoutDocs ];
 
-  # Client access key and management panel key. The service reads them
+  # Client access key, management panel key, and the OpenRouter upstream
+  # key (openrouter.ai/keys) for the models below. The service reads them
   # through LoadCredential and writes them into its generated config.yaml.
-  sops.secrets = {
+  clb.opAgents.secrets = {
     # Readable by the host user: Claude Code and Codex on this host use it
     # (modules/common/programs/cliproxyapi.nix).
     cliproxyapi-api-key = {
-      sopsFile = ./cliproxyapi.yaml;
-      key = "api-key";
+      reference = "op://Agents/CLIProxyAPI/cliproxyapi-api-key";
       owner = config.clb.host.user;
+      services = [ "cliproxyapi" ];
     };
     cliproxyapi-management-key = {
-      sopsFile = ./cliproxyapi.yaml;
-      key = "management-key";
+      reference = "op://Agents/CLIProxyAPI/management-key";
+      services = [ "cliproxyapi" ];
     };
-    # OpenRouter upstream key (openrouter.ai/keys), for the models below.
     cliproxyapi-openrouter-key = {
-      sopsFile = ./openrouter.yaml;
-      key = "api-key";
+      reference = "op://Agents/OpenRouter/credential";
+      services = [ "cliproxyapi" ];
     };
   };
 
@@ -60,9 +60,9 @@ in
       management = {
         # The panel at /management.html, from other machines.
         allow-remote = true;
-        secret-key._secret = config.sops.secrets.cliproxyapi-management-key.path;
+        secret-key._secret = config.clb.opAgents.secrets.cliproxyapi-management-key.path;
       };
-      access.api-keys = [ { _secret = config.sops.secrets.cliproxyapi-api-key.path; } ];
+      access.api-keys = [ { _secret = config.clb.opAgents.secrets.cliproxyapi-api-key.path; } ];
       # OpenRouter as an upstream: clients use the aliases with the hub's
       # access key, and the hub sends the OpenRouter key. Only listed models
       # are exposed. The `-free` ones are rate-limited, not billed.
@@ -72,7 +72,7 @@ in
         {
           name = "openrouter";
           base-url = "https://openrouter.ai/api/v1";
-          keys = [ { api-key._secret = config.sops.secrets.cliproxyapi-openrouter-key.path; } ];
+          keys = [ { api-key._secret = config.clb.opAgents.secrets.cliproxyapi-openrouter-key.path; } ];
           models = [
             {
               name = "moonshotai/kimi-k3.1-pro";
@@ -120,12 +120,6 @@ in
       };
     };
   };
-
-  # Restart on key rotation; the config is regenerated at each start.
-  systemd.services.cliproxyapi.restartTriggers = [
-    ./cliproxyapi.yaml
-    ./openrouter.yaml
-  ];
 
   # `sudo cliproxyapi-login -claude-login` (and `-codex-login` or
   # `-codex-device-login`): account logins as the service user, saved to

@@ -1,10 +1,31 @@
 # srv-devbox
 
-Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. Defined by
+Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. It
+is the hub every other host uses: the Claude and Codex logins (CLIProxyAPI),
+the shared memory server (claude-mem), and the T3 Code server. Defined by
 the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
 aggregator (`modules/nixos/`), and the host override files in
 `hosts/srv-devbox/`. Files named below without a path are in that
 directory.
+
+Do the steps in order; each one assumes the ones before it. Where it fits in
+the whole setup: [docs/README.md](README.md).
+
+| Step | Needs |
+| --- | --- |
+| [1. Create the Proxmox VM](#1-create-the-proxmox-vm) | |
+| [2. Partition and mount](#2-partition-and-mount) | |
+| [3. Generate and push the hardware file](#3-generate-and-push-the-hardware-file-required) | a machine that can push to GitHub |
+| [4. Install](#4-install) | |
+| [5. SSH in and clone](#5-ssh-in-and-clone) | an SSH agent holding a GitHub key |
+| [6. Bootstrap Home Manager](#6-bootstrap-home-manager) | |
+| [7. op-agents token](#7-op-agents-token) | the Agents vault items, a Mac with `op` |
+| [8. agent-git](#8-agent-git) | 7 |
+| [9. Tailscale](#9-tailscale) | |
+| [10. T3 Code server](#10-t3-code-server) | 9 |
+| [11. CLIProxyAPI hub](#11-cliproxyapi-hub) | 7 |
+| [12. CPA Usage Keeper](#12-cpa-usage-keeper) | 7, 11 |
+| [13. claude-mem hosted server](#13-claude-mem-hosted-server) | 7, 9, 11 |
 
 ## 1. Create the Proxmox VM
 
@@ -93,18 +114,26 @@ nixos-enter --root /mnt -c 'passwd clburlison'
 
 Detach the ISO and reboot.
 
+The new install has a new SSH host key, so it can't decrypt the committed
+op-agents token yet. Until step 7, `op-agents` fails after a 10-minute
+retry at boot, and the hub, Keeper, claude-mem server and Caddy don't
+start. That is expected.
+
 ## 5. SSH in and clone
 
 Password SSH is off; log in with the key from `lib/ssh-keys.nix`.
 
-Step 6 fetches the private `clb-skills` input over SSH, so forward the
-agent-git agent from the Mac (`docs/agent-git.md`). Plain `ssh -A`
-forwards the empty launchd agent instead:
+Step 6 fetches the private `clb-skills` input over SSH, so forward an agent
+that holds a GitHub key. Plain `ssh -A` forwards the empty launchd agent
+instead. From a Mac with agent-git set up (`docs/agent-git.md`):
 
 ```sh
 ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@srv-devbox
 ssh-add -l   # lists the agent-git key
 ```
+
+On a Mac without agent-git, forward 1Password's agent instead:
+`-o "ForwardAgent=~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"`.
 
 Git comes from Home Manager, so steps 5 and 6 borrow it with
 `nix shell nixpkgs#git -c`:
@@ -136,27 +165,48 @@ nix shell nixpkgs#git -c nix run home-manager/release-26.05 -- \
 
 After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 
-## 7. agent-git
+## 7. op-agents token
+
+The host holds one secret, the op-agents service account token
+(`secrets.yaml`, encrypted to this host's SSH host key in `.sops.yaml`).
+Every other secret on this host comes from the Agents vault through it
+(`docs/op-agents.md`).
+
+1. Check that every Agents item this host reads exists: the srv-devbox rows
+   of [Agents vault items](op-agents.md#agents-vault-items). op-agents
+   fetches them all in one run and fails if any is missing, and each service
+   that reads one requires it, so one missing item stops the hub, Keeper,
+   the claude-mem server and Caddy together. On a first setup,
+   `claude-mem-viewer` can't exist yet (step 13 creates the key): create it
+   with any placeholder `credential` now.
+2. Encrypt the token to this host: "NixOS host" in `docs/op-agents.md`,
+   steps 1 to 4. It ends with `task system`, `task home` and
+   `op-agents-check`.
+
+After a reinstall, the host key changes: redo item 2 before `task system`.
+
+## 8. agent-git
 
 Lets the host sign commits and reach GitHub without a forwarded agent. It
-uses the host's one secret, the op-agents service account token
-(`secrets.yaml`, encrypted to this host's key in `.sops.yaml`); every other
-secret on this host comes from the Agents vault through it
-(`docs/op-agents.md`). After a reinstall, the host key changes: redo "NixOS
-host" there before `task system`, or sops-nix can't decrypt the token.
+reads `op://Agents/git-agent` with the token from step 7
+(`docs/agent-git.md`, "NixOS hosts").
 
-Once `agent-git-check` passes, switch the clone from step 5 to SSH so pushes
-use the agent-git key:
+```sh
+agent-git-check
+```
+
+Once it passes, switch the clone from step 5 to SSH so pushes use the
+agent-git key:
 
 ```sh
 git remote set-url origin git@github.com:clburlison/nixos-config.git
 ```
 
-## 8. Tailscale
+## 9. Tailscale
 
 `tailscaled` starts at boot (`services.tailscale` in `system.nix`). Log in
-once after the first `task system`; the node key in `/var/lib/tailscale`
-reconnects it on every boot after that:
+once; the node key in `/var/lib/tailscale` reconnects it on every boot
+after that:
 
 ```sh
 sudo tailscale up
@@ -167,153 +217,26 @@ In the Tailscale admin console, open the machine and choose **Disable key
 expiry**, or it drops off the tailnet when the key expires (180 days by
 default).
 
-## 9. T3 Code server
+The tailnet address is pinned as `tailnetIp` in `claude-mem-server.nix`
+(Postgres and the viewer bind it). It is stable per node; after
+re-registering the node, check `tailscale ip -4` and update it.
+
+## 10. T3 Code server
 
 The `t3-serve` user service (`home.nix`) runs `t3 serve` on port 3773 on
 all interfaces and also publishes it over HTTPS on the tailnet with
-Tailscale Serve. Lingering starts it at boot. Serve needs step 8 done and
+Tailscale Serve. Lingering starts it at boot. Serve needs step 9 done and
 HTTPS certificates enabled for the tailnet (admin console > DNS > HTTPS
 Certificates).
 
 - Direct: `http://srv-devbox:3773` from the LAN or the tailnet (plain HTTP).
 - Tailnet HTTPS: the `https://srv-devbox.mermaid-agama.ts.net` URL.
 
-After `task system` and `task home`:
-
 ```sh
 systemctl --user status t3-serve
 journalctl --user -u t3-serve
 t3 pair --tailscale   # pairing link through the tailnet HTTPS URL
 t3 pair               # direct; swap the printed host for srv-devbox:3773
-```
-
-## 10. claude-mem hosted server
-
-`claude-mem-server.nix` runs upstream's Docker Compose stack
-(<https://docs.claude-mem.ai/hosted-server>) as the `claude-mem-server`
-system service, pinned to a release tag. Compose builds the images locally,
-so the first `task system` start takes several minutes. The server listens
-on port 37877 on all interfaces.
-
-Postgres credentials are generated once into
-`/var/lib/claude-mem-server/postgres.env`. Postgres only reads them when it
-creates its volume, so keep that file as long as the volume exists.
-
-The worker generates observations through the CLIProxyAPI hub on this host
-(step 11), with the OpenAI subscription logins there. `claude-mem-server.nix`
-sets the provider (`openrouter`, which takes any OpenAI-compatible base
-URL), the base URL (`http://host.docker.internal:8317/v1`, the Docker host
-gateway, since 127.0.0.1 in the container is the container) and the model
-(`gpt-6-luna`; list the hub's models with `GET /v1/models`). The key is the
-hub's client access key, filled in from `op://Agents/CLIProxyAPI` by
-op-agents.
-
-The Secure Note `claude-mem-server-env` in the Agents vault holds any other
-worker env as a dotenv, e.g.
-`OPENROUTER_API_KEY=<openrouter.ai key, unused while the hub is set>`. Edit
-the note to change it.
-
-To go back to openrouter.ai, drop `CLAUDE_MEM_OPENROUTER_BASE_URL` and the
-rendered key env file, and set the model to an OpenRouter one (for example
-`~anthropic/claude-haiku-latest`).
-
-op-agents picks up a changed note within the hour and restarts the
-service; `sudo systemctl start op-agents-refresh` does it now.
-
-`sudo claude-mem-server-compose` is `docker compose` with this stack's files:
-
-```sh
-systemctl status claude-mem-server
-sudo claude-mem-server-compose ps
-sudo claude-mem-server-compose logs -f claude-mem-worker
-# Keys and projects (no secrets):
-sudo claude-mem-server-compose exec claude-mem-server \
-  bun /opt/claude-mem/scripts/server-service.cjs server keys
-```
-
-### API keys
-
-Keys are shown once, at creation. Save each one in the Agents vault right
-away (`docs/op-agents.md`). Pass `--team` and `--project` so the key lands
-on the existing project (`local-hook-project`,
-`CLAUDE_MEM_SERVER_PROJECT_ID` in `modules/common/programs/claude-mem.nix`);
-without them the CLI bootstraps its own.
-
-Keep the team named `local-hook-team`. Upstream finds it by that name in
-`server keys rotate`, the installer's server bootstrap and `api-key create`
-without `--team`; after a rename each of those creates a new, empty team
-and project.
-
-```sh
-sudo claude-mem-server-compose exec -T claude-mem-server \
-  bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
-  --name <name> --scope <scopes> \
-  --team b5819eed-7f22-4054-b5da-9e31515d1a00 \
-  --project 3bee384a-652b-4947-bd36-027c429b4589
-```
-
-| 1Password item (Agents) | Scopes | Used by |
-| --- | --- | --- |
-| `claude-mem-api-key` | `memories:read,memories:write` | hooks (`CLAUDE_MEM_SERVER_API_KEY` in `~/.claude-mem/settings.json`) and the `claude-mem` MCP server header, on every host; to be replaced by `clb-memory-rw`, then revoked |
-| `clb-memory-rw` | `memories:read,memories:write` | replacement for `claude-mem-api-key`, not yet on hosts |
-| `claude-mem-viewer` | `memories:read` | the viewer proxy below, through op-agents |
-
-Revoke a key with `server api-key revoke <id>`.
-
-### Viewer
-
-The server serves the memory viewer at `/`, but the viewer's browser code
-sends no API key, so opened directly on 37877 every data call gets 401 and
-the page stays empty. Caddy fronts it on the tailnet:
-<http://srv-devbox.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
-read key to every request.
-
-Anyone who reaches that port reads as the key's team, so it is
-tailnet-only: Caddy binds the tailnet address, the firewall opens 37878
-only on `tailscale0`, and requests from outside `100.64.0.0/10` and
-`fd7a:115c:a1e0::/48` get 403.
-
-The viewer is read-only (the key has no write scope). New rows show on
-reload; the server sends no live updates. My Work is not on the server
-runtime; it runs in each host's local worker.
-
-To rotate the key, create a new `memories:read` key, replace the
-`credential` in `claude-mem-viewer`, then revoke the old one. op-agents
-restarts Caddy within the hour, or now with
-`sudo systemctl start op-agents-refresh`.
-
-Connect a client through the tailnet name. It resolves on and off the home
-network, and at home Tailscale connects directly over the LAN:
-
-```sh
-claude mcp add --scope user --transport http claude-mem \
-  http://srv-devbox.mermaid-agama.ts.net:37877/v1/mcp \
-  --header "Authorization: Bearer cm_..."
-```
-
-That name needs Tailscale running on the client. For a LAN fallback at
-home with Tailscale off, add a local DNS record on the home router for
-`srv-devbox.mermaid-agama.ts.net` pointing to srv-devbox's LAN IP
-(192.xxx.xxx.xxx, from DHCP, so reserve it). Tailscale's MagicDNS answers
-first whenever Tailscale is up, so the same URL works either way. Away from
-home there is no fallback without Tailscale: upstream says not to expose
-the server to the internet.
-
-Postgres is published on the tailnet address only (`tailnetIp` in
-`claude-mem-server.nix`), for database clients. The password is in
-`/var/lib/claude-mem-server/postgres.env`:
-
-```sh
-psql postgres://claude_mem:<password>@100.75.137.72:5432/claude_mem
-```
-
-To upgrade, change `version` and `hash` in `claude-mem-server.nix`. Back up
-first and follow upstream's "Upgrading the Postgres image" when the
-Postgres image changes:
-
-```sh
-sudo claude-mem-server-compose exec postgres \
-  sh -c 'pg_dumpall -U "$POSTGRES_USER"' > claude-mem-backup.sql
 ```
 
 ## 11. CLIProxyAPI hub
@@ -327,10 +250,15 @@ its API endpoint. It listens on port 8317 on all interfaces (plain HTTP):
 - LAN: `http://192.xxx.xxx.xxx:8317` (srv-devbox's LAN IP)
 - Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8317`
 
-The module and package come from nixpkgs-unstable. Nix writes
-`/var/lib/cliproxyapi/config.yaml` at every start, so change settings in
-`cliproxyapi.nix`, not the management panel. Account logins live in
-`/var/lib/cliproxyapi` and are kept.
+The module comes from nixpkgs-unstable; `packages/cliproxyapi.nix` pins a
+newer release. Its Claude cloaking reports a fixed Claude Code version
+upstream, and models that need a newer client are refused ("Claude Code
+2.1.x does not support this model") until the pin moves to a release that
+reports a newer one. Nix writes `/var/lib/cliproxyapi/config.yaml` at every
+start, so change settings in `cliproxyapi.nix`, not the management panel.
+Account logins live in `/var/lib/cliproxyapi` and are kept.
+
+### Keys
 
 The client access key and management key are the `cliproxyapi-api-key` and
 `password` fields of `CLIProxyAPI` in the Agents vault. op-agents
@@ -353,6 +281,8 @@ OpenRouter is also an upstream (`api-keys.openai-compatibility` in
 OpenRouter key. Only listed models are exposed; add more from
 <https://openrouter.ai/models>. The key is the `credential` of `OpenRouter`
 in the Agents vault; create one at <https://openrouter.ai/keys>.
+
+### Account logins
 
 Sign accounts in with `sudo cliproxyapi-login`, which runs the binary as
 the service user with the service's config and `-no-browser`, so each login
@@ -388,6 +318,8 @@ curl -s http://srv-devbox.mermaid-agama.ts.net:8317/v1/models \
   -H "Authorization: Bearer <api key>" | head -c 300
 ```
 
+### Clients
+
 Claude Code and Codex route through the hub on every host
 (`modules/common/programs/cliproxyapi.nix`), in their usual `~/.claude` and
 `~/.codex`. Their wrappers read the key at each run and set
@@ -409,24 +341,12 @@ Check that cache writes use the 1-hour TTL: run
 `ephemeral_1h_input_tokens` in `usage.cache_creation`. The 1-hour request
 travels partly in the `anthropic-beta` header, so the hub must forward it.
 
-Without the key, a host keeps its own Claude and Codex logins. To sign in
-directly on a Mac (e.g. clb-work), set `clb.cliproxyapi.enable = false;` in
-its host override file, then drop the cache:
+`CLAUDE_NO_PROXY=1 claude` skips the hub for one run, e.g. for claude.ai
+connectors, which only load with the claude.ai login. Without the key, a
+host keeps its own Claude and Codex logins. To sign in directly on a Mac
+(e.g. clb-work), set `clb.cliproxyapi.enable = false;` in its host override
+file, then drop the cache:
 `security delete-generic-password -s op-agents:cliproxyapi-api-key`.
-
-## Notes
-
-- `system.stateVersion` in `system.nix` is pinned at install. Don't bump it
-  without reading the NixOS release notes.
-- If the Determinate module fails on `nixos-26.05`, drop
-  `determinate.nixosModules.default` from `modules/nixos/default.nix` and keep
-  the stock `nix.settings`.
-- `homeConfigurations."clburlison@srv-devbox".activationPackage` can't be
-  evaluated from a Mac without an `x86_64-linux` builder. `agent-skills-nix`
-  reads each transformed `SKILL.md` (our `linear-cli` skill) from a
-  derivation built for the target system, which is import from derivation.
-  `config.home-files` and the rest of the config evaluate fine. On the host
-  itself, `task test-home` and `task home` evaluate and build normally.
 
 ## 12. CPA Usage Keeper
 
@@ -437,9 +357,8 @@ It subscribes to the hub's usage queue (`observability.usage` in
 `cliproxyapi.nix`; records wait up to an hour) and keeps the history in
 SQLite under `/var/lib/cpa-usage-keeper`, with daily backups there.
 
-Keeper needs CLIProxyAPI 8.0.12 or later, so `packages/cliproxyapi.nix`
-pins a newer release than nixpkgs-unstable. Newer releases need a newer Go
-than unstable has.
+Keeper needs CLIProxyAPI 8.0.12 or later, which `packages/cliproxyapi.nix`
+covers.
 
 The dashboard listens on port 8080 on all interfaces:
 
@@ -455,4 +374,143 @@ journalctl -fu cpa-usage-keeper
 ```
 
 To rotate the password, change it in 1Password (e.g. `openssl rand -hex 16`),
-then `sudo systemctl start op-agents-refresh`.
+then `sudo systemctl start op-agents-refresh`. Keeper restarts and accepts
+only the new password, but browsers already logged in keep their session
+(7 days); revoke them on Keeper's sessions page.
+
+## 13. claude-mem hosted server
+
+`claude-mem-server.nix` runs upstream's Docker Compose stack
+(<https://docs.claude-mem.ai/hosted-server>) as the `claude-mem-server`
+system service, pinned to a release tag. Compose builds the images locally,
+so the first `task system` start takes several minutes. The server listens
+on port 37877 on all interfaces. Each host's hooks and MCP server connect to
+it (`docs/claude-mem.md`, "Hosted server").
+
+Postgres credentials are generated once into
+`/var/lib/claude-mem-server/postgres.env`. Postgres only reads them when it
+creates its volume, so keep that file as long as the volume exists.
+
+`sudo claude-mem-server-compose` is `docker compose` with this stack's files:
+
+```sh
+systemctl status claude-mem-server
+sudo claude-mem-server-compose ps
+sudo claude-mem-server-compose logs -f claude-mem-worker
+# Keys and projects (no secrets):
+sudo claude-mem-server-compose exec claude-mem-server \
+  bun /opt/claude-mem/scripts/server-service.cjs server keys
+```
+
+### Generation
+
+The worker generates observations through the CLIProxyAPI hub (step 11),
+with the OpenAI subscription logins there. `claude-mem-server.nix` sets the
+provider (`openrouter`, which takes any OpenAI-compatible base URL), the
+base URL (`http://host.docker.internal:8317/v1`, the Docker host gateway,
+since 127.0.0.1 in the container is the container) and the model
+(`gpt-6-luna`; list the hub's models with `GET /v1/models`). The key is the
+hub's client access key, filled in from `op://Agents/CLIProxyAPI` by
+op-agents.
+
+The Secure Note `claude-mem-server-env` in the Agents vault holds any other
+worker env as a dotenv, e.g.
+`OPENROUTER_API_KEY=<openrouter.ai key, unused while the hub is set>`. Edit
+the note to change it. op-agents picks up a changed note within the hour and
+restarts the service; `sudo systemctl start op-agents-refresh` does it now.
+
+To go back to openrouter.ai, drop `CLAUDE_MEM_OPENROUTER_BASE_URL` and the
+rendered key env file, and set the model to an OpenRouter one (for example
+`~anthropic/claude-haiku-latest`).
+
+### API keys
+
+Keys are shown once, at creation. Save each one in the Agents vault right
+away (`docs/op-agents.md`). Pass `--team` and `--project` so the key lands
+on the existing project (`local-hook-project`,
+`CLAUDE_MEM_SERVER_PROJECT_ID` in `modules/common/programs/claude-mem.nix`);
+without them the CLI bootstraps its own.
+
+Keep the team named `local-hook-team`. Upstream finds it by that name in
+`server keys rotate`, the installer's server bootstrap and `api-key create`
+without `--team`; after a rename each of those creates a new, empty team
+and project.
+
+```sh
+sudo claude-mem-server-compose exec -T claude-mem-server \
+  bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
+  --name <name> --scope <scopes> \
+  --team b5819eed-7f22-4054-b5da-9e31515d1a00 \
+  --project 3bee384a-652b-4947-bd36-027c429b4589
+```
+
+| 1Password item (Agents) | Scopes | Used by |
+| --- | --- | --- |
+| `clb-memory-rw` | `memories:read,memories:write` | hooks and the MCP server on every host (`docs/claude-mem.md`, "Hosted server") |
+| `claude-mem-api-key` | `memories:read,memories:write` | the key `clb-memory-rw` replaces; revoke it once no host uses it |
+| `claude-mem-viewer` | `memories:read` | the viewer proxy below, through op-agents |
+
+Revoke a key with `server api-key revoke <id>`. To rotate a host key,
+create a new one, save it in 1Password, update every host, then revoke the
+old one. Don't use `server keys rotate`: it mints a key for the bootstrap
+project and writes it into the local `settings.json` only.
+
+On a first setup, create `clb-memory-rw` and `claude-mem-viewer` here, and
+replace the placeholder `claude-mem-viewer` from step 7.
+
+### Viewer
+
+The server serves the memory viewer at `/`, but the viewer's browser code
+sends no API key, so opened directly on 37877 every data call gets 401 and
+the page stays empty. Caddy fronts it on the tailnet:
+<http://srv-devbox.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
+read key to every request.
+
+Anyone who reaches that port reads as the key's team, so it is
+tailnet-only: Caddy binds the tailnet address, the firewall opens 37878
+only on `tailscale0`, and requests from outside `100.64.0.0/10` and
+`fd7a:115c:a1e0::/48` get 403.
+
+The viewer is read-only (the key has no write scope). New rows show on
+reload; the server sends no live updates. My Work is not on the server
+runtime; it runs in each host's local worker.
+
+To rotate the key, create a new `memories:read` key, replace the
+`credential` in `claude-mem-viewer`, then revoke the old one. op-agents
+restarts Caddy within the hour, or now with
+`sudo systemctl start op-agents-refresh`.
+
+### Postgres
+
+Postgres is published on the tailnet address only (`tailnetIp` in
+`claude-mem-server.nix`), for database clients. The password is in
+`/var/lib/claude-mem-server/postgres.env`:
+
+```sh
+psql postgres://claude_mem:<password>@100.75.137.72:5432/claude_mem
+```
+
+### Upgrading
+
+Change `version` and `hash` in `claude-mem-server.nix`. Back up first and
+follow upstream's "Upgrading the Postgres image" when the Postgres image
+changes:
+
+```sh
+sudo claude-mem-server-compose exec postgres \
+  sh -c 'pg_dumpall -U "$POSTGRES_USER"' > claude-mem-backup.sql
+```
+
+## Notes
+
+- `system.stateVersion` in `system.nix` is pinned at install. Don't bump it
+  without reading the NixOS release notes.
+- If the Determinate module fails on `nixos-26.05`, drop
+  `determinate.nixosModules.default` from `modules/nixos/default.nix` and keep
+  the stock `nix.settings`.
+- `homeConfigurations."clburlison@srv-devbox".activationPackage` can't be
+  evaluated from a Mac without an `x86_64-linux` builder. `agent-skills-nix`
+  reads each transformed `SKILL.md` (our `linear-cli` skill) from a
+  derivation built for the target system, which is import from derivation.
+  `config.home-files` and the rest of the config evaluate fine. On the host
+  itself, `task test-home` and `task home` evaluate and build normally.

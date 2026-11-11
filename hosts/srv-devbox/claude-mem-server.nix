@@ -2,7 +2,7 @@
 # stack (Postgres 17 with pgvector and pg_textsearch, Valkey, the HTTP
 # server on port 37877, and the generation worker), pinned to a release tag.
 # Compose builds the images locally from the pinned source. See
-# docs/srv-devbox.md step 10 and https://docs.claude-mem.ai/hosted-server.
+# docs/srv-devbox.md step 13 and https://docs.claude-mem.ai/hosted-server.
 {
   config,
   pkgs,
@@ -69,7 +69,7 @@ in
 
   clb.opAgents.secrets = {
     # Dotenv file, kept whole in a Secure Note. Holds the worker's provider
-    # settings and credential. docs/srv-devbox.md step 10 shows how to
+    # settings and credential. docs/srv-devbox.md step 13 shows how to
     # replace it.
     claude-mem-server-env = {
       reference = "op://Agents/claude-mem-server-env/notesPlain";

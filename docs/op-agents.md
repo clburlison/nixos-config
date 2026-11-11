@@ -1,5 +1,7 @@
 # op-agents: one secret per host
 
+Where this fits in the setup order: [docs/README.md](README.md).
+
 Every host holds exactly one secret: the token for the `agents` 1Password
 service account. That account can only read the `Agents` vault, and every
 other secret the hosts need lives there. What a host can reach is what you put
@@ -32,17 +34,22 @@ Consumers: agent-git (`docs/agent-git.md`), the CLIProxyAPI client key
 
 ## Agents vault items
 
-| Item | Field | Used by |
-| --- | --- | --- |
-| `git-agent` (SSH Key) | `private key`, `public key` | agent-git, every host |
-| `CLIProxyAPI` (API Credential) | `cliproxyapi-api-key` | Claude Code and Codex wrappers on every host; the hub and claude-mem worker on srv-devbox |
-| `CLIProxyAPI` | `password` (the management key) | hub panel, CPA Usage Keeper |
-| `OpenRouter` (API Credential) | `credential` | hub's OpenRouter upstream |
-| `cpa-usage-keeper` (Password) | `password` | Keeper dashboard login |
-| `claude-mem-server-env` (Secure Note) | `notesPlain` | claude-mem worker dotenv |
-| `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | claude-mem viewer proxy (Caddy) on srv-devbox |
-| `claude-mem-api-key` (API Credential) | `credential` (`memories:read,memories:write` key) | not read by Nix; in each host's claude-mem settings and MCP header until rotated to `clb-memory-rw` |
-| `clb-memory-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | replacement for `claude-mem-api-key`; not read by Nix |
+**Boot** marks the items srv-devbox's system services read through
+`op-agents.service`. It fetches them all in one run and fails if any is
+missing, and every service that reads one requires it, so they must all
+exist before the `task system` in `docs/srv-devbox.md` step 7.
+
+| Item | Field | Boot | Used by |
+| --- | --- | --- | --- |
+| `git-agent` (SSH Key) | `private key`, `public key` | | agent-git, every host |
+| `CLIProxyAPI` (API Credential) | `cliproxyapi-api-key` | yes | Claude Code and Codex wrappers on every host; the hub and claude-mem worker on srv-devbox |
+| `CLIProxyAPI` | `password` (the management key) | yes | hub panel, CPA Usage Keeper |
+| `OpenRouter` (API Credential) | `credential` | yes | hub's OpenRouter upstream |
+| `cpa-usage-keeper` (Password) | `password` | yes | Keeper dashboard login |
+| `claude-mem-server-env` (Secure Note) | `notesPlain` | yes | claude-mem worker dotenv |
+| `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on srv-devbox |
+| `clb-memory-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | | claude-mem hooks and MCP server on every host, set by hand (`docs/claude-mem.md`) |
+| `claude-mem-api-key` (API Credential) | `credential` (`memories:read,memories:write` key) | | the key `clb-memory-rw` replaces; delete once revoked |
 
 To add one: create the item in `Agents`, then add it to
 `clb.opAgents.secrets` (system or Home Manager) and point the consumer at its
@@ -77,6 +84,9 @@ agent-git. Don't use `security add-generic-password -w` at its prompt: the
 prompt truncates input at 128 characters.
 
 ## NixOS host
+
+For srv-devbox this is step 7 of `docs/srv-devbox.md`; create the Boot items
+above first.
 
 1. On the host, convert its SSH host key to an age recipient:
 
@@ -124,6 +134,8 @@ Reinstalling a host changes its host key. Repeat steps 1 to 3.
 
 - Any process running as you can read the token, and so everything in
   `Agents`. Keep only agent secrets there.
+- On NixOS, one missing or unreadable item fails `op-agents.service`, and
+  with it every service that reads any of its secrets.
 - On NixOS, boot needs 1Password reachable: `op-agents.service` retries for
   10 minutes, and services that need its secrets wait for it. After that,
   `sudo systemctl restart op-agents` and the waiting services.

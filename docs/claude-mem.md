@@ -1,5 +1,7 @@
 # Shared AI-agent memory
 
+Where this fits in the setup order: [docs/README.md](README.md).
+
 `modules/common/programs/claude-mem.nix` enables claude-mem **15.6.0** for Claude Code,
 Codex, and OpenCode V2. `packages/claude-mem.nix` packages the published npm
 bundles and a packaging-maintained runtime dependency lock. Nothing invokes the
@@ -41,7 +43,7 @@ Claude receives upstream plugin skills; Codex/OpenCode additionally receive
 ## Hosted server
 
 Hooks on every host send to the hosted server on srv-devbox
-(`docs/srv-devbox.md` step 10): `home.sessionVariables` set
+(`docs/srv-devbox.md` step 13): `home.sessionVariables` set
 `CLAUDE_MEM_RUNTIME=server`, the server URL (tailnet name), and the project
 ID. The server stores memory in Postgres and generates observations itself,
 so the local SQLite worker below is only the fallback.
@@ -49,23 +51,59 @@ so the local SQLite worker below is only the fallback.
 Session variables only reach agents started from a login shell. Agents
 launched by a launchd/systemd service (e.g. T3 Code) and the worker they spawn
 fall back to `~/.claude-mem/settings.json`, so activation also merges those
-three keys there and stops a running worker when they change. Local routing shows as `ENQUEUED | sessionDbId=...` in
-`~/.claude-mem/logs`.
+three keys there and stops a running worker when they change. Local routing
+shows as `ENQUEUED | sessionDbId=...` in `~/.claude-mem/logs`.
 
-The API key is the one per-host step. Add it to `~/.claude-mem/settings.json`
-(mode 0600) on each host; a host without it keeps the local SQLite worker:
+### Per host: the API key
 
-```sh
-jq --arg key 'cm_...' '.CLAUDE_MEM_SERVER_API_KEY = $key' \
-  ~/.claude-mem/settings.json > ~/.claude-mem/settings.json.new \
-  && chmod 600 ~/.claude-mem/settings.json.new \
-  && mv ~/.claude-mem/settings.json.new ~/.claude-mem/settings.json
-```
+The one per-host step. The key is `op://Agents/clb-memory-rw/credential`
+(`memories:read,memories:write`); hosts read the Agents vault with
+`op-agents`, so set the op-agents token first (`docs/op-agents.md`). Nix
+doesn't manage the key: `settings.json` stays mutable.
 
-Create the key on srv-devbox with `server api-key create` (`docs/srv-devbox.md` step 10).
-Keys created without `--project` share the project ID in
-`modules/common/programs/claude-mem.nix`. Existing SQLite memory is not
-migrated: the server has no import path.
+1. Hooks: add it to `~/.claude-mem/settings.json` (mode 0600). A host without
+   it keeps the local SQLite worker.
+
+   ```sh
+   jq --arg key "$(op-agents read op://Agents/clb-memory-rw/credential)" \
+     '.CLAUDE_MEM_SERVER_API_KEY = $key' \
+     ~/.claude-mem/settings.json > ~/.claude-mem/settings.json.new \
+     && chmod 600 ~/.claude-mem/settings.json.new \
+     && mv ~/.claude-mem/settings.json.new ~/.claude-mem/settings.json
+   claude-mem restart
+   ```
+
+2. MCP server, for search and memory tools in Claude Code:
+
+   ```sh
+   claude mcp remove --scope user claude-mem 2>/dev/null
+   claude mcp add --scope user --transport http claude-mem \
+     http://srv-devbox.mermaid-agama.ts.net:37877/v1/mcp \
+     --header "Authorization: Bearer $(op-agents read op://Agents/clb-memory-rw/credential)"
+   ```
+
+3. Approve the Codex hooks ("Apply and use" step 4).
+
+To rotate the key, see "API keys" in `docs/srv-devbox.md`, then redo steps 1
+and 2 on every host.
+
+### Reaching the server
+
+The tailnet name resolves on and off the home network, and at home
+Tailscale connects directly over the LAN. It needs Tailscale running on the
+client. For a LAN fallback at home with Tailscale off, add a local DNS
+record on the home router for `srv-devbox.mermaid-agama.ts.net` pointing to
+srv-devbox's LAN IP (192.xxx.xxx.xxx, from DHCP, so reserve it). Tailscale's
+MagicDNS answers first whenever Tailscale is up, so the same URL works
+either way. Away from home there is no fallback without Tailscale: upstream
+says not to expose the server to the internet.
+
+Existing SQLite memory is not migrated: the server has no import path.
+
+The memory viewer for the server is
+<http://srv-devbox.mermaid-agama.ts.net:37878> (tailnet only; `docs/srv-devbox.md`,
+"Viewer"). The local viewer on `127.0.0.1:37777` shows only the local
+worker.
 
 ## Runtime policy and limitations
 

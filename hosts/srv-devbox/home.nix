@@ -23,7 +23,7 @@
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so
   # it can configure Serve. system.nix opens the port. See
-  # docs/srv-devbox.md step 9.
+  # docs/srv-devbox.md step 10.
   systemd.user.services.t3-serve = {
     Unit.Description = "T3 Code server on the tailnet";
     Service = {

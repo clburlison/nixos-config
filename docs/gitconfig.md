@@ -1,5 +1,7 @@
 # Private Git overrides
 
+Where this fits in the setup order: [docs/README.md](README.md).
+
 `dotfiles/gitconfig` includes an optional private file after the default `[user]` settings:
 
 ```gitconfig

@@ -34,6 +34,22 @@ let
         }
       '';
 
+  # store_secret SERVICE VALUE: writes a login keychain item readable by
+  # /usr/bin/security. Updating an existing item in place (`-U` with `-T`)
+  # rewrites its ACL, which makes macOS prompt for the keychain password. So
+  # an unchanged value is left alone, and a changed one is deleted and re-added.
+  # `security -i` reads the command from stdin, keeping the value out of argv.
+  storeSecret = ''
+    store_secret() {
+      if [ "$(/usr/bin/security find-generic-password -s "$1" -a "$USER" -w 2>/dev/null)" = "$2" ]; then
+        return 0
+      fi
+      /usr/bin/security delete-generic-password -s "$1" -a "$USER" >/dev/null 2>&1 || true
+      printf 'add-generic-password -s %s -a %s -T /usr/bin/security -w %s\n' \
+        "$1" "$USER" "$2" | /usr/bin/security -i
+    }
+  '';
+
   # `op` as the service account, e.g. `op-agents read op://Agents/item/field`.
   opAgents = pkgs.writeShellApplication {
     name = "op-agents";
@@ -55,11 +71,11 @@ let
     name = "op-agents-load";
     runtimeInputs = [ opAgents ];
     text = ''
+      ${storeSecret}
       failures=0
       ${lib.concatMapStrings (name: ''
         if value="$(op-agents read --no-newline ${lib.escapeShellArg cfg.secrets.${name}.reference})"; then
-          printf 'add-generic-password -U -s %s -a %s -T /usr/bin/security -w %s\n' \
-            ${lib.escapeShellArg "${cachePrefix}${name}"} "$USER" "$value" | /usr/bin/security -i
+          store_secret ${lib.escapeShellArg "${cachePrefix}${name}"} "$value"
         else
           echo "$(date -u +%FT%TZ) failed to read ${name}" >&2
           failures=$((failures + 1))
@@ -95,8 +111,8 @@ let
         exit 1
       fi
 
-      printf 'add-generic-password -U -s %s -a %s -T /usr/bin/security -w %s\n' \
-        ${keychainService} "$USER" "$token" | /usr/bin/security -i
+      ${storeSecret}
+      store_secret ${keychainService} "$token"
       if [ -t 0 ]; then
         /usr/bin/pbcopy </dev/null
         echo "Cleared the clipboard." >&2

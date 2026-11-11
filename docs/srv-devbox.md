@@ -446,8 +446,7 @@ sudo claude-mem-server-compose exec -T claude-mem-server \
 
 | 1Password item (Agents) | Scopes | Used by |
 | --- | --- | --- |
-| `clb-memory-rw` | `memories:read,memories:write` | hooks and the MCP server on every host (`docs/claude-mem.md`, "Hosted server") |
-| `claude-mem-api-key` | `memories:read,memories:write` | the key `clb-memory-rw` replaces; revoke it once no host uses it |
+| `claude-mem-rw` | `memories:read,memories:write` | hooks and the MCP server on every host (`docs/claude-mem.md`, "Hosted server") |
 | `claude-mem-viewer` | `memories:read` | the viewer proxy below, through op-agents |
 
 Revoke a key with `server api-key revoke <id>`. To rotate a host key,
@@ -455,7 +454,7 @@ create a new one, save it in 1Password, update every host, then revoke the
 old one. Don't use `server keys rotate`: it mints a key for the bootstrap
 project and writes it into the local `settings.json` only.
 
-On a first setup, create `clb-memory-rw` and `claude-mem-viewer` here, and
+On a first setup, create `claude-mem-rw` and `claude-mem-viewer` here, and
 replace the placeholder `claude-mem-viewer` from step 7.
 
 ### Viewer

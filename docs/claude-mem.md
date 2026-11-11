@@ -56,7 +56,7 @@ shows as `ENQUEUED | sessionDbId=...` in `~/.claude-mem/logs`.
 
 ### Per host: the API key
 
-The one per-host step. The key is `op://Agents/clb-memory-rw/credential`
+The one per-host step. The key is `op://Agents/claude-mem-rw/credential`
 (`memories:read,memories:write`); hosts read the Agents vault with
 `op-agents`, so set the op-agents token first (`docs/op-agents.md`). Nix
 doesn't manage the key: `settings.json` stays mutable.
@@ -65,7 +65,7 @@ doesn't manage the key: `settings.json` stays mutable.
    it keeps the local SQLite worker.
 
    ```sh
-   jq --arg key "$(op-agents read op://Agents/clb-memory-rw/credential)" \
+   jq --arg key "$(op-agents read op://Agents/claude-mem-rw/credential)" \
      '.CLAUDE_MEM_SERVER_API_KEY = $key' \
      ~/.claude-mem/settings.json > ~/.claude-mem/settings.json.new \
      && chmod 600 ~/.claude-mem/settings.json.new \
@@ -79,7 +79,7 @@ doesn't manage the key: `settings.json` stays mutable.
    claude mcp remove --scope user claude-mem 2>/dev/null
    claude mcp add --scope user --transport http claude-mem \
      http://srv-devbox.mermaid-agama.ts.net:37877/v1/mcp \
-     --header "Authorization: Bearer $(op-agents read op://Agents/clb-memory-rw/credential)"
+     --header "Authorization: Bearer $(op-agents read op://Agents/claude-mem-rw/credential)"
    ```
 
 3. Approve the Codex hooks ("Apply and use" step 4).

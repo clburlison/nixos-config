@@ -167,8 +167,8 @@ tasks:
   clean:
     desc: Cleanup nix garbage
     cmds:
-      - nix-store --optimise
       - sudo nix-collect-garbage -d
+      - nix-store --optimise
 
   rename-mac:
     desc: Rename macOS computer names (HostName, ComputerName, LocalHostName)

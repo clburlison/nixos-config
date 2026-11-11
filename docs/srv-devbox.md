@@ -226,11 +226,55 @@ service; `sudo systemctl start op-agents-refresh` does it now.
 systemctl status claude-mem-server
 sudo claude-mem-server-compose ps
 sudo claude-mem-server-compose logs -f claude-mem-worker
-# First API key (shown once):
+# Keys and projects (no secrets):
 sudo claude-mem-server-compose exec claude-mem-server \
-  bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
-  --name clburlison --scope memories:read,memories:write
+  bun /opt/claude-mem/scripts/server-service.cjs server keys
 ```
+
+### API keys
+
+Keys are shown once, at creation. Save each one in the Agents vault right
+away (`docs/op-agents.md`). Pass `--team` and `--project` so the key lands
+on the existing project (`local-hook-project`,
+`CLAUDE_MEM_SERVER_PROJECT_ID` in `modules/common/programs/claude-mem.nix`);
+without them the CLI bootstraps its own.
+
+```sh
+sudo claude-mem-server-compose exec -T claude-mem-server \
+  bun /opt/claude-mem/scripts/server-service.cjs server api-key create \
+  --name <name> --scope <scopes> \
+  --team b5819eed-7f22-4054-b5da-9e31515d1a00 \
+  --project 3bee384a-652b-4947-bd36-027c429b4589
+```
+
+| 1Password item (Agents) | Scopes | Used by |
+| --- | --- | --- |
+| `claude-mem-api-key` | `memories:read,memories:write` | hooks (`CLAUDE_MEM_SERVER_API_KEY` in `~/.claude-mem/settings.json`) and the `claude-mem` MCP server header, on every host |
+| `claude-mem-viewer` | `memories:read` | the viewer proxy below, through op-agents |
+
+Revoke a key with `server api-key revoke <id>`.
+
+### Viewer
+
+The server serves the memory viewer at `/`, but the viewer's browser code
+sends no API key, so opened directly on 37877 every data call gets 401 and
+the page stays empty. Caddy fronts it on the tailnet:
+<http://srv-devbox.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
+read key to every request.
+
+Anyone who reaches that port reads as the key's team, so it is
+tailnet-only: Caddy binds the tailnet address, the firewall opens 37878
+only on `tailscale0`, and requests from outside `100.64.0.0/10` and
+`fd7a:115c:a1e0::/48` get 403.
+
+The viewer is read-only (the key has no write scope). New rows show on
+reload; the server sends no live updates. My Work is not on the server
+runtime; it runs in each host's local worker.
+
+To rotate the key, create a new `memories:read` key, replace the
+`credential` in `claude-mem-viewer`, then revoke the old one. op-agents
+restarts Caddy within the hour, or now with
+`sudo systemctl start op-agents-refresh`.
 
 Connect a client through the tailnet name. It resolves on and off the home
 network, and at home Tailscale connects directly over the LAN:

@@ -10,13 +10,17 @@
 }:
 
 let
-  version = "15.10.0";
+  version = "15.17.0";
   src = pkgs.fetchFromGitHub {
     owner = "thedotmack";
     repo = "claude-mem";
     tag = "v${version}";
-    hash = "sha256-gtIt9Q/eFWkKdDXm8SHiTPkQE7xHJp1n9MbLq5sD/Is=";
+    hash = "sha256-8qmM7mthX8TNqSDtp6ktYpLciCK2+L68QX33sPLOOfg=";
   };
+
+  # Tailnet-only viewer proxy (Caddy, below). The viewer's browser code
+  # sends no API key, so on 37877 every data call gets 401.
+  viewerPort = 37878;
 
   # The worker generates through the CLIProxyAPI hub on this host
   # (cliproxyapi.nix), with the OpenAI subscription logins there. The
@@ -77,7 +81,34 @@ in
       template = "OPENROUTER_API_KEY={{ op://Agents/CLIProxyAPI/cliproxyapi-api-key }}";
       services = [ "claude-mem-server" ];
     };
+    # memories:read key that the viewer proxy adds to every request.
+    claude-mem-viewer-env = {
+      template = "CLAUDE_MEM_VIEWER_KEY={{ op://Agents/claude-mem-viewer/credential }}";
+      services = [ "caddy" ];
+    };
   };
+
+  # Viewer at http://srv-devbox.mermaid-agama.ts.net:37878. Caddy adds the
+  # read key, so anyone who reaches this port reads the key's team: bind the
+  # tailnet address only, open the port only on tailscale0, and refuse any
+  # source outside the tailnet ranges.
+  services.caddy = {
+    enable = true;
+    globalConfig = "auto_https off";
+    virtualHosts."http://:${toString viewerPort}".extraConfig = ''
+      bind ${tailnetIp}
+      @outsideTailnet not remote_ip 100.64.0.0/10 fd7a:115c:a1e0::/48
+      respond @outsideTailnet 403
+      reverse_proxy 127.0.0.1:37877 {
+        header_up Authorization "Bearer {env.CLAUDE_MEM_VIEWER_KEY}"
+      }
+    '';
+  };
+  systemd.services.caddy = {
+    after = [ "tailscaled.service" ];
+    serviceConfig.EnvironmentFile = config.clb.opAgents.secrets.claude-mem-viewer-env.path;
+  };
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ viewerPort ];
 
   # Wraps compose with this stack's files for operations as root:
   # `sudo claude-mem-server-compose ps`, `logs -f`, `exec ...`.

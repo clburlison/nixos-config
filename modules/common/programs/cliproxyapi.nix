@@ -164,7 +164,12 @@ in
         rm $out/bin/claude
         cat > $out/bin/claude <<'EOF'
         #! ${pkgs.bash}/bin/bash
-        if key="$(${readKey})" && [ -n "$key" ]; then
+        # CLAUDE_NO_PROXY=1 skips the hub so the claude.ai login applies,
+        # which is what loads claude.ai connectors.
+        # It also drops proxy vars inherited from a proxied parent session.
+        if [ "''${CLAUDE_NO_PROXY:-}" = 1 ]; then
+          unset ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL CLAUDE_CODE_PROMPT_CACHE_TTL
+        elif key="$(${readKey})" && [ -n "$key" ]; then
           export ANTHROPIC_AUTH_TOKEN="$key"
           export ANTHROPIC_BASE_URL=${lib.escapeShellArg cfg.url}
           # With a custom base URL and token, Claude Code writes the prompt

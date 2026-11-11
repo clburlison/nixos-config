@@ -1,8 +1,8 @@
 # srv-devbox
 
 Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. It
-is the hub every other host uses: the Claude and Codex logins (CLIProxyAPI),
-the shared memory server (claude-mem), and the T3 Code server. Defined by
+is the hub every other host uses: the Claude and Codex logins (CLIProxyAPI)
+and the shared memory server (claude-mem). Defined by
 the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
 aggregator (`modules/nixos/`), and the host override files in
 `hosts/srv-devbox/`. Files named below without a path are in that

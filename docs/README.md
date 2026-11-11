@@ -1,9 +1,9 @@
 # Setup guide
 
 The order of operations for setting everything up from scratch. srv-devbox is
-the hub: it holds the Claude and Codex logins (CLIProxyAPI), the shared
-memory server (claude-mem) and the T3 Code server. Every Mac is a client of
-it. So set up 1Password first, then srv-devbox, then each Mac.
+the hub: it holds the Claude and Codex logins (CLIProxyAPI) and the shared
+memory server (claude-mem). Every Mac is a client of it. So set up
+1Password first, then srv-devbox, then each Mac.
 
 Each step links to the section that does it. Do them in order; a step
 assumes the ones before it.

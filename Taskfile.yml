@@ -165,10 +165,9 @@ tasks:
       - task: home
 
   clean:
-    desc: Cleanup nix garbage
+    desc: Prune profiles to the last two generations, collect garbage, optimise store (sudo)
     cmds:
-      - sudo nix-collect-garbage -d
-      - nix-store --optimise
+      - sudo sh ./lib/nix-clean.sh
 
   rename-mac:
     desc: Rename macOS computer names (HostName, ComputerName, LocalHostName)

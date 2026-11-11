@@ -30,4 +30,24 @@
         launchctl kickstart -k system/systems.determinate.nix-daemon
       fi
     '';
+
+  # Weekly `task clean`. nix.gc/nix.optimise need nix.enable, so use a plain
+  # daemon. launchd runs a calendar job missed during sleep on wake.
+  launchd.daemons.nix-clean.serviceConfig = {
+    ProgramArguments = [
+      "/bin/sh"
+      "${../../lib/nix-clean.sh}"
+    ];
+    StartCalendarInterval = [
+      {
+        Weekday = 0;
+        Hour = 3;
+        Minute = 0;
+      }
+    ];
+    LowPriorityIO = true;
+    ProcessType = "Background";
+    StandardOutPath = "/var/log/nix-clean.log";
+    StandardErrorPath = "/var/log/nix-clean.log";
+  };
 }

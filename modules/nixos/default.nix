@@ -34,6 +34,24 @@ in
     ];
   };
 
+  # Weekly `task clean`. Persistent: a missed run happens on next boot.
+  systemd.services.nix-clean = {
+    description = "Prune Nix profiles, collect garbage, optimise store";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.runtimeShell} ${../../lib/nix-clean.sh}";
+      Nice = 19;
+      IOSchedulingClass = "idle";
+    };
+  };
+  systemd.timers.nix-clean = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Sun *-*-* 03:00:00";
+      Persistent = true;
+    };
+  };
+
   # Wheel sudo asks for the user's password. It is not stored in this repo;
   # set it once with `passwd` when installing a host.
   users.users.${user} = {

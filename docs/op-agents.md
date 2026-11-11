@@ -36,7 +36,7 @@ Consumers: agent-git (`docs/agent-git.md`), the CLIProxyAPI client key
 | --- | --- | --- |
 | `git-agent` (SSH Key) | `private key`, `public key` | agent-git, every host |
 | `CLIProxyAPI` (API Credential) | `cliproxyapi-api-key` | Claude Code and Codex wrappers on every host; the hub and claude-mem worker on srv-devbox |
-| `CLIProxyAPI` | `management-key` | hub panel, CPA Usage Keeper |
+| `CLIProxyAPI` | `password` (the management key) | hub panel, CPA Usage Keeper |
 | `OpenRouter` (API Credential) | `credential` | hub's OpenRouter upstream |
 | `cpa-usage-keeper` (Password) | `password` | Keeper dashboard login |
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | claude-mem worker dotenv |

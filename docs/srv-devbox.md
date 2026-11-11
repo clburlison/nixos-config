@@ -283,7 +283,7 @@ The module and package come from nixpkgs-unstable. Nix writes
 `/var/lib/cliproxyapi` and are kept.
 
 The client access key and management key are the `cliproxyapi-api-key` and
-`management-key` fields of `CLIProxyAPI` in the Agents vault. op-agents
+`password` fields of `CLIProxyAPI` in the Agents vault. op-agents
 writes them to `/run/op-agents` (the access key is owned by the host user,
 for its own Claude Code and Codex):
 

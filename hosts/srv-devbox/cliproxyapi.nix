@@ -37,7 +37,7 @@ in
       services = [ "cliproxyapi" ];
     };
     cliproxyapi-management-key = {
-      reference = "op://Agents/CLIProxyAPI/management-key";
+      reference = "op://Agents/CLIProxyAPI/password";
       services = [ "cliproxyapi" ];
     };
     cliproxyapi-openrouter-key = {

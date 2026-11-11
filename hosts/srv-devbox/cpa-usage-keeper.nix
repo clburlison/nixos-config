@@ -17,7 +17,7 @@ in
   # The hub's management key and the dashboard login password.
   clb.opAgents.secrets.cpa-usage-keeper-env = {
     template = ''
-      CPA_MANAGEMENT_KEY={{ op://Agents/CLIProxyAPI/management-key }}
+      CPA_MANAGEMENT_KEY={{ op://Agents/CLIProxyAPI/password }}
       LOGIN_PASSWORD={{ op://Agents/cpa-usage-keeper/password }}
     '';
     services = [ "cpa-usage-keeper" ];

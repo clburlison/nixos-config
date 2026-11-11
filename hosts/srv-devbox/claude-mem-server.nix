@@ -11,11 +11,22 @@
 
 let
   version = "15.17.0";
-  src = pkgs.fetchFromGitHub {
-    owner = "thedotmack";
-    repo = "claude-mem";
-    tag = "v${version}";
-    hash = "sha256-8qmM7mthX8TNqSDtp6ktYpLciCK2+L68QX33sPLOOfg=";
+  # The image runs `npm install` with no lockfile. tree-sitter-sql 0.3.12+
+  # (2026-11-10) builds with a tree-sitter-cli binary that needs glibc 2.39,
+  # newer than the node:20 base image's, so pin the last release that builds.
+  src = pkgs.applyPatches {
+    name = "claude-mem-${version}-src";
+    src = pkgs.fetchFromGitHub {
+      owner = "thedotmack";
+      repo = "claude-mem";
+      tag = "v${version}";
+      hash = "sha256-8qmM7mthX8TNqSDtp6ktYpLciCK2+L68QX33sPLOOfg=";
+    };
+    postPatch = ''
+      substituteInPlace plugin/package.json \
+        --replace-fail '"@derekstride/tree-sitter-sql": "^0.3.11"' \
+                       '"@derekstride/tree-sitter-sql": "0.3.11"'
+    '';
   };
 
   # Tailnet-only viewer proxy (Caddy, below). The viewer's browser code

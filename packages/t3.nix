@@ -10,15 +10,15 @@ let
   sources = {
     aarch64-darwin = {
       target = "darwin-arm64";
-      hash = "sha256-qVvmGgJg+Nr2Lw4hi9PmA4amZ00yo/xG4tO8FZ+bfao=";
+      hash = "sha256-fS64wGh7cMoDqdNUmDgYUtN5KYNYnoLR+xgxwI8LIwE=";
     };
     aarch64-linux = {
       target = "linux-arm64";
-      hash = "sha256-K/+/YI7vc2xcNeNDGn5SYdDJCeM9io/rg+8mo3R8+PQ=";
+      hash = "sha256-UgI7xXKKTe5N42Gtb+98I28e+ydC/yXinVxV4vtmLuo=";
     };
     x86_64-linux = {
       target = "linux-x64";
-      hash = "sha256-ucSdwAwj+7xZYb2v8tiOVW2WyNvWOMRQHik3xwZQqeU=";
+      hash = "sha256-AUECUzXaM0dZzs2Ns0g+CXcvNgDKA2dGmFJOfZQpE2I=";
     };
   };
   source =
@@ -27,7 +27,7 @@ let
 in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "t3";
-  version = "0.1.8";
+  version = "0.1.9";
 
   src = fetchurl {
     url = "https://github.com/pingdotgg/t3code/releases/download/v${finalAttrs.version}/t3-${finalAttrs.version}-${source.target}.tar.gz";

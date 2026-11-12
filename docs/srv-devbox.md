@@ -308,7 +308,14 @@ sudo cliproxyapi-login -codex-device-login
 
 # Or Codex browser login (uses the 1455 tunnel)
 sudo cliproxyapi-login -codex-login
+
+# Muse Code (Meta), device code
+sudo cliproxyapi-login -meta-login
 ```
+
+Meta's terms say a Muse Code subscription is for use with the Muse Code CLI.
+Only the `muse` CLI uses the hub's Meta login here, but Meta may still
+answer a proxied request with 403 `client_attestation_denied`.
 
 Check accounts in the panel at `http://srv-devbox:8317/management.html`
 (management key) and verify from another machine:
@@ -330,6 +337,16 @@ otherwise caches for 5 minutes, not the subscription's 1 hour), and a
 stay untouched. T3 Code runs the same `claude` and `codex`, so it follows
 too; for Codex, pick **Use existing CLI**.
 
+Muse Code (`muse`) reads its endpoint only from settings.json: `--base-url`
+makes it withhold its key, and `-c` works only on `exec` and `serve`. So
+activation merges `endpoint_transport` (the hub's `/v1`, bearer auth) into
+the mutable `~/.config/muse/settings.json` and leaves every other setting
+alone. The wrapper exports the hub key as `META_API_KEY`. Before it runs, Muse fetches
+`/muse-code/models` from the origin's root. The hub only serves that path
+because of `patches/cliproxyapi-muse-code-relay.patch`, which is upstream
+PR [#6563](https://github.com/router-for-me/CLIProxyAPI/pull/6563); drop the patch
+once that PR ships.
+
 srv-devbox uses `http://127.0.0.1:8317` and reads the op-agents file
 directly (`hosts/srv-devbox/home.nix`). Macs use the tailnet URL and read
 op-agents' keychain cache of `op://Agents/CLIProxyAPI/cliproxyapi-api-key`
@@ -343,7 +360,9 @@ travels partly in the `anthropic-beta` header, so the hub must forward it.
 
 `CLAUDE_NO_PROXY=1 claude` skips the hub for one run, e.g. for claude.ai
 connectors, which only load with the claude.ai login. Without the key, a
-host keeps its own Claude and Codex logins. To sign in directly on a Mac
+host keeps its own Claude and Codex logins (Muse Code needs
+`clb.cliproxyapi.enable = false;`, since its endpoint pin is static). To
+sign in directly on a Mac
 (e.g. clb-work), set `clb.cliproxyapi.enable = false;` in its host override
 file, then drop the cache:
 `security delete-generic-password -s op-agents:cliproxyapi-api-key`.

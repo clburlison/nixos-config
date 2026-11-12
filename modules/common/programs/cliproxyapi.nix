@@ -1,10 +1,10 @@
-# Route Claude Code and Codex through the CLIProxyAPI hub on srv-devbox
-# (docs/srv-devbox.md step 11), on every host. They keep their usual
-# config dirs (~/.claude, ~/.codex). The access key is a secret, so it stays
-# out of Nix: the wrappers read it at each run. Darwin reads op-agents'
-# keychain cache of the Agents vault item; Linux reads apiKeyFile, e.g. from
-# the system's op-agents secrets. A host without the key keeps its own Claude
-# and Codex logins.
+# Route Claude Code, Codex, and Muse Code through the CLIProxyAPI hub on
+# srv-devbox (docs/srv-devbox.md step 11), on every host. They keep their
+# usual config dirs (~/.claude, ~/.codex, ~/.config/muse). The access key
+# is a secret, so it stays out of Nix: the wrappers read it at each run.
+# Darwin reads op-agents' keychain cache of the Agents vault item; Linux
+# reads apiKeyFile, e.g. from the system's op-agents secrets. A host without
+# the key keeps its own Claude and Codex logins.
 {
   config,
   lib,
@@ -34,6 +34,14 @@ let
     ''model_providers.cliproxyapi={name="CLIProxyAPI",base_url="${cfg.url}/v1",wire_api="responses",requires_openai_auth=false,supports_websockets=true,env_key="CLIPROXYAPI_API_KEY"}''
   ];
 
+  # Muse Code reads its endpoint from settings.json only: `--base-url`
+  # makes it withhold the key, and `-c` exists only on exec and serve.
+  museSettings = "${config.xdg.configHome}/muse/settings.json";
+  museEndpoint = {
+    base_url = "${cfg.url}/v1";
+    auth = "bearer";
+  };
+
 in
 {
   _class = "homeManager";
@@ -42,7 +50,7 @@ in
     enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
-      description = "Route through the hub. Off, Claude Code and Codex use their own logins.";
+      description = "Route through the hub. Off, Claude Code, Codex, and Muse Code use their own logins.";
     };
     url = lib.mkOption {
       type = lib.types.str;
@@ -128,6 +136,54 @@ in
     clb.opAgents.secrets = lib.mkIf (cfg.enable && isDarwin) {
       cliproxyapi-api-key.reference = "op://Agents/CLIProxyAPI/cliproxyapi-api-key";
     };
+
+    # Muse Code with the hub key as META_API_KEY. The hub needs the Muse
+    # Code client endpoints (packages/cliproxyapi.nix) and a Meta login.
+    home.packages = [
+      (pkgs.symlinkJoin {
+        name = "muse-code-cliproxyapi";
+        paths = [ pkgs.muse-code ];
+        postBuild = ''
+          rm $out/bin/muse
+          cat > $out/bin/muse <<'EOF'
+          #! ${pkgs.bash}/bin/bash
+          if key="$(${readKey})" && [ -n "$key" ]; then
+            export META_API_KEY="$key"
+          fi
+          unset key
+          exec -a "$0" ${pkgs.muse-code}/bin/muse "$@"
+          EOF
+          chmod +x $out/bin/muse
+        '';
+        inherit (pkgs.muse-code) meta;
+      })
+    ];
+
+    # Pin Muse Code's endpoint to the hub in its mutable settings.json,
+    # keeping everything else. Off, drop the pin only if it is the hub's.
+    home.activation.museCodeEndpoint = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      settings=${lib.escapeShellArg museSettings}
+      if ${lib.boolToString cfg.enable} || [ -e "$settings" ]; then
+        ${pkgs.coreutils}/bin/install -d -m 700 "''${settings%/*}"
+        if [ ! -e "$settings" ]; then
+          printf '{}\n' > "$settings"
+        fi
+        tmp="$(${pkgs.coreutils}/bin/mktemp "$settings.XXXXXX")"
+        ${pkgs.jq}/bin/jq \
+          --argjson enable ${lib.boolToString cfg.enable} \
+          --argjson endpoint ${lib.escapeShellArg (builtins.toJSON museEndpoint)} \
+          'if $enable then {schema_version: 1} + . + {endpoint_transport: $endpoint}
+           elif .endpoint_transport.base_url == $endpoint.base_url then del(.endpoint_transport)
+           else . end' \
+          "$settings" > "$tmp"
+        if ${pkgs.diffutils}/bin/cmp -s "$tmp" "$settings"; then
+          ${pkgs.coreutils}/bin/rm -f "$tmp"
+        else
+          ${pkgs.coreutils}/bin/chmod 600 "$tmp"
+          ${pkgs.coreutils}/bin/mv "$tmp" "$settings"
+        fi
+      fi
+    '';
 
     # programs.claude-code (claude-mem.nix) wraps this again with its plugins.
     programs.claude-code.package = pkgs.symlinkJoin {

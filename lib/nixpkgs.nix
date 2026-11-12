@@ -27,6 +27,7 @@
         lazygit = unstable.lazygit;
         nerd-fonts = unstable.nerd-fonts;
         linear-cli = final.callPackage ../packages/linear-cli.nix { };
+        muse-code = unstable.muse-code;
         ntn = final.callPackage ../packages/ntn.nix { };
         opencode = final.callPackage ../packages/opencode.nix {
           opencode-v2 = inputs.opencode-v2;

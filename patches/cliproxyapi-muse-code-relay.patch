@@ -1,0 +1,925 @@
+diff -ruN a/internal/api/muse_code_relay.go b/internal/api/muse_code_relay.go
+--- a/internal/api/muse_code_relay.go
++++ b/internal/api/muse_code_relay.go
+@@ -0,0 +1,308 @@
++package api
++
++import (
++	"context"
++	"errors"
++	"io"
++	"net/http"
++	"net/url"
++	"strconv"
++	"strings"
++	"time"
++
++	"github.com/gin-gonic/gin"
++	metaauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/meta"
++	"github.com/router-for-me/CLIProxyAPI/v8/internal/clienterror"
++	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
++	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
++	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
++	log "github.com/sirupsen/logrus"
++)
++
++const (
++	museCodeProvider = "meta"
++	// museCodeRelayMaxBody caps the request and response bodies the relay carries.
++	museCodeRelayMaxBody = 16 << 20
++)
++
++// museCodeRelayPaths are the Muse Code client endpoints, relative to
++// /muse-code, that the relay forwards. The client asks for them at the root of
++// the origin its base URL names, and refuses to start without the model
++// catalog. Endpoints that mint or revoke credentials, and telemetry, are left
++// out on purpose.
++var museCodeRelayPaths = []string{"models", "config", "search", "browser_open"}
++
++// museCodeRelayQueryCredentials are the query parameters client access accepts
++// as a proxy API key. They are never passed on to Meta.
++var museCodeRelayQueryCredentials = []string{"key", "auth_token"}
++
++// registerMuseCodeRoutes serves the Muse Code client endpoints so the Muse CLI
++// can use the proxy as its endpoint.
++func (s *Server) registerMuseCodeRoutes() {
++	museCode := s.engine.Group("/muse-code")
++	museCode.Use(AuthMiddleware(s.accessManager))
++	for _, path := range museCodeRelayPaths {
++		museCode.GET("/"+path, s.museCodeRelay)
++		museCode.POST("/"+path, s.museCodeRelay)
++	}
++}
++
++// museCodeRelay forwards one Muse Code client request to Meta with a Meta
++// credential and returns the answer unchanged. These payloads are already in
++// Meta's format and must not pass through a protocol translator.
++func (s *Server) museCodeRelay(c *gin.Context) {
++	if s == nil || s.handlers == nil || s.handlers.AuthManager == nil {
++		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Meta auth manager unavailable"})
++		return
++	}
++	// Home dispatches a credential for a model, and these requests carry none,
++	// so they are refused plainly rather than with the legacy selection error.
++	if s.handlers.AuthManager.HomeEnabled() {
++		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Muse Code endpoints are unavailable while Home is enabled"})
++		return
++	}
++
++	var body []byte
++	if c.Request.Method != http.MethodGet && c.Request.Body != nil {
++		requestBody, errRead := io.ReadAll(io.LimitReader(c.Request.Body, museCodeRelayMaxBody+1))
++		if errRead != nil {
++			c.JSON(clienterror.HTTPStatusFromErrorOr(errRead, http.StatusBadRequest), gin.H{"error": "Failed to read Muse Code request"})
++			return
++		}
++		if len(requestBody) > museCodeRelayMaxBody {
++			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Muse Code request is too large"})
++			return
++		}
++		body = requestBody
++	}
++
++	ctx := context.WithValue(c.Request.Context(), "gin", c)
++	selected, errSelect := s.museCodeSelectAuth(ctx, coreexecutor.Options{Headers: c.Request.Header.Clone()})
++	if errSelect != nil {
++		for _, value := range auth.SafeResponseHeaders(errSelect).Values("Retry-After") {
++			c.Writer.Header().Add("Retry-After", value)
++		}
++		c.JSON(clienterror.HTTPStatusFromErrorOr(errSelect, http.StatusServiceUnavailable), gin.H{"error": errSelect.Error()})
++		return
++	}
++	if selected == nil {
++		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Meta auth unavailable"})
++		return
++	}
++	// A Meta login that holds only a DCA token gets its API key minted and saved
++	// here, before the origin is derived, because the mint may name the origin.
++	if executor, okExecutor := s.handlers.AuthManager.Executor(museCodeProvider); okExecutor {
++		if preparer, okPreparer := executor.(auth.RequestAuthPreparer); okPreparer {
++			prepared, errPrepare := s.handlers.AuthManager.PrepareRequestAuth(ctx, preparer, selected)
++			if errPrepare != nil {
++				status := clienterror.HTTPStatusFromErrorOr(errPrepare, http.StatusBadGateway)
++				s.recordMuseCodeFailure(ctx, selected, status, nil, errPrepare)
++				c.JSON(status, gin.H{"error": errPrepare.Error()})
++				return
++			}
++			if prepared != nil {
++				selected = prepared
++			}
++		}
++	}
++
++	query := museCodeRelayQuery(c.Request.URL.RawQuery)
++	headers := museCodeRelayHeaders(c.Request.Header)
++	send := func(current *auth.Auth) (*http.Response, int, error) {
++		upstreamURL, errURL := museCodeUpstreamURL(current, c.Request.URL.Path, query)
++		if errURL != nil {
++			return nil, http.StatusServiceUnavailable, errURL
++		}
++		req, errRequest := s.handlers.AuthManager.NewHttpRequest(ctx, current, c.Request.Method, upstreamURL, body, headers)
++		if errRequest != nil {
++			return nil, clienterror.HTTPStatusFromErrorOr(errRequest, http.StatusBadGateway), errRequest
++		}
++		resp, errDo := s.handlers.AuthManager.HttpRequest(ctx, current, req)
++		if errDo != nil {
++			return nil, clienterror.HTTPStatusFromErrorOr(errDo, http.StatusBadGateway), errDo
++		}
++		return resp, http.StatusOK, nil
++	}
++	current := selected
++	resp, status, errSend := send(current)
++	// A revoked API key answers 401 while the login can still mint another. The
++	// relay sends outside the execution pipeline, so it refreshes once itself,
++	// under the same rules, before giving up.
++	if errSend == nil && resp.StatusCode == http.StatusUnauthorized {
++		if refreshed, okRefresh := s.handlers.AuthManager.RefreshAfterUnauthorized(ctx, current); okRefresh {
++			closeMuseCodeResponse(resp)
++			current = refreshed
++			resp, status, errSend = send(current)
++		}
++	}
++	// Failures that belong to the credential are recorded as the pipeline records
++	// them, so selection moves past a rejected, exhausted or unreachable credential
++	// and a rejected login is not refreshed again on every request.
++	if errSend != nil {
++		s.recordMuseCodeFailure(ctx, current, status, nil, errSend)
++		c.JSON(status, gin.H{"error": errSend.Error()})
++		return
++	}
++	if museCodeCredentialFailure(resp.StatusCode) {
++		s.recordMuseCodeFailure(ctx, current, resp.StatusCode, museCodeRetryAfter(resp.Header), nil)
++	}
++	defer closeMuseCodeResponse(resp)
++	upstreamBody, errRead := io.ReadAll(io.LimitReader(resp.Body, museCodeRelayMaxBody+1))
++	if errRead != nil {
++		c.JSON(clienterror.HTTPStatusFromErrorOr(errRead, http.StatusBadGateway), gin.H{"error": "Failed to read Muse Code response"})
++		return
++	}
++	if len(upstreamBody) > museCodeRelayMaxBody {
++		c.JSON(http.StatusBadGateway, gin.H{"error": "Muse Code response is too large"})
++		return
++	}
++	for _, name := range []string{"Content-Type", "Cache-Control", "Etag", "Last-Modified", "Retry-After"} {
++		if value := resp.Header.Get(name); value != "" {
++			c.Header(name, value)
++		}
++	}
++	c.Status(resp.StatusCode)
++	_, _ = c.Writer.Write(upstreamBody)
++}
++
++// museCodeSelectAuth picks a Meta credential for a request that names no model.
++// It selects for each model the Meta credentials serve, in turn, and takes the
++// first credential found. A credential that serves no model, such as a config
++// key turned off with a "*" model exclusion, is never chosen, and a model that
++// is cooling down on one credential does not hide another credential.
++func (s *Server) museCodeSelectAuth(ctx context.Context, opts coreexecutor.Options) (*auth.Auth, error) {
++	var lastErr error
++	for _, model := range registry.GetGlobalRegistry().GetAvailableModelsByProvider(museCodeProvider) {
++		if model == nil || strings.TrimSpace(model.ID) == "" {
++			continue
++		}
++		selected, errSelect := s.handlers.AuthManager.SelectAuth(ctx, museCodeProvider, model.ID, opts)
++		if errSelect == nil && selected != nil {
++			return selected, nil
++		}
++		if errSelect != nil {
++			lastErr = errSelect
++		}
++	}
++	return nil, lastErr
++}
++
++// recordMuseCodeFailure records a relayed request that failed on its credential.
++// These requests name no model, so the failure is the credential's. The result
++// carries the credential version and registration epoch it was sent under, which
++// MarkResult needs to accept it after a refresh.
++func (s *Server) recordMuseCodeFailure(ctx context.Context, current *auth.Auth, status int, retryAfter *time.Duration, errFailure error) {
++	if current == nil {
++		return
++	}
++	message := http.StatusText(status)
++	if errFailure != nil {
++		message = errFailure.Error()
++	}
++	s.handlers.AuthManager.MarkResult(ctx, auth.Result{
++		AuthID:            current.ID,
++		Provider:          museCodeProvider,
++		Success:           false,
++		RetryAfter:        retryAfter,
++		CredentialScope:   true,
++		Error:             &auth.Error{Message: message, HTTPStatus: status},
++		CredentialVersion: current.CredentialVersion,
++		RegistrationEpoch: current.RegistrationEpoch,
++	})
++}
++
++// museCodeCredentialFailure reports whether Meta's answer is about the
++// credential (rejected, unpaid, forbidden, exhausted or failing) rather than
++// about the request, such as a 400 or 404.
++func museCodeCredentialFailure(status int) bool {
++	switch status {
++	case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden, http.StatusTooManyRequests:
++		return true
++	default:
++		return status >= http.StatusInternalServerError
++	}
++}
++
++// museCodeRetryAfter reads a Retry-After header given in seconds or as a date.
++func museCodeRetryAfter(header http.Header) *time.Duration {
++	value := strings.TrimSpace(header.Get("Retry-After"))
++	if value == "" {
++		return nil
++	}
++	if seconds, errAtoi := strconv.Atoi(value); errAtoi == nil && seconds >= 0 {
++		delay := time.Duration(seconds) * time.Second
++		return &delay
++	}
++	if at, errParse := http.ParseTime(value); errParse == nil {
++		if delay := time.Until(at); delay > 0 {
++			return &delay
++		}
++	}
++	return nil
++}
++
++func closeMuseCodeResponse(resp *http.Response) {
++	if errClose := resp.Body.Close(); errClose != nil {
++		log.Errorf("muse code relay: close response body error: %v", errClose)
++	}
++}
++
++// museCodeRelayQuery drops the proxy credentials from a relayed query string.
++func museCodeRelayQuery(rawQuery string) string {
++	if rawQuery == "" {
++		return ""
++	}
++	values, _ := url.ParseQuery(rawQuery)
++	for _, name := range museCodeRelayQueryCredentials {
++		values.Del(name)
++	}
++	return values.Encode()
++}
++
++// museCodeUpstreamURL maps a relayed request onto the origin the credential
++// talks to. Muse Code endpoints live at the root of that origin, beside the
++// versioned API the credential's base URL names.
++func museCodeUpstreamURL(selected *auth.Auth, path, rawQuery string) (string, error) {
++	baseURL := ""
++	if selected != nil {
++		if selected.Attributes != nil {
++			baseURL = strings.TrimSpace(selected.Attributes["base_url"])
++		}
++		for _, key := range []string{"base_url", "api_base_url"} {
++			if baseURL != "" || selected.Metadata == nil {
++				break
++			}
++			if value, ok := selected.Metadata[key].(string); ok {
++				baseURL = strings.TrimSpace(value)
++			}
++		}
++	}
++	if baseURL == "" {
++		baseURL = metaauth.DefaultAPIBaseURL
++	}
++	parsed, errParse := url.Parse(baseURL)
++	if errParse != nil || parsed.Scheme == "" || parsed.Host == "" {
++		return "", errors.New("Meta credential has an invalid base URL")
++	}
++	upstream := url.URL{Scheme: parsed.Scheme, Host: parsed.Host, Path: path, RawQuery: rawQuery}
++	return upstream.String(), nil
++}
++
++// museCodeRelayHeaders keeps the request headers of the Muse Code client that
++// Meta's endpoints read. The client authenticates to the proxy with a proxy
++// API key, so its Authorization header is never forwarded; the Meta credential
++// is injected when the request is prepared.
++func museCodeRelayHeaders(in http.Header) http.Header {
++	out := make(http.Header)
++	for name, values := range in {
++		canonical := http.CanonicalHeaderKey(name)
++		switch {
++		case canonical == "Accept", canonical == "Content-Type", canonical == "Traceparent", canonical == "If-None-Match":
++		case strings.HasPrefix(canonical, "X-Tbh-"), strings.HasPrefix(canonical, "X-Meta-Ai-"):
++		default:
++			continue
++		}
++		out[canonical] = append([]string(nil), values...)
++	}
++	return out
++}
+diff -ruN a/internal/api/muse_code_relay_test.go b/internal/api/muse_code_relay_test.go
+--- a/internal/api/muse_code_relay_test.go
++++ b/internal/api/muse_code_relay_test.go
+@@ -0,0 +1,536 @@
++package api
++
++import (
++	"context"
++	"io"
++	"net/http"
++	"net/http/httptest"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++	"time"
++
++	gin "github.com/gin-gonic/gin"
++	proxyconfig "github.com/router-for-me/CLIProxyAPI/v8/internal/config"
++	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
++	sdkaccess "github.com/router-for-me/CLIProxyAPI/v8/sdk/access"
++	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
++	coreexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
++	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
++)
++
++// museRelayCaptureExecutor stands in for the Meta executor and records the
++// request the relay sends upstream.
++type museRelayCaptureExecutor struct {
++	request      *http.Request
++	body         []byte
++	calls        int
++	mints        int
++	refreshes    int
++	status       int
++	responseBody string
++	// statusByKey answers requests carrying one of these Meta keys with the given
++	// status, such as 401 for a revoked key or 429 for an exhausted one.
++	statusByKey map[string]int
++}
++
++// ShouldPrepareRequestAuth mirrors the Meta executor: a login holding only a
++// DCA token needs its API key minted first.
++func (e *museRelayCaptureExecutor) ShouldPrepareRequestAuth(a *auth.Auth) bool {
++	return a != nil && a.Attributes["api_key"] == "" && a.Attributes["dca_token"] != ""
++}
++
++func (e *museRelayCaptureExecutor) PrepareRequestAuth(_ context.Context, a *auth.Auth) (*auth.Auth, error) {
++	e.mints++
++	a.Attributes["api_key"] = "minted-key"
++	a.Attributes["base_url"] = "https://minted.example.com/v1"
++	return a, nil
++}
++
++func (e *museRelayCaptureExecutor) Identifier() string { return "meta" }
++
++func (e *museRelayCaptureExecutor) Execute(context.Context, *auth.Auth, coreexecutor.Request, coreexecutor.Options) (coreexecutor.Response, error) {
++	return coreexecutor.Response{}, nil
++}
++
++func (e *museRelayCaptureExecutor) ExecuteStream(context.Context, *auth.Auth, coreexecutor.Request, coreexecutor.Options) (*coreexecutor.StreamResult, error) {
++	return nil, nil
++}
++
++// Refresh mirrors the Meta executor: a login with a DCA token mints a new key.
++func (e *museRelayCaptureExecutor) Refresh(_ context.Context, a *auth.Auth) (*auth.Auth, error) {
++	if a != nil && a.Attributes["dca_token"] != "" {
++		e.refreshes++
++		a.Attributes["api_key"] = "fresh-key"
++	}
++	return a, nil
++}
++
++func (e *museRelayCaptureExecutor) CountTokens(context.Context, *auth.Auth, coreexecutor.Request, coreexecutor.Options) (coreexecutor.Response, error) {
++	return coreexecutor.Response{}, nil
++}
++
++func (e *museRelayCaptureExecutor) PrepareRequest(req *http.Request, a *auth.Auth) error {
++	req.Header.Set("Authorization", "Bearer "+a.Attributes["api_key"])
++	return nil
++}
++
++func (e *museRelayCaptureExecutor) HttpRequest(_ context.Context, _ *auth.Auth, req *http.Request) (*http.Response, error) {
++	e.calls++
++	e.request = req.Clone(req.Context())
++	if req.Body != nil {
++		body, errRead := io.ReadAll(req.Body)
++		if errRead != nil {
++			return nil, errRead
++		}
++		e.body = body
++	}
++	status := e.status
++	if status == 0 {
++		status = http.StatusOK
++	}
++	if keyStatus, ok := e.statusByKey[strings.TrimPrefix(req.Header.Get("Authorization"), "Bearer ")]; ok {
++		status = keyStatus
++	}
++	responseBody := e.responseBody
++	if responseBody == "" {
++		responseBody = `{"rows":[{"model_id":"muse-test"}]}`
++	}
++	header := http.Header{"Content-Type": []string{"application/json"}, "Etag": []string{`"catalog-1"`}, "Set-Cookie": []string{"session=upstream"}}
++	if status == http.StatusTooManyRequests {
++		header.Set("Retry-After", "120")
++	}
++	return &http.Response{
++		StatusCode: status,
++		Header:     header,
++		Body:       io.NopCloser(strings.NewReader(responseBody)),
++	}, nil
++}
++
++func museRelayTestServer(t *testing.T, attributes map[string]string) (*Server, *museRelayCaptureExecutor) {
++	t.Helper()
++	gin.SetMode(gin.TestMode)
++
++	tmpDir := t.TempDir()
++	authDir := filepath.Join(tmpDir, "auth")
++	if errMkdir := os.MkdirAll(authDir, 0o700); errMkdir != nil {
++		t.Fatalf("create auth dir: %v", errMkdir)
++	}
++	cfg := &proxyconfig.Config{
++		SDKConfig: sdkconfig.SDKConfig{
++			APIKeys: []string{"sk-muse-test", "plain-key"},
++		},
++	}
++	cfg.AuthDir = authDir
++	cfg.LoggingToFile = false
++	cfg.UsageStatisticsEnabled = false
++
++	server := NewServer(cfg, auth.NewManager(nil, nil, nil), sdkaccess.NewManager(), filepath.Join(tmpDir, "config.yaml"))
++	executor := &museRelayCaptureExecutor{}
++	server.handlers.AuthManager.RegisterExecutor(executor)
++	credential := &auth.Auth{ID: "meta-auth", Provider: "meta", Status: auth.StatusActive, Attributes: attributes}
++	if _, errRegister := server.handlers.AuthManager.Register(context.Background(), credential); errRegister != nil {
++		t.Fatalf("register Meta auth: %v", errRegister)
++	}
++	registry.GetGlobalRegistry().RegisterClient(credential.ID, "meta", []*registry.ModelInfo{{ID: "muse-relay-test", Object: "model", OwnedBy: "meta", Type: "meta"}})
++	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(credential.ID) })
++	return server, executor
++}
++
++func TestMuseCodeRelayForwardsCatalogRequest(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key", "base_url": "https://meta.example.com/v1"})
++
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models?profile=tbh", nil)
++	req.Header.Set("Authorization", "Bearer sk-muse-test")
++	req.Header.Set("X-Tbh-Session-Id", "session-1")
++	req.Header.Set("Cookie", "client=cookie")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++
++	if recorder.Code != http.StatusOK {
++		t.Fatalf("status = %d, want 200; body=%s", recorder.Code, recorder.Body.String())
++	}
++	if executor.request == nil {
++		t.Fatal("the Meta executor did not receive a request")
++	}
++	if got, want := executor.request.URL.String(), "https://meta.example.com/muse-code/models?profile=tbh"; got != want {
++		t.Fatalf("upstream URL = %q, want %q", got, want)
++	}
++	if got := executor.request.Method; got != http.MethodGet {
++		t.Fatalf("upstream method = %q, want GET", got)
++	}
++	if got := executor.request.Header.Get("Authorization"); got != "Bearer meta-key" {
++		t.Fatalf("upstream Authorization = %q, want the Meta credential", got)
++	}
++	if got := executor.request.Header.Get("X-Tbh-Session-Id"); got != "session-1" {
++		t.Fatalf("X-Tbh-Session-Id = %q, want it forwarded", got)
++	}
++	if got := executor.request.Header.Get("Cookie"); got != "" {
++		t.Fatalf("Cookie = %q, want it dropped", got)
++	}
++	if got := recorder.Body.String(); got != `{"rows":[{"model_id":"muse-test"}]}` {
++		t.Fatalf("body = %s, want the upstream body unchanged", got)
++	}
++	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
++		t.Fatalf("Content-Type = %q", got)
++	}
++	if got := recorder.Header().Get("Etag"); got != `"catalog-1"` {
++		t.Fatalf("Etag = %q, want it relayed", got)
++	}
++	if got := recorder.Header().Get("Set-Cookie"); got != "" {
++		t.Fatalf("Set-Cookie = %q, want it dropped", got)
++	}
++}
++
++func TestMuseCodeRelayPostsToTheDefaultOrigin(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	executor.status = http.StatusTooManyRequests
++
++	req := httptest.NewRequest(http.MethodPost, "/muse-code/search", strings.NewReader(`{"query":"muse"}`))
++	req.Header.Set("Authorization", "Bearer plain-key")
++	req.Header.Set("Content-Type", "application/json")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++
++	if recorder.Code != http.StatusTooManyRequests {
++		t.Fatalf("status = %d, want the upstream status 429", recorder.Code)
++	}
++	if got, want := executor.request.URL.String(), "https://api.meta.ai/muse-code/search"; got != want {
++		t.Fatalf("upstream URL = %q, want %q", got, want)
++	}
++	if got := executor.request.Method; got != http.MethodPost {
++		t.Fatalf("upstream method = %q, want POST", got)
++	}
++	if got := string(executor.body); got != `{"query":"muse"}` {
++		t.Fatalf("upstream body = %q", got)
++	}
++	if got := executor.request.Header.Get("Content-Type"); got != "application/json" {
++		t.Fatalf("upstream Content-Type = %q", got)
++	}
++}
++
++func TestMuseCodeRelayRequiresKeyAndAllowlist(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++
++	for _, testCase := range []struct {
++		name   string
++		method string
++		path   string
++		key    string
++		status int
++	}{
++		{name: "unknown key", method: http.MethodGet, path: "/muse-code/models", key: "wrong-key", status: http.StatusUnauthorized},
++		{name: "credential minting is not relayed", method: http.MethodPost, path: "/muse-code/key", key: "sk-muse-test", status: http.StatusNotFound},
++		{name: "telemetry is not relayed", method: http.MethodPost, path: "/muse-code/telemetry/logs", key: "sk-muse-test", status: http.StatusNotFound},
++	} {
++		t.Run(testCase.name, func(t *testing.T) {
++			req := httptest.NewRequest(testCase.method, testCase.path, nil)
++			req.Header.Set("Authorization", "Bearer "+testCase.key)
++			recorder := httptest.NewRecorder()
++			server.engine.ServeHTTP(recorder, req)
++			if recorder.Code != testCase.status {
++				t.Fatalf("status = %d, want %d; body=%s", recorder.Code, testCase.status, recorder.Body.String())
++			}
++		})
++	}
++	if executor.calls != 0 {
++		t.Fatalf("the Meta executor received %d request(s), want none", executor.calls)
++	}
++}
++
++func TestMuseCodeRelayRejectsOversizedBodies(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	oversized := strings.Repeat("a", museCodeRelayMaxBody+1)
++
++	req := httptest.NewRequest(http.MethodPost, "/muse-code/search", strings.NewReader(oversized))
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++	if recorder.Code != http.StatusRequestEntityTooLarge {
++		t.Fatalf("oversized request: status = %d, want 413", recorder.Code)
++	}
++	if executor.calls != 0 {
++		t.Fatal("an oversized request reached Meta")
++	}
++
++	executor.responseBody = oversized
++	req = httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder = httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++	if recorder.Code != http.StatusBadGateway {
++		t.Fatalf("oversized response: status = %d, want 502", recorder.Code)
++	}
++	if strings.Contains(recorder.Body.String(), "aaaa") {
++		t.Fatal("part of an oversized response was relayed")
++	}
++}
++
++func TestMuseCodeRelayRefusesPlainlyWhileHomeIsEnabled(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	homeConfig := &proxyconfig.Config{}
++	homeConfig.Home.Enabled = true
++	server.handlers.AuthManager.SetConfig(homeConfig)
++
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++
++	if recorder.Code != http.StatusServiceUnavailable || !strings.Contains(recorder.Body.String(), "Muse Code endpoints are unavailable while Home is enabled") {
++		t.Fatalf("status = %d, body = %s; want the Home refusal", recorder.Code, recorder.Body.String())
++	}
++	if executor.calls != 0 {
++		t.Fatal("the Meta executor was called while Home is enabled")
++	}
++}
++
++func TestMuseCodeRelayDropsProxyKeyFromQuery(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key", "base_url": "https://meta.example.com/v1"})
++
++	for _, query := range []string{"profile=tbh&key=plain-key", "auth_token=plain-key&profile=tbh"} {
++		req := httptest.NewRequest(http.MethodGet, "/muse-code/models?"+query, nil)
++		recorder := httptest.NewRecorder()
++		server.engine.ServeHTTP(recorder, req)
++		if recorder.Code != http.StatusOK {
++			t.Fatalf("%s: status = %d, want 200 (the query key authenticates); body=%s", query, recorder.Code, recorder.Body.String())
++		}
++		if got, want := executor.request.URL.String(), "https://meta.example.com/muse-code/models?profile=tbh"; got != want {
++			t.Fatalf("%s: upstream URL = %q, want %q without the proxy key", query, got, want)
++		}
++	}
++}
++
++func TestMuseCodeRelaySkipsMetaCredentialsThatServeNoModel(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	// A config key turned off with a "*" exclusion is left with no models.
++	disabled := &auth.Auth{ID: "meta-disabled", Provider: "meta", Status: auth.StatusActive, Attributes: map[string]string{"api_key": "disabled-key", "excluded_models": "*"}}
++	if _, errRegister := server.handlers.AuthManager.Register(context.Background(), disabled); errRegister != nil {
++		t.Fatalf("register disabled Meta auth: %v", errRegister)
++	}
++
++	for i := 0; i < 4; i++ {
++		req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++		req.Header.Set("Authorization", "Bearer plain-key")
++		recorder := httptest.NewRecorder()
++		server.engine.ServeHTTP(recorder, req)
++		if recorder.Code != http.StatusOK {
++			t.Fatalf("request %d: status = %d, body=%s", i, recorder.Code, recorder.Body.String())
++		}
++		if got := executor.request.Header.Get("Authorization"); got != "Bearer meta-key" {
++			t.Fatalf("request %d went out with %q, want the credential that serves models", i, got)
++		}
++	}
++
++	registry.GetGlobalRegistry().UnregisterClient("meta-auth")
++	executor.calls = 0
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++	if recorder.Code != http.StatusServiceUnavailable || executor.calls != 0 {
++		t.Fatalf("with no credential serving a model: status = %d, Meta calls = %d; want 503 and none", recorder.Code, executor.calls)
++	}
++}
++
++func TestMuseCodeRelayMintsDCAKeyBeforeChoosingOrigin(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"dca_token": "dca:test", "base_url": "https://stale.example.com/v1"})
++
++	for i := 0; i < 2; i++ {
++		req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++		req.Header.Set("Authorization", "Bearer plain-key")
++		recorder := httptest.NewRecorder()
++		server.engine.ServeHTTP(recorder, req)
++		if recorder.Code != http.StatusOK {
++			t.Fatalf("request %d: status = %d, body=%s", i, recorder.Code, recorder.Body.String())
++		}
++		if got, want := executor.request.URL.String(), "https://minted.example.com/muse-code/models"; got != want {
++			t.Fatalf("request %d: upstream URL = %q, want the origin the mint named", i, got)
++		}
++		if got := executor.request.Header.Get("Authorization"); got != "Bearer minted-key" {
++			t.Fatalf("request %d: Authorization = %q, want the minted key", i, got)
++		}
++	}
++	if executor.mints != 1 {
++		t.Fatalf("mints = %d over two requests, want 1: the minted key must be saved", executor.mints)
++	}
++}
++
++func TestMuseCodeRelayRefreshesARevokedKeyOnce(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "revoked-key", "dca_token": "dca:test"})
++	executor.statusByKey = map[string]int{"revoked-key": http.StatusUnauthorized}
++
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++
++	if recorder.Code != http.StatusOK {
++		t.Fatalf("status = %d, want 200 after refreshing the revoked key; body=%s", recorder.Code, recorder.Body.String())
++	}
++	if executor.calls != 2 || executor.refreshes != 1 {
++		t.Fatalf("Meta calls = %d, refreshes = %d; want 2 and 1", executor.calls, executor.refreshes)
++	}
++	if got := executor.request.Header.Get("Authorization"); got != "Bearer fresh-key" {
++		t.Fatalf("retry Authorization = %q, want the refreshed key", got)
++	}
++}
++
++func TestMuseCodeRelayRetiresARejectedCredential(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	executor.statusByKey = map[string]int{"dead-key": http.StatusUnauthorized}
++	// A config key Meta rejects, with nothing to refresh it from, beside a good one.
++	dead := &auth.Auth{ID: "meta-dead", Provider: "meta", Status: auth.StatusActive, Attributes: map[string]string{"api_key": "dead-key"}}
++	if _, errRegister := server.handlers.AuthManager.Register(context.Background(), dead); errRegister != nil {
++		t.Fatalf("register rejected Meta auth: %v", errRegister)
++	}
++	registry.GetGlobalRegistry().RegisterClient(dead.ID, "meta", []*registry.ModelInfo{{ID: "muse-relay-test", Object: "model", OwnedBy: "meta", Type: "meta"}})
++	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(dead.ID) })
++
++	failures := 0
++	for i := 0; i < 8; i++ {
++		req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++		req.Header.Set("Authorization", "Bearer plain-key")
++		recorder := httptest.NewRecorder()
++		server.engine.ServeHTTP(recorder, req)
++		if recorder.Code != http.StatusOK {
++			failures++
++		}
++	}
++	if failures > 1 {
++		t.Fatalf("%d of 8 requests failed; want the rejected credential retired after its first 401", failures)
++	}
++}
++
++// museRelayAddCredential registers another Meta credential that serves the
++// test model, beside the one museRelayTestServer registers.
++func museRelayAddCredential(t *testing.T, server *Server, id string, attributes map[string]string) {
++	t.Helper()
++	credential := &auth.Auth{ID: id, Provider: "meta", Status: auth.StatusActive, Attributes: attributes}
++	if _, errRegister := server.handlers.AuthManager.Register(context.Background(), credential); errRegister != nil {
++		t.Fatalf("register %s: %v", id, errRegister)
++	}
++	registry.GetGlobalRegistry().RegisterClient(id, "meta", []*registry.ModelInfo{{ID: "muse-relay-test", Object: "model", OwnedBy: "meta", Type: "meta"}})
++	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(id) })
++}
++
++func museRelayGetModels(server *Server) *httptest.ResponseRecorder {
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer plain-key")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++	return recorder
++}
++
++func TestMuseCodeRelayRetiresALoginWhoseFreshKeyIsRejectedToo(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	// A DCA-backed login whose old and freshly minted keys are both refused.
++	museRelayAddCredential(t, server, "meta-dca-dead", map[string]string{"api_key": "revoked-key", "dca_token": "dca:test"})
++	executor.statusByKey = map[string]int{"revoked-key": http.StatusUnauthorized, "fresh-key": http.StatusUnauthorized}
++
++	failures := 0
++	for i := 0; i < 8; i++ {
++		if museRelayGetModels(server).Code != http.StatusOK {
++			failures++
++		}
++	}
++	// The refresh advances the credential version; a result recorded without it
++	// would be dropped as stale and the login minted again on every request.
++	if executor.refreshes != 1 || failures > 1 {
++		t.Fatalf("refreshes = %d, failures = %d of 8; want one refresh and at most one failure", executor.refreshes, failures)
++	}
++}
++
++func TestMuseCodeRelayPassesRetryAfterAndMovesPastAnExhaustedKey(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	museRelayAddCredential(t, server, "meta-busy", map[string]string{"api_key": "busy-key"})
++	executor.statusByKey = map[string]int{"busy-key": http.StatusTooManyRequests}
++
++	failures := 0
++	for i := 0; i < 8; i++ {
++		recorder := museRelayGetModels(server)
++		if recorder.Code == http.StatusTooManyRequests {
++			failures++
++			if got := recorder.Header().Get("Retry-After"); got != "120" {
++				t.Fatalf("Retry-After = %q on Meta's 429, want it passed through", got)
++			}
++		} else if recorder.Code != http.StatusOK {
++			t.Fatalf("request %d: status = %d", i, recorder.Code)
++		}
++	}
++	if failures > 1 {
++		t.Fatalf("%d of 8 requests hit the exhausted key; want it skipped after its first 429", failures)
++	}
++}
++
++func TestMuseCodeRelayIsNotHiddenByACoolingModel(t *testing.T) {
++	server, executor := museRelayTestServer(t, map[string]string{"api_key": "meta-key"})
++	// A second credential serves only a model that is cooling down on it.
++	cooling := &auth.Auth{
++		ID: "meta-cooling", Provider: "meta", Status: auth.StatusActive,
++		Attributes: map[string]string{"api_key": "cooling-key"},
++		ModelStates: map[string]*auth.ModelState{"muse-cooling": {
++			Status: auth.StatusError, Unavailable: true, NextRetryAfter: time.Now().Add(time.Hour),
++		}},
++	}
++	if _, errRegister := server.handlers.AuthManager.Register(context.Background(), cooling); errRegister != nil {
++		t.Fatalf("register cooling Meta auth: %v", errRegister)
++	}
++	registry.GetGlobalRegistry().RegisterClient(cooling.ID, "meta", []*registry.ModelInfo{{ID: "muse-cooling", Object: "model", OwnedBy: "meta", Type: "meta"}})
++	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(cooling.ID) })
++
++	// The registry lists the two models in no fixed order, so send enough
++	// requests that the cooling model comes first in some of them.
++	for i := 0; i < 16; i++ {
++		req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++		req.Header.Set("Authorization", "Bearer plain-key")
++		recorder := httptest.NewRecorder()
++		server.engine.ServeHTTP(recorder, req)
++		if recorder.Code != http.StatusOK {
++			t.Fatalf("request %d: status = %d, want 200 through the healthy credential; body=%s", i, recorder.Code, recorder.Body.String())
++		}
++		if got := executor.request.Header.Get("Authorization"); got != "Bearer meta-key" {
++			t.Fatalf("request %d went out with %q, want the healthy credential", i, got)
++		}
++	}
++}
++
++func TestMuseCodeRelayIsBlockedInExampleKeySafeMode(t *testing.T) {
++	server := newTestServerWithOptions(t, WithExampleAPIKeySafeMode())
++	cfg := *server.cfg
++	cfg.APIKeys = []string{"your-api-key-1"}
++	server.UpdateClients(&cfg)
++
++	req := httptest.NewRequest(http.MethodGet, "/muse-code/models", nil)
++	req.Header.Set("Authorization", "Bearer your-api-key-1")
++	recorder := httptest.NewRecorder()
++	server.engine.ServeHTTP(recorder, req)
++	if recorder.Code != http.StatusForbidden || recorder.Header().Get("X-CPA-SAFE-MODE") != "example-api-key" {
++		t.Fatalf("status = %d, safe-mode header = %q; want 403 from example-key safe mode", recorder.Code, recorder.Header().Get("X-CPA-SAFE-MODE"))
++	}
++}
++
++func TestMuseCodeUpstreamURL(t *testing.T) {
++	for _, testCase := range []struct {
++		name     string
++		selected *auth.Auth
++		want     string
++		wantErr  bool
++	}{
++		{name: "no base URL uses Meta", selected: &auth.Auth{}, want: "https://api.meta.ai/muse-code/models?a=1"},
++		{name: "attribute base URL", selected: &auth.Auth{Attributes: map[string]string{"base_url": "http://127.0.0.1:9000/custom/v1/"}}, want: "http://127.0.0.1:9000/muse-code/models?a=1"},
++		{name: "metadata base URL", selected: &auth.Auth{Metadata: map[string]any{"api_base_url": "https://meta.example.com/v1"}}, want: "https://meta.example.com/muse-code/models?a=1"},
++		{name: "base URL without a host", selected: &auth.Auth{Attributes: map[string]string{"base_url": "not a url"}}, wantErr: true},
++	} {
++		t.Run(testCase.name, func(t *testing.T) {
++			got, errURL := museCodeUpstreamURL(testCase.selected, "/muse-code/models", "a=1")
++			if (errURL != nil) != testCase.wantErr {
++				t.Fatalf("error = %v, wantErr %t", errURL, testCase.wantErr)
++			}
++			if got != testCase.want {
++				t.Fatalf("URL = %q, want %q", got, testCase.want)
++			}
++		})
++	}
++}
+diff -ruN a/internal/api/server_middleware.go b/internal/api/server_middleware.go
+--- a/internal/api/server_middleware.go
++++ b/internal/api/server_middleware.go
+@@ -418,6 +418,8 @@
+ 		return true
+ 	case path == "/backend-api/codex" || strings.HasPrefix(path, "/backend-api/codex/"):
+ 		return true
++	case path == "/muse-code" || strings.HasPrefix(path, "/muse-code/"):
++		return true
+ 	default:
+ 		return false
+ 	}
+diff -ruN a/internal/api/server_routes.go b/internal/api/server_routes.go
+--- a/internal/api/server_routes.go
++++ b/internal/api/server_routes.go
+@@ -127,6 +127,8 @@
+ 		codexDirect.POST("/alpha/search", s.codexAlphaSearch)
+ 	}
+ 
++	s.registerMuseCodeRoutes()
++
+ 	// Gemini compatible API routes
+ 	v1beta := s.engine.Group("/v1beta")
+ 	v1beta.Use(AuthMiddleware(s.accessManager))
+diff -ruN a/internal/logging/gin_logger.go b/internal/logging/gin_logger.go
+--- a/internal/logging/gin_logger.go
++++ b/internal/logging/gin_logger.go
+@@ -22,6 +22,7 @@
+ 	"/v1beta",
+ 	"/openai/v1",
+ 	"/backend-api/codex",
++	"/muse-code",
+ }
+ 
+ const (
+diff -ruN a/internal/logging/gin_logger_test.go b/internal/logging/gin_logger_test.go
+--- a/internal/logging/gin_logger_test.go
++++ b/internal/logging/gin_logger_test.go
+@@ -70,6 +70,7 @@
+ 		"/v1beta/interactions",
+ 		"/openai/v1/videos",
+ 		"/backend-api/codex/responses",
++		"/muse-code/models",
+ 	} {
+ 		if !isAIAPIPath(path) {
+ 			t.Fatalf("expected %s to be treated as AI API path", path)
+@@ -80,6 +81,7 @@
+ 		"/v10/models",
+ 		"/openai/v10/videos",
+ 		"/backend-api/codex-status",
++		"/muse-codex",
+ 	} {
+ 		if isAIAPIPath(path) {
+ 			t.Fatalf("expected %s not to be treated as AI API path", path)
+diff -ruN a/sdk/cliproxy/auth/conductor_refresh.go b/sdk/cliproxy/auth/conductor_refresh.go
+--- a/sdk/cliproxy/auth/conductor_refresh.go
++++ b/sdk/cliproxy/auth/conductor_refresh.go
+@@ -1144,6 +1144,15 @@
+ 	return current, false, nil
+ }
+ 
++// RefreshAfterUnauthorized refreshes a credential once after its upstream
++// answered 401 to a request sent outside the execution pipeline, such as a
++// relay that calls HttpRequest directly. It follows the pipeline's own rules and
++// reports whether a refreshed credential was returned.
++func (m *Manager) RefreshAfterUnauthorized(ctx context.Context, auth *Auth) (*Auth, bool) {
++	unauthorized := &Error{Code: "unauthorized", Message: "upstream returned 401", HTTPStatus: http.StatusUnauthorized}
++	return m.tryRefreshAfterUnauthorized(ctx, auth, unauthorized, false)
++}
++
+ // tryRefreshAfterUnauthorized refreshes local OAuth credentials once after a
+ // 401 so the current auth can be retried before fallback/suspend.
+ func (m *Manager) tryRefreshAfterUnauthorized(ctx context.Context, auth *Auth, execErr error, alreadyTried bool, clientHeaders ...http.Header) (*Auth, bool) {

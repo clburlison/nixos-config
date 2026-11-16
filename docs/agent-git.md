@@ -4,8 +4,8 @@ Where this fits in the setup order: [docs/README.md](README.md).
 
 Signing commits and pushing over SSH through 1Password's agent fails while the
 app is locked. `modules/common/programs/agent-git.nix` adds a separate key that works
-locked and makes it the default for every session and app: shells, herdr
-remote sessions, Claude Code, Codex and T3 Code. 1Password and the personal
+locked and makes it the default for every session and app: shells, SSH
+sessions, Claude Code, Codex and T3 Code. 1Password and the personal
 key are the fallback.
 
 How it works on each Mac:

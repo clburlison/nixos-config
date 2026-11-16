@@ -35,7 +35,7 @@ These are the files that changed most often over the past year, mapped to where 
 | Add a flake input or bump a pinned version | `flake.nix`, then `task update -- <input>` | both |
 | Turn AI agent skills on or off | `modules/common/programs/agent-skills.nix` | `task home` |
 | Ship a pushed clb-skills change | nothing here (`clb-skills` input is pinned in `flake.lock`) | `task skills` (`task home` alone keeps the old pin) |
-| Change herdr, worktrunk, claude-mem, agent-git, fish, zsh | `modules/common/programs/<name>.nix` | `task home` |
+| Change worktrunk, claude-mem, agent-git, fish, zsh | `modules/common/programs/<name>.nix` | `task home` |
 | Link a new dotfile into `$HOME` | `modules/common/default.nix` (`home.file`) | `task home` |
 | Edit Neovim, fish functions, Ghostty, SSH, Claude config | `dotfiles/config/...`, `dotfiles/ssh/`, `dotfiles/claude/` | nothing (live symlink) |
 | Edit `gitconfig`, `aliases`, `path`, `functions` | `dotfiles/<name>` | `task home` (copied into the store) |
@@ -64,7 +64,6 @@ Dotfiles linked with `mkOutOfStoreSymlink` in `home.file` are live: edits show u
 | `dotfiles/` | App configs (Neovim, fish, Ghostty, git, SSH, Claude, ...) linked into `$HOME` by `modules/common` |
 | `packages/` | Custom package derivations (claude-mem, linear-cli, ntn, opencode, t3, ...) and their update scripts (`packages/Taskfile.yml`) |
 | `patches/` | Patches applied to upstream packages |
-| `plugins/` | herdr plugins (layouts) |
 | `docs/` | Setup guide (`docs/README.md`), per-topic guides, and research notes |
 | `Taskfile.yml` | `task` entry points (below) |
 

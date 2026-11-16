@@ -1,4 +1,3 @@
--- herdr plugin link  ~/.local/share/nvim/lazy/smart-splits.nvim
 return {
   {
     'smart-splits-nvim/smart-splits.nvim',

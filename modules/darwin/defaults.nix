@@ -43,11 +43,10 @@
   };
 
   # Rex has no built-in Nerd Font symbols (Ghostty does), so icons fall back
-  # to installed fonts: Nerd Font glyphs, then Herdr agent icons (U+E1A0-E1B7).
+  # to installed Nerd Font glyphs.
   system.defaults.CustomUserPreferences."com.superlogical.rex"."Workspace.terminalFallbackFontNames" =
     [
       "Hack Nerd Font Mono"
-      "Herdr Agent Icons Max"
     ];
 
   system.defaults.dock = {

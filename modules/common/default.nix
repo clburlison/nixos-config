@@ -27,7 +27,6 @@ in
     ./programs/claude-mem.nix
     ./programs/cliproxyapi.nix
     ./programs/uv.nix
-    ./programs/herdr.nix
     ./programs/op-agents.nix
     ./programs/agent-git.nix
     ./programs/agent-skills.nix

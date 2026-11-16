@@ -61,31 +61,6 @@
       url = "git+ssh://git@github.com/clburlison/clb-skills";
       flake = false;
     };
-
-    herdr-nix = {
-      url = "github:kevinpita/herdr-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    smart-splits-nvim = {
-      url = "github:smart-splits-nvim/smart-splits.nvim";
-      flake = false;
-    };
-
-    herdr-worktrunk = {
-      url = "github:devashish2203/herdr-worktrunk";
-      flake = false;
-    };
-
-    herdr-bar = {
-      url = "github:jeffarese/herdr-bar";
-      flake = false;
-    };
-
-    herdr-automatic-rename = {
-      url = "github:qu8n/herdr-automatic-rename";
-      flake = false;
-    };
   };
 
   outputs =

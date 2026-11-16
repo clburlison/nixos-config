@@ -199,24 +199,6 @@
         "url": "https://flakehub.com/f/hercules-ci/flake-parts/0.1"
       }
     },
-    "flake-utils": {
-      "inputs": {
-        "systems": "systems"
-      },
-      "locked": {
-        "lastModified": 1731533236,
-        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
     "git-hooks-nix": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -237,75 +219,6 @@
       "original": {
         "type": "tarball",
         "url": "https://flakehub.com/f/cachix/git-hooks.nix/0.1.941"
-      }
-    },
-    "herdr-automatic-rename": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791517011,
-        "narHash": "sha256-HvoFscLm4cYBb40nQxkW2gFoCSIZwxwzNrE26gvUjUY=",
-        "owner": "qu8n",
-        "repo": "herdr-automatic-rename",
-        "rev": "b90c4086854080fd0dbde63c19667e38d55df5af",
-        "type": "github"
-      },
-      "original": {
-        "owner": "qu8n",
-        "repo": "herdr-automatic-rename",
-        "type": "github"
-      }
-    },
-    "herdr-bar": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1792983080,
-        "narHash": "sha256-CYLnUJ7BQZmtnp7X1vtqTxLjEOaWsFQ2bHyghLG8oM0=",
-        "owner": "jeffarese",
-        "repo": "herdr-bar",
-        "rev": "1ec84901d7922987b4273e4ae98c33bd5d251fab",
-        "type": "github"
-      },
-      "original": {
-        "owner": "jeffarese",
-        "repo": "herdr-bar",
-        "type": "github"
-      }
-    },
-    "herdr-nix": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1790870916,
-        "narHash": "sha256-FoFEVk8KMov1MC0LgFqy5QGilP8m5h7xeV+WsHoJgOs=",
-        "owner": "kevinpita",
-        "repo": "herdr-nix",
-        "rev": "8a81b7635cf3845f6880c3d7ac97af4effd5ab2c",
-        "type": "github"
-      },
-      "original": {
-        "owner": "kevinpita",
-        "repo": "herdr-nix",
-        "type": "github"
-      }
-    },
-    "herdr-worktrunk": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791287192,
-        "narHash": "sha256-puZWyvtBt2svov0NIVJTzdfHzm/k1EglbXsTGsm8N7I=",
-        "owner": "devashish2203",
-        "repo": "herdr-worktrunk",
-        "rev": "f9df9ba700b8a4f4d97ddfe3ea3eb345e80b880b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "devashish2203",
-        "repo": "herdr-worktrunk",
-        "type": "github"
       }
     },
     "home-manager": {
@@ -553,10 +466,6 @@
         "cloudflare-security-audit-skills": "cloudflare-security-audit-skills",
         "darwin": "darwin",
         "determinate": "determinate",
-        "herdr-automatic-rename": "herdr-automatic-rename",
-        "herdr-bar": "herdr-bar",
-        "herdr-nix": "herdr-nix",
-        "herdr-worktrunk": "herdr-worktrunk",
         "home-manager": "home-manager",
         "linear-cli-skills": "linear-cli-skills",
         "matt-pocock-skills": "matt-pocock-skills",
@@ -565,24 +474,7 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "notion-skills": "notion-skills",
         "opencode-v2": "opencode-v2",
-        "smart-splits-nvim": "smart-splits-nvim",
         "sops-nix": "sops-nix"
-      }
-    },
-    "smart-splits-nvim": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1788803650,
-        "narHash": "sha256-wTNNFmVARLSbhYvr7dkPc+9jJBLEeRah0JB3j4W/7uM=",
-        "owner": "smart-splits-nvim",
-        "repo": "smart-splits.nvim",
-        "rev": "ec76708f1617ef9e2ac353357fe52d2c997a0f06",
-        "type": "github"
-      },
-      "original": {
-        "owner": "smart-splits-nvim",
-        "repo": "smart-splits.nvim",
-        "type": "github"
       }
     },
     "sops-nix": {
@@ -602,21 +494,6 @@
       "original": {
         "owner": "Mic92",
         "repo": "sops-nix",
-        "type": "github"
-      }
-    },
-    "systems": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
         "type": "github"
       }
     }

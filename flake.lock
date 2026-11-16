@@ -25,11 +25,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794808393,
-        "narHash": "sha256-QrZHCBNL9Ya3+Ro5kFNeTB5eRsQRp3/SiSc1gUhweVw=",
+        "lastModified": 1794809736,
+        "narHash": "sha256-WGs4ahg2CCs8bRgFxd0ao3W8SUSktfWEjLcU5cz/OzI=",
         "ref": "refs/heads/main",
-        "rev": "ace6ef2a3736e140277cd0b008d8747c9063a44c",
-        "revCount": 4,
+        "rev": "8e827d07710db73792fe779f91a8696d70f73213",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@github.com/clburlison/ai-analytics"
       },

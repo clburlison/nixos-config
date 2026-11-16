@@ -37,7 +37,7 @@ tasks:
     internal: true
     platforms: [linux]
     cmds:
-      - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild switch --flake ".#{{.NIXNAME}}"
+      - NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild switch --sudo --flake ".#{{.NIXNAME}}"
 
   home:
     desc: Apply the Home Manager config (no sudo)
@@ -69,7 +69,7 @@ tasks:
     internal: true
     platforms: [linux]
     cmds:
-      - sudo NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild test --flake ".#{{.NIXNAME}}"
+      - NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1 nixos-rebuild test --sudo --flake ".#{{.NIXNAME}}"
 
   test-home:
     desc: Build the Home Manager config without activating it (no sudo)

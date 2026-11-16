@@ -26,6 +26,7 @@ the whole setup: [docs/README.md](README.md).
 | [11. CLIProxyAPI hub](#11-cliproxyapi-hub) | 7 |
 | [12. CPA Usage Keeper](#12-cpa-usage-keeper) | 7, 11 |
 | [13. claude-mem hosted server](#13-claude-mem-hosted-server) | 7, 9, 11 |
+| [14. AI usage analytics](#14-ai-usage-analytics) | 11 |
 
 ## 1. Create the Proxmox VM
 
@@ -518,6 +519,12 @@ changes:
 sudo claude-mem-server-compose exec postgres \
   sh -c 'pg_dumpall -U "$POSTGRES_USER"' > claude-mem-backup.sql
 ```
+
+## 14. AI usage analytics
+
+`cpa-clickhouse.nix` tracks our AI usage analytics. Setup and usage live in
+the private `ai-analytics` repo (the `ai-analytics` flake input, fetched
+over SSH like `clb-skills`).
 
 ## Notes
 

@@ -18,6 +18,26 @@
         "type": "github"
       }
     },
+    "ai-analytics": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794808393,
+        "narHash": "sha256-QrZHCBNL9Ya3+Ro5kFNeTB5eRsQRp3/SiSc1gUhweVw=",
+        "ref": "refs/heads/main",
+        "rev": "ace6ef2a3736e140277cd0b008d8747c9063a44c",
+        "revCount": 4,
+        "type": "git",
+        "url": "ssh://git@github.com/clburlison/ai-analytics"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/clburlison/ai-analytics"
+      }
+    },
     "bdwgc": {
       "flake": false,
       "locked": {
@@ -462,6 +482,7 @@
     "root": {
       "inputs": {
         "agent-skills": "agent-skills",
+        "ai-analytics": "ai-analytics",
         "clb-skills": "clb-skills",
         "cloudflare-security-audit-skills": "cloudflare-security-audit-skills",
         "darwin": "darwin",

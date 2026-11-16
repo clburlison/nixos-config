@@ -42,6 +42,7 @@ All in [srv-devbox.md](srv-devbox.md):
 | [11](srv-devbox.md#11-cliproxyapi-hub) | CLIProxyAPI hub: sign in the Claude and Codex accounts |
 | [12](srv-devbox.md#12-cpa-usage-keeper) | CPA Usage Keeper dashboard |
 | [13](srv-devbox.md#13-claude-mem-hosted-server) | claude-mem server: create the host and viewer keys, save them in 1Password |
+| [14](srv-devbox.md#14-ai-usage-analytics) | AI usage analytics (nothing to do) |
 
 ## 2. Each Mac
 

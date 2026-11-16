@@ -61,6 +61,12 @@
       url = "git+ssh://git@github.com/clburlison/clb-skills";
       flake = false;
     };
+
+    # AI usage analytics (private).
+    ai-analytics = {
+      url = "git+ssh://git@github.com/clburlison/ai-analytics";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

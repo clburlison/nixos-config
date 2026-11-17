@@ -56,47 +56,38 @@ shows as `ENQUEUED | sessionDbId=...` in `~/.claude-mem/logs`.
 
 ### Per host: the API key
 
-The one per-host step. The key is `op://Agents/claude-mem-rw/credential`
-(`memories:read,memories:write`); hosts read the Agents vault with
-`op-agents`, so set the op-agents token first (`docs/op-agents.md`). Nix
-doesn't manage the key: `settings.json` stays mutable.
+The key is `op://Agents/claude-mem-rw/credential`
+(`memories:read,memories:write`). Nix supplies it on every host from the
+Agents vault through `op-agents`, so set the op-agents token first
+(`docs/op-agents.md`); no hand edits to `settings.json`.
 
-1. Hooks: add it to `~/.claude-mem/settings.json` (mode 0600). A host without
-   it keeps the local SQLite worker.
+1. Hooks: activation writes `CLAUDE_MEM_SERVER_API_KEY` into
+   `~/.claude-mem/settings.json` (mode 0600) with the other server keys, and
+   pins the legacy `CLAUDE_MEM_SERVER_BETA_*` fallbacks to match (beta key
+   empty). Darwin reads op-agents' keychain cache, or 1Password directly on
+   a first activation; srv-devbox reads `/run/op-agents/claude-mem-api-key`.
+   If the key can't be read, activation warns and keeps the current one. A
+   host without a key keeps the local SQLite worker.
 
-   ```sh
-   jq --arg key "$(op-agents read op://Agents/claude-mem-rw/credential)" \
-     '.CLAUDE_MEM_SERVER_API_KEY = $key' \
-     ~/.claude-mem/settings.json > ~/.claude-mem/settings.json.new \
-     && chmod 600 ~/.claude-mem/settings.json.new \
-     && mv ~/.claude-mem/settings.json.new ~/.claude-mem/settings.json
-   claude-mem restart
-   ```
-
-2. MCP server, for search and memory tools in Claude Code:
-
-   ```sh
-   claude mcp remove --scope user claude-mem 2>/dev/null
-   claude mcp add --scope user --transport http claude-mem \
-     http://srv-devbox.mermaid-agama.ts.net:37877/v1/mcp \
-     --header "Authorization: Bearer $(op-agents read op://Agents/claude-mem-rw/credential)"
-   ```
+2. MCP server, for search and memory tools in Claude Code: Nix manages it
+   (`programs.claude-code.mcpServers.claude-mem` in
+   `modules/common/programs/claude-mem.nix`), at the host's server URL plus
+   `/v1/mcp`. Its `headersHelper` reads the key at each connect, from the
+   same source. Activation removes an old hand-added user-scope `claude-mem`
+   entry.
 
 3. Approve the Codex hooks ("Apply and use" step 4).
 
-To rotate the key, see "API keys" in `docs/srv-devbox.md`, then redo steps 1
-and 2 on every host.
+To rotate the key, see "API keys" in `docs/srv-devbox.md`, then run
+`op-agents-load` (Darwin) and `task home` on every host.
 
 ### Reaching the server
 
-The tailnet name resolves on and off the home network, and at home
-Tailscale connects directly over the LAN. It needs Tailscale running on the
-client. For a LAN fallback at home with Tailscale off, add a local DNS
-record on the home router for `srv-devbox.mermaid-agama.ts.net` pointing to
-srv-devbox's LAN IP (192.xxx.xxx.xxx, from DHCP, so reserve it). Tailscale's
-MagicDNS answers first whenever Tailscale is up, so the same URL works
-either way. Away from home there is no fallback without Tailscale: upstream
-says not to expose the server to the internet.
+Hosts on the home LAN use the LAN name `srv-devbox.home.clb.ai`, so they
+need no Tailscale. clb-work roams: its local failover proxy
+(`hosts/clb-work/hub-proxy.nix`) tries the LAN name, then the tailnet name.
+Away from home it still needs Tailscale: upstream says not to expose the
+server to the internet.
 
 Existing SQLite memory is not migrated: the server has no import path.
 

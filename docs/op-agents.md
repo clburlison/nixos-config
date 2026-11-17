@@ -48,7 +48,7 @@ exist before the `task system` in `docs/srv-devbox.md` step 7.
 | `cpa-usage-keeper` (Password) | `password` | yes | Keeper dashboard login |
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | yes | claude-mem worker dotenv |
 | `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on srv-devbox |
-| `claude-mem-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | | claude-mem hooks and MCP server on every host, set by hand (`docs/claude-mem.md`) |
+| `claude-mem-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | yes | claude-mem hooks and MCP server on every host (`docs/claude-mem.md`) |
 
 To add one: create the item in `Agents`, then add it to
 `clb.opAgents.secrets` (system or Home Manager) and point the consumer at its

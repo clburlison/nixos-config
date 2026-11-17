@@ -11,6 +11,8 @@
   # The claude-mem hosted server runs here (system.nix), so skip the
   # tailnet round trip.
   home.sessionVariables.CLAUDE_MEM_SERVER_URL = "http://127.0.0.1:37877";
+  # Its op-agents secret (claude-mem-server.nix), for the MCP server.
+  clb.claudeMem.apiKeyFile = "/run/op-agents/claude-mem-api-key";
 
   # The CLIProxyAPI hub runs here too (cliproxyapi.nix); its op-agents
   # secret is owned by the host user.

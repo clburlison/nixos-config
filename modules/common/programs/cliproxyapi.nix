@@ -54,7 +54,9 @@ in
     };
     url = lib.mkOption {
       type = lib.types.str;
-      default = "http://srv-devbox.mermaid-agama.ts.net:8317";
+      # The LAN name: hosts are on the home LAN. A roaming host overrides
+      # this (hosts/clb-work/home.nix).
+      default = "http://srv-devbox.home.clb.ai:8317";
       description = "CLIProxyAPI base URL, without /v1.";
     };
     apiKeyFile = lib.mkOption {

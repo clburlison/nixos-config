@@ -349,7 +349,15 @@ PR [#6563](https://github.com/router-for-me/CLIProxyAPI/pull/6563); drop the pat
 once that PR ships.
 
 srv-devbox uses `http://127.0.0.1:8317` and reads the op-agents file
-directly (`hosts/srv-devbox/home.nix`). Macs use the tailnet URL and read
+directly (`hosts/srv-devbox/home.nix`). Macs on the home LAN use
+`http://srv-devbox.home.clb.ai:8317`. clb-work roams, so it uses
+`http://127.0.0.1:8317`, a local failover proxy
+(`hosts/clb-work/hub-proxy.nix`): a Caddy launchd daemon that sends each
+request to the LAN name when it answers, else the tailnet name, so the hub
+keeps working with Tailscale off or on another tailnet. It is a system
+daemon because macOS local network privacy blocks LAN connections from user
+processes whose app lacks the grant; launchd daemons are exempt. Log:
+`/var/log/hub-proxy.log`. Macs read
 op-agents' keychain cache of `op://Agents/CLIProxyAPI/cliproxyapi-api-key`
 (`docs/op-agents.md`), which works while 1Password is locked. No per-Mac
 step beyond the op-agents token.
@@ -405,7 +413,9 @@ only the new password, but browsers already logged in keep their session
 system service, pinned to a release tag. Compose builds the images locally,
 so the first `task system` start takes several minutes. The server listens
 on port 37877 on all interfaces. Each host's hooks and MCP server connect to
-it (`docs/claude-mem.md`, "Hosted server").
+it (`docs/claude-mem.md`, "Hosted server") at `srv-devbox.home.clb.ai:37877`;
+clb-work goes through its failover proxy at `http://127.0.0.1:37877`
+(step 11).
 
 Postgres credentials are generated once into
 `/var/lib/claude-mem-server/postgres.env`. Postgres only reads them when it

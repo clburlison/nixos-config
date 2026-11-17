@@ -97,6 +97,12 @@ in
       template = "CLAUDE_MEM_VIEWER_KEY={{ op://Agents/claude-mem-viewer/credential }}";
       services = [ "caddy" ];
     };
+    # Read/write key for the host user's claude-mem MCP server
+    # (modules/common/programs/claude-mem.nix).
+    claude-mem-api-key = {
+      reference = "op://Agents/claude-mem-rw/credential";
+      owner = config.clb.host.user;
+    };
   };
 
   # Viewer at http://srv-devbox.mermaid-agama.ts.net:37878. Caddy adds the

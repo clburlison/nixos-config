@@ -116,7 +116,7 @@ in
       agents.enable = true;
       claude.enable = true;
       codex.enable = true;
-      opencode.enable = true;
+      # opencode.enable = true;
     };
   };
 }

@@ -458,27 +458,6 @@
         "type": "github"
       }
     },
-    "opencode-v2": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs-unstable"
-        ]
-      },
-      "locked": {
-        "lastModified": 1794961686,
-        "narHash": "sha256-yEdLD000KJPNkuowiy4g+sHV+7dm3xazKTEf15ZIYKs=",
-        "owner": "anomalyco",
-        "repo": "opencode",
-        "rev": "c0ad18b402eb2827fc1ee71c171b1177b3fc02d1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "anomalyco",
-        "ref": "v2.3.2",
-        "repo": "opencode",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "agent-skills": "agent-skills",
@@ -494,7 +473,6 @@
         "nixpkgs": "nixpkgs_4",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "notion-skills": "notion-skills",
-        "opencode-v2": "opencode-v2",
         "sops-nix": "sops-nix"
       }
     },

@@ -11,10 +11,10 @@
     # We use the unstable nixpkgs repo for some packages.
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
-    opencode-v2 = {
-      url = "github:anomalyco/opencode/v2.3.2";
-      inputs.nixpkgs.follows = "nixpkgs-unstable";
-    };
+    # opencode-v2 = {
+    #   url = "github:anomalyco/opencode/v2.3.2";
+    #   inputs.nixpkgs.follows = "nixpkgs-unstable";
+    # };
 
     # https://github.com/nix-community/home-manager/branches/all?query=release
     home-manager.url = "github:nix-community/home-manager/release-26.05";

@@ -13,6 +13,10 @@
   # what our home directory is (https://github.com/LnL7/nix-darwin/issues/423).
   system.primaryUser = config.clb.host.user;
 
+  # GUI apps (e.g. T3 Code) skip shell init, so give Node the Nix CA bundle
+  # via launchd or remote MCP servers fail TLS verification.
+  launchd.user.envVariables.NODE_EXTRA_CA_CERTS = config.environment.variables.NIX_SSL_CERT_FILE;
+
   users.users.${config.clb.host.user} = {
     home = "/Users/${config.clb.host.user}";
     shell = pkgs.fish;

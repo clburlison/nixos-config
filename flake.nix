@@ -12,7 +12,7 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
     opencode-v2 = {
-      url = "github:anomalyco/opencode/v2.0.31";
+      url = "github:anomalyco/opencode/v2.3.2";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
 

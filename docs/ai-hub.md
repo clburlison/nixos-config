@@ -561,8 +561,8 @@ A Docker Compose stack with pinned images, run by `obot.service`:
   servers, so it is root-equivalent on this host. Keep anything that
   shouldn't trust it off ai-hub.
 - `tailscale`: a sidecar in Obot's network namespace that joins the
-  tailnet as its own node `mcp` (`tag:mcp-gateway`) and serves
-  `https://mcp.mermaid-agama.ts.net` with the ts.net cert. It hands
+  tailnet as its own node `ai-hub-mcp` (`tag:mcp-gateway`) and serves
+  `https://ai-hub-mcp.mermaid-agama.ts.net` with the ts.net cert. It hands
   requests to Obot over loopback, so decrypted traffic never crosses the
   Docker network the MCP containers share. If Docker restarts a crashed
   Obot, the sidecar loses that namespace; `obot-watchdog.timer` probes the
@@ -639,7 +639,7 @@ gateway can't reach other tailnet devices.
 ### First start
 
 `obot.service` fails its start (and takes its containers down) until Obot
-answers and the sidecar serves HTTPS as `mcp`, so do these before the first
+answers and the sidecar serves HTTPS as `ai-hub-mcp`, so do these before the first
 `task system` that includes `obot.nix`:
 
 1. Tailnet HTTPS certificates on (admin console > **DNS > HTTPS
@@ -657,9 +657,9 @@ answers and the sidecar serves HTTPS as `mcp`, so do these before the first
    ```
 
 4. `task system`. `sudo obot-compose ps` shows both containers and
-   `tailscale status` lists `mcp`.
+   `tailscale status` lists `ai-hub-mcp`.
 5. From a Mac on the tailnet, open
-   `https://mcp.mermaid-agama.ts.net/activate#token=<setup token>` (the
+   `https://ai-hub-mcp.mermaid-agama.ts.net/activate#token=<setup token>` (the
    token is in `sudo cat /var/lib/obot/secrets/obot.env`), set a password
    (12+ characters), and sign in with the owner email.
 6. Save `encryption.yaml` and `obot.env` (Secrets, above).
@@ -687,15 +687,15 @@ EOF
 ```
 
 The sidecar keeps its node in the `tailscale-state` volume. If that volume
-is lost, delete the old `mcp` machine in the admin console (or the new one
-comes up as `mcp-1`, which no client uses), write a fresh auth key to
-`ts-authkey`, and `sudo systemctl restart obot`.
+is lost, delete the old `ai-hub-mcp` machine in the admin console (or the
+new one comes up as `ai-hub-mcp-1`, which no client uses), write a fresh
+auth key to `ts-authkey`, and `sudo systemctl restart obot`.
 
 ### Upstream OAuth apps
 
 Prefer Obot's catalog entries. Register this redirect URI on each OAuth
 app (Obot's MCP OAuth callback; confirm it on the server's configuration
-page): `https://mcp.mermaid-agama.ts.net/oauth/mcp/callback`. Every
+page): `https://ai-hub-mcp.mermaid-agama.ts.net/oauth/mcp/callback`. Every
 browser that does a login must be on the tailnet.
 
 - Google Cloud OAuth client (Gmail, Sheets, Drive). In Testing mode
@@ -741,7 +741,7 @@ key goes through stdin, not argv):
 
 ```sh
 printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s op-agents:obot-api-key -a "$USER" -w)" \
-  | curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me
+  | curl -fsS -K - https://ai-hub-mcp.mermaid-agama.ts.net/api/me
 ```
 
 Clients that only do stdio can use `mcp-proxy` as a bridge.

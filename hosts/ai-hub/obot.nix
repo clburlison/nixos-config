@@ -11,7 +11,7 @@
 #              sibling containers on this stack's network, so it is
 #              root-equivalent on this host.
 #   tailscale  a sidecar in Obot's network namespace that joins the
-#              tailnet as its own node `mcp`
+#              tailnet as its own node `ai-hub-mcp`
 #              (tag:mcp-gateway) and serves HTTPS with the ts.net cert.
 #              The host's own Tailscale Serve :443 belongs to t3-serve.
 # Nothing is published beyond 127.0.0.1 on the host.
@@ -32,7 +32,7 @@ let
   tailscaleImage = "ghcr.io/tailscale/tailscale:v1.104.4";
 
   # The sidecar's node name; with the tailnet name it makes the URL.
-  nodeName = "mcp";
+  nodeName = "ai-hub-mcp";
   url = "https://${nodeName}.mermaid-agama.ts.net";
   # No host port: Docker would forward it over the bridge the MCP
   # containers share. Local access goes into Obot's network namespace
@@ -278,9 +278,9 @@ let
   };
 
   # Fails the start unless Obot answers, its Postgres listens on loopback
-  # only, and Obot answers over HTTPS on the tailnet as `mcp`. The HTTPS
-  # probe runs from this host, a tailnet member the policy lets in, and
-  # pins the name to the sidecar's address, so it needs no MagicDNS here.
+  # only, and Obot answers over HTTPS on the tailnet as `ai-hub-mcp`. The
+  # HTTPS probe runs from this host, a tailnet member the policy lets in,
+  # and pins the name to the sidecar's address, so it needs no MagicDNS.
   ready = pkgs.writeShellApplication {
     name = "obot-ready";
     runtimeInputs = [

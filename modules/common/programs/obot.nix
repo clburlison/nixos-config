@@ -35,7 +35,7 @@ in
   options.clb.obot = {
     url = lib.mkOption {
       type = lib.types.str;
-      default = "https://mcp.mermaid-agama.ts.net";
+      default = "https://ai-hub-mcp.mermaid-agama.ts.net";
       description = "Obot base URL (the gateway's tailnet node).";
     };
     vmcps = lib.mkOption {

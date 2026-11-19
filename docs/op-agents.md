@@ -4,7 +4,10 @@ Where this fits in the setup order: [docs/README.md](README.md).
 
 Every host holds exactly one secret: the token for the `agents` 1Password
 service account. That account can only read the `Agents` vault, and every
-other secret the hosts need lives there. What a host can reach is what you put
+other secret the hosts need lives there, except two kinds every host could
+otherwise read: the Obot gateway's server secrets (generated on ai-hub) and
+each Mac's Obot API key (in that Mac's keychain); see `docs/ai-hub.md`
+step 15. What a host can reach is what you put
 in `Agents`; your Private and other vaults stay out of reach.
 
 - `modules/common/programs/op-agents.nix` (Home Manager, every host):

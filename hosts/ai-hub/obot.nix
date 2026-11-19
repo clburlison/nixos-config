@@ -48,8 +48,10 @@ let
   backupDir = "${stateDir}/backups";
 
   # The image's Postgres listens on all interfaces, and Obot attaches the
-  # MCP containers it starts to its own network. Runs once, at initdb:
-  # loopback only, so those containers can't reach the database.
+  # MCP containers it starts to its own network. Runs once, at initdb (the
+  # image's init dir is /var/lib/postgres/initdb, not
+  # /docker-entrypoint-initdb.d): loopback only, so those containers can't
+  # reach the database. obot-ready enforces it on existing databases too.
   initdbListen = pkgs.writeText "10-listen-localhost.sql" ''
     ALTER SYSTEM SET listen_addresses = 'localhost';
   '';
@@ -87,7 +89,7 @@ let
           }
           "/var/run/docker.sock:/var/run/docker.sock"
           (bind "${secretsDir}/encryption.yaml" "/config/encryption.yaml")
-          (bind "${initdbListen}" "/docker-entrypoint-initdb.d/10-listen-localhost.sql")
+          (bind "${initdbListen}" "/var/lib/postgres/initdb/10-listen-localhost.sql")
         ];
         # POSTGRES_PASSWORD (read at initdb and for Obot's DSN) and the
         # owner's one-time setup token.
@@ -153,6 +155,17 @@ let
       install -d -m 0711 ${dataDir}
       chmod 0711 ${dataDir}
 
+      # An existing (or restored) database needs its own secrets back: a new
+      # password wouldn't match it, a new key can't decrypt it.
+      if [ -e ${dataDir}/postgresql/PG_VERSION ]; then
+        for f in encryption.yaml obot.env; do
+          if [ ! -s "${secretsDir}/$f" ]; then
+            echo "${dataDir} holds a database but ${secretsDir}/$f is missing; restore it (docs/ai-hub.md step 15, Backups)." >&2
+            exit 1
+          fi
+        done
+      fi
+
       if [ ! -s ${secretsDir}/encryption.yaml ]; then
         key="$(openssl rand -base64 32)"
         cat > ${secretsDir}/encryption.yaml.tmp <<EOF
@@ -195,25 +208,59 @@ let
     '';
   };
 
-  # Fails the start unless Obot answers and the sidecar is on the tailnet.
+  # Fails the start unless Obot answers, its Postgres listens on loopback
+  # only (fixing an existing database that doesn't), and the sidecar serves
+  # HTTPS as `mcp` on the tailnet.
   ready = pkgs.writeShellApplication {
     name = "obot-ready";
     runtimeInputs = [
       compose
+      pkgs.coreutils
       pkgs.curl
       pkgs.jq
     ];
     text = ''
+      # Runs in the container, with its own env; the SQL is $1 there.
+      psql() {
+        # shellcheck disable=SC2016
+        obot-compose exec -T obot sh -c \
+          'PGPASSWORD="$POSTGRES_PASSWORD" psql -h /var/run/postgresql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$1"' \
+          sh "$1"
+      }
+
+      healthy() {
+        for _ in $(seq 1 60); do
+          curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz && return 0
+          sleep 5
+        done
+        echo "Obot isn't healthy; see 'obot-compose logs obot'." >&2
+        return 1
+      }
+
+      healthy
+      if [ "$(psql 'SHOW listen_addresses')" != localhost ]; then
+        echo "Postgres listens beyond loopback; setting listen_addresses = localhost." >&2
+        psql "ALTER SYSTEM SET listen_addresses = 'localhost'" >/dev/null
+        obot-compose restart obot
+        healthy
+        if [ "$(psql 'SHOW listen_addresses')" != localhost ]; then
+          echo "Postgres still listens beyond loopback; stopping." >&2
+          exit 1
+        fi
+      fi
+
       for _ in $(seq 1 60); do
-        if curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz \
-          && obot-compose exec -T tailscale tailscale status --json 2>/dev/null \
-            | jq -e '.BackendState == "Running"' >/dev/null; then
+        if obot-compose exec -T tailscale tailscale status --json 2>/dev/null \
+          | jq -e '.BackendState == "Running" and (.Self.DNSName | startswith("${nodeName}."))' >/dev/null \
+          && obot-compose exec -T tailscale tailscale serve status --json 2>/dev/null \
+            | jq -e '.TCP["443"].HTTPS == true' >/dev/null; then
           exit 0
         fi
         sleep 5
       done
-      echo "Obot or its tailscale sidecar isn't ready; see 'obot-compose logs'." >&2
-      echo "First start: is the auth key in ${secretsDir}/ts-authkey?" >&2
+      echo "The tailscale sidecar isn't serving HTTPS as ${nodeName}; see 'obot-compose logs tailscale'." >&2
+      echo "First start: is the auth key in ${secretsDir}/ts-authkey? Are HTTPS certificates on for the tailnet?" >&2
+      echo "Renamed (${nodeName}-1)? Delete the old ${nodeName} machine in the admin console." >&2
       exit 1
     '';
   };
@@ -267,7 +314,8 @@ in
       # Compose restarts crashed containers (restart: unless-stopped).
       ExecStart = "${compose}/bin/obot-compose up --detach --remove-orphans";
       ExecStartPost = "${ready}/bin/obot-ready";
-      ExecStop = "${compose}/bin/obot-compose down";
+      # Post, so it also runs after a failed start and leaves nothing up.
+      ExecStopPost = "${compose}/bin/obot-compose down";
       # The first start pulls the images.
       TimeoutStartSec = "30min";
     };

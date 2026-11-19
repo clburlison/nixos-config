@@ -175,7 +175,7 @@ After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 The host holds one secret, the op-agents service account token
 (`secrets.yaml`, encrypted to this host's SSH host key in `.sops.yaml`).
 Every other secret on this host comes from the Agents vault through it
-(`docs/op-agents.md`).
+(`docs/op-agents.md`), except Obot's, which it generates itself (step 15).
 
 1. Check that every Agents item this host reads exists: the ai-hub rows
    of [Agents vault items](op-agents.md#agents-vault-items). op-agents
@@ -186,7 +186,10 @@ Every other secret on this host comes from the Agents vault through it
    with any placeholder `credential` now.
 2. Encrypt the token to this host: "NixOS host" in `docs/op-agents.md`,
    steps 1 to 4. It ends with `task system`, `task home` and
-   `op-agents-check`.
+   `op-agents-check`. That `task system` also starts the Obot gateway:
+   do step 15's Tailscale policy and First start 1 to 3 before it, or
+   `obot.service` fails (nothing else depends on it; it starts at the
+   next `task system` once they're done).
 
 After a reinstall, the host key changes: redo item 2 before `task system`.
 
@@ -564,7 +567,7 @@ Login is Obot's Local auth provider with one preconfigured owner
 GitHub sign-in only restrict by email domain.)
 
 The embedded Postgres gets a random password and listens on loopback only
-(set at initdb), so the MCP containers Obot starts on its network can't
+(set at initdb, checked at every start), so the MCP containers Obot starts on its network can't
 reach the database.
 
 ### Secrets
@@ -579,38 +582,55 @@ Mac can read that vault and none needs these.
 | `obot.env` | the Postgres password (fixed at initdb) and the owner's one-time setup token |
 | `ts-authkey` | the Tailscale auth key you add below; only read while the sidecar has no state |
 
-After the first start, save `encryption.yaml` in your **Private** vault (a
-Secure Note): `sudo cat /var/lib/obot/secrets/encryption.yaml`. The
-backups don't contain it.
+After the first start, save `encryption.yaml` and `obot.env` in your
+**Private** vault (one Secure Note each): `sudo cat
+/var/lib/obot/secrets/<file>`. The backups don't contain them, and a
+restored database needs both: the key decrypts it and the Postgres password
+opens it. `obot-prepare` refuses to start a database whose secrets are
+missing rather than generate new ones.
 
 ### Tailscale policy
 
-Add to the tailnet policy file (admin console > **Access controls**). With
-grants:
+In the tailnet policy file (admin console > **Access controls**). Rules
+only add access, so a narrow grant does nothing while the default allow-all
+rule (`{"src": ["*"], "dst": ["*"], "ip": ["*"]}`, or an `acls` entry
+with `*` to `*:*`) is still there: replace it with what your devices need,
+leaving `tag:mcp-gateway` out of every other rule. With grants:
 
 ```hujson
 "tagOwners": {
   "tag:mcp-gateway": ["autogroup:admin"],
 },
 "grants": [
-  // Only your own devices reach the gateway, and only on 443.
+  // Your devices reach each other (replaces allow-all; narrow as you like).
+  {"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
+  // Only your devices reach the gateway, and only on 443.
   {"src": ["autogroup:member"], "dst": ["tag:mcp-gateway"], "ip": ["tcp:443"]},
+],
+"tests": [
+  {"src": "you@example.com", "accept": ["tag:mcp-gateway:443"], "deny": ["tag:mcp-gateway:22"]},
+  // The gateway reaches nothing, e.g. ai-hub's tailnet address.
+  {"src": "tag:mcp-gateway", "deny": ["100.75.137.72:22", "100.75.137.72:8317"]},
 ],
 ```
 
-Use your login (e.g. `"you@example.com"`) instead of `autogroup:member` if
-the tailnet has other users. Tagged nodes get no access by default, so the
-gateway itself can't reach other tailnet devices.
+Use your login instead of `you@example.com`, and your login instead of
+`autogroup:member` if the tailnet has other users. The policy won't save
+while a test fails. Tagged nodes get only what a rule gives them, so the
+gateway can't reach other tailnet devices.
 
 ### First start
 
-`obot.service` fails its start until Obot answers and the sidecar is on
-the tailnet, so add the auth key before the first `task system`:
+`obot.service` fails its start (and takes its containers down) until Obot
+answers and the sidecar serves HTTPS as `mcp`, so do these before the first
+`task system` that includes `obot.nix`:
 
-1. Tailscale admin console > **Settings > Keys > Generate auth key**:
+1. Tailnet HTTPS certificates on (admin console > **DNS > HTTPS
+   Certificates**; t3-serve already needs them).
+2. Tailscale admin console > **Settings > Keys > Generate auth key**:
    reusable off, ephemeral off, pre-approved, tag `tag:mcp-gateway` (the
    policy above must exist first).
-2. On ai-hub (`read -s` keeps it out of history; fish: `read -s key`):
+3. On ai-hub (`read -s` keeps it out of history; fish: `read -s key`):
 
    ```sh
    read -rs key
@@ -619,18 +639,20 @@ the tailnet, so add the auth key before the first `task system`:
    unset key
    ```
 
-3. `task system`. `sudo obot-compose ps` shows both containers and
+4. `task system`. `sudo obot-compose ps` shows both containers and
    `tailscale status` lists `mcp`.
-4. From a Mac on the tailnet, open
+5. From a Mac on the tailnet, open
    `https://mcp.mermaid-agama.ts.net/activate#token=<setup token>` (the
    token is in `sudo cat /var/lib/obot/secrets/obot.env`), set a password
    (12+ characters), and sign in with the owner email.
-5. Save the encryption key (Secrets, above).
-6. Check that the gateway isn't reachable off the tailnet: from a phone on
+6. Save `encryption.yaml` and `obot.env` (Secrets, above).
+7. Check that the gateway isn't reachable off the tailnet: from a phone on
    cellular with Tailscale off, the URL doesn't resolve.
 
 The sidecar keeps its node in the `tailscale-state` volume. If that volume
-is lost, write a fresh auth key to `ts-authkey` and restart `obot`.
+is lost, delete the old `mcp` machine in the admin console (or the new one
+comes up as `mcp-1`, which no client uses), write a fresh auth key to
+`ts-authkey`, and `sudo systemctl restart obot`.
 
 ### Upstream OAuth apps
 
@@ -674,13 +696,11 @@ in Obot; the others keep working.
 `modules/common/programs/obot.nix` adds every vMCP to Claude Code
 (`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
 that reads the key from the keychain at each connect. Check with `/mcp` in
-Claude Code, or (fish: `set key (...)`):
+Claude Code, or (bash and fish; the key goes through stdin, not argv):
 
 ```sh
-key="$(security find-generic-password -s obot-api-key -a "$USER" -w)"
-curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me \
-  <<<"header = \"Authorization: Bearer $key\""
-unset key
+printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s obot-api-key -a "$USER" -w)" \
+  | curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me
 ```
 
 Clients that only do stdio can use `mcp-proxy` as a bridge.
@@ -694,18 +714,28 @@ archive. The encryption key isn't in the archive; it is in your Private
 vault (Secrets, above). The archives stay on this VM; the Proxmox VM backup is the
 off-host copy. Run one now with `sudo systemctl start obot-backup`.
 
-Restore, onto the same pinned version (the archive name says which). On
-a fresh host, first put the saved `encryption.yaml` back in
-`/var/lib/obot/secrets` (0400) and the old `obot.env`, whose Postgres
-password the restored database expects:
+Restore, onto the same pinned version (the archive name says which). The
+archive may predate a key revocation, so bring it up with the sidecar off
+(loopback only) and revoke again before the tailnet can reach it:
 
-```sh
-sudo systemctl stop obot
-sudo mv /var/lib/obot/data /var/lib/obot/data.old
-sudo install -d -m 0711 /var/lib/obot/data
-sudo tar -C /var/lib/obot/data -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
-sudo systemctl start obot
-```
+1. On a fresh host, put the saved `encryption.yaml` and `obot.env` in
+   `/var/lib/obot/secrets` first (`sudo install -m 0400`), and the
+   Tailscale auth key as in First start.
+2. Restore the data dir and start Obot alone:
+
+   ```sh
+   sudo systemctl stop obot
+   sudo mv /var/lib/obot/data /var/lib/obot/data.old
+   sudo install -d -m 0711 /var/lib/obot/data
+   sudo tar -C /var/lib/obot/data -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
+   sudo obot-compose up --detach obot
+   ```
+
+3. From a Mac, `ssh -L 8090:127.0.0.1:8090 ai-hub` and open
+   `http://localhost:8090`. Under **Identity & Access > Agents**, delete
+   every scope revoked after the backup was taken (or every scope, and
+   issue new keys).
+4. `sudo systemctl restart obot`: starts the sidecar and runs the checks.
 
 ### Upgrade
 

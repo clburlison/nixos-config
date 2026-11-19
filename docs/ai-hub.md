@@ -560,9 +560,13 @@ A Docker Compose stack with pinned images, run by `obot.service`:
   `127.0.0.1:8090` only. It mounts the Docker socket to start local MCP
   servers, so it is root-equivalent on this host. Keep anything that
   shouldn't trust it off ai-hub.
-- `tailscale`: a sidecar that joins the tailnet as its own node `mcp`
-  (`tag:mcp-gateway`) and serves `https://mcp.mermaid-agama.ts.net` with the
-  ts.net cert. The host's own Serve :443 belongs to t3-serve.
+- `tailscale`: a sidecar in Obot's network namespace that joins the
+  tailnet as its own node `mcp` (`tag:mcp-gateway`) and serves
+  `https://mcp.mermaid-agama.ts.net` with the ts.net cert. It hands
+  requests to Obot over loopback, so decrypted traffic never crosses the
+  Docker network the MCP containers share. If Docker restarts a crashed
+  Obot, the sidecar loses that namespace; `obot-watchdog.timer` probes the
+  HTTPS endpoint every 5 minutes and restarts `obot.service` when it fails. The host's own Serve :443 belongs to t3-serve.
 
 Login is Obot's Local auth provider with one preconfigured owner
 (`ownerEmail` in `obot.nix`), so no one else can sign in. (Google and
@@ -781,6 +785,12 @@ reboots included, until you remove it:
      session.
    - Otherwise (the restored password is the one you use now): **Log out
      all other sessions** in your account menu.
+   If the backup predates the owner's activation, there is no password to
+   sign in with: activate instead. If the link has expired, run the token
+   refresh from First start without its `systemctl restart obot` line,
+   then `sudo obot-compose up --detach --force-recreate obot`. Open
+   `http://localhost:8090/activate#token=<setup token>` through the
+   tunnel.
 4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:
    starts the sidecar and runs the checks.
 

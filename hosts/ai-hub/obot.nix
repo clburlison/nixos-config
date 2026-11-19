@@ -10,7 +10,8 @@
 #              mounts the Docker socket to start local MCP servers as
 #              sibling containers on this stack's network, so it is
 #              root-equivalent on this host.
-#   tailscale  a sidecar that joins the tailnet as its own node `mcp`
+#   tailscale  a sidecar in Obot's network namespace that joins the
+#              tailnet as its own node `mcp`
 #              (tag:mcp-gateway) and serves HTTPS with the ts.net cert.
 #              The host's own Tailscale Serve :443 belongs to t3-serve.
 # Nothing is published beyond 127.0.0.1 on the host.
@@ -69,7 +70,9 @@ let
   serveConfig = pkgs.writeText "obot-tailscale-serve.json" (
     builtins.toJSON {
       TCP."443".HTTPS = true;
-      Web."\${TS_CERT_DOMAIN}:443".Handlers."/".Proxy = "http://obot:8080";
+      # Loopback: the sidecar shares Obot's network namespace, so the
+      # decrypted hop never crosses the bridge the MCP containers are on.
+      Web."\${TS_CERT_DOMAIN}:443".Handlers."/".Proxy = "http://127.0.0.1:8080";
       AllowFunnel."\${TS_CERT_DOMAIN}:443" = false;
     }
   );
@@ -119,7 +122,7 @@ let
       tailscale = {
         image = tailscaleImage;
         restart = "unless-stopped";
-        hostname = nodeName;
+        network_mode = "service:obot";
         volumes = [
           "tailscale-state:/var/lib/tailscale"
           (bind "${serveConfig}" "/config/serve.json")
@@ -285,6 +288,33 @@ let
     '';
   };
 
+  # Restarts the stack when the HTTPS endpoint stops answering, e.g. after
+  # Docker restarted a crashed Obot and left the sidecar in its old network
+  # namespace.
+  watchdog = pkgs.writeShellApplication {
+    name = "obot-watchdog";
+    runtimeInputs = [
+      compose
+      pkgs.curl
+      pkgs.systemd
+    ];
+    text = ''
+      host=${nodeName}.mermaid-agama.ts.net
+      systemctl is-active --quiet obot.service || exit 0
+      # A backup stops the stack on purpose.
+      ! systemctl is-active --quiet obot-backup.service || exit 0
+      for _ in 1 2 3; do
+        if ip="$(obot-compose exec -T tailscale tailscale ip -4 2>/dev/null)" && [ -n "$ip" ] \
+          && curl -fsS -o /dev/null --max-time 10 --resolve "$host:443:$ip" "https://$host/api/healthz"; then
+          exit 0
+        fi
+        sleep 20
+      done
+      echo "https://$host isn't answering; restarting obot.service." >&2
+      systemctl restart obot.service
+    '';
+  };
+
   # Stops Obot for a consistent copy of the embedded Postgres, archives
   # the data dir, and starts it again. The encryption key isn't in it.
   backup = pkgs.writeShellApplication {
@@ -299,8 +329,10 @@ let
     text = ''
       umask 077
       archive="${backupDir}/obot-data-${version}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
-      obot-compose stop obot
-      trap 'rm -f "$archive.tmp"; obot-compose start obot' EXIT
+      # Both: the sidecar lives in Obot's network namespace, which a
+      # restart of Obot alone would leave it without.
+      obot-compose stop
+      trap 'rm -f "$archive.tmp"; obot-compose start' EXIT
       tar -C ${dataDir} -czf "$archive.tmp" .
       mv "$archive.tmp" "$archive"
       find ${backupDir} -name 'obot-data-*.tar.gz' -mtime +14 -delete
@@ -343,12 +375,30 @@ in
   systemd.services.obot-backup = {
     description = "Back up the Obot data dir";
     after = [ "obot.service" ];
+    # Stops a running watchdog, which would restart the stack mid-backup.
+    conflicts = [ "obot-watchdog.service" ];
     requisite = [ "obot.service" ];
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${backup}/bin/obot-backup";
     };
   };
+  systemd.services.obot-watchdog = {
+    description = "Restart Obot when its HTTPS endpoint stops answering";
+    after = [ "obot.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${watchdog}/bin/obot-watchdog";
+    };
+  };
+  systemd.timers.obot-watchdog = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "15min";
+      OnUnitActiveSec = "5min";
+    };
+  };
+
   systemd.timers.obot-backup = {
     wantedBy = [ "timers.target" ];
     timerConfig = {

@@ -11,6 +11,7 @@
     ./cliproxyapi.nix
     ./cpa-usage-keeper.nix
     ./cpa-clickhouse.nix
+    ./obot.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

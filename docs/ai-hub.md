@@ -30,6 +30,7 @@ the whole setup: [docs/README.md](README.md).
 | [12. CPA Usage Keeper](#12-cpa-usage-keeper) | 7, 11 |
 | [13. claude-mem hosted server](#13-claude-mem-hosted-server) | 7, 9, 11 |
 | [14. AI usage analytics](#14-ai-usage-analytics) | 11 |
+| [15. Obot MCP gateway](#15-obot-mcp-gateway) | 7, 9 |
 
 ## 1. Create the Proxmox VM
 
@@ -538,6 +539,158 @@ sudo claude-mem-server-compose exec postgres \
 `cpa-clickhouse.nix` tracks our AI usage analytics. Setup and usage live in
 the private `ai-analytics` repo (the `ai-analytics` flake input, fetched
 over SSH like `clb-skills`).
+
+## 15. Obot MCP gateway
+
+`obot.nix` runs [Obot](https://docs.obot.ai) `v0.28.0`, an MCP gateway. It
+does each provider's OAuth once (Gmail, Sheets/Drive, Outlook, Slack, Zoom,
+Linear), stores the grants encrypted, refreshes them, and serves the tools
+to every Mac through vMCPs (virtual MCP servers). It replaces the
+claude.ai connectors, which an `ANTHROPIC_BASE_URL` setup can't reach.
+Obot's LLM gateway is unused; CLIProxyAPI stays the model router.
+
+A Docker Compose stack with pinned images, run by `obot.service`:
+
+- `obot`: the server, embedded Postgres in `/var/lib/obot/data`, on
+  `127.0.0.1:8090` only. It mounts the Docker socket to start local MCP
+  servers, so it is root-equivalent on this host. Keep anything that
+  shouldn't trust it off ai-hub.
+- `tailscale`: a sidecar that joins the tailnet as its own node `mcp`
+  (`tag:mcp-gateway`) and serves `https://mcp.mermaid-agama.ts.net` with the
+  ts.net cert. The host's own Serve :443 belongs to t3-serve.
+
+Login is Obot's Local auth provider with one preconfigured owner, so no one
+else can sign in. (Google and GitHub sign-in only restrict by email domain.)
+
+### 1Password
+
+Agents item `obot` (Secure Note or Password), fields:
+
+| Field | Value |
+| --- | --- |
+| `encryption-key` | `openssl rand -base64 32`. Losing it loses every stored grant; never change it on an existing install |
+| `owner-email` | your email, the owner's login |
+| `owner-setup-token` | `openssl rand -hex 32`, used once by the activation link |
+| `tailscale-authkey` | an auth key, below. Used once; keep the field afterwards, op-agents needs it to exist |
+
+Tailscale admin console > **Settings > Keys > Generate auth key**:
+reusable off, ephemeral off, pre-approved, tag `tag:mcp-gateway`. The tag
+needs an owner in the policy (below) first.
+
+### Tailscale policy
+
+Add to the tailnet policy file (admin console > **Access controls**). With
+grants:
+
+```hujson
+"tagOwners": {
+  "tag:mcp-gateway": ["autogroup:admin"],
+},
+"grants": [
+  // Only your own devices reach the gateway, and only on 443.
+  {"src": ["autogroup:member"], "dst": ["tag:mcp-gateway"], "ip": ["tcp:443"]},
+],
+```
+
+Use your login (e.g. `"you@example.com"`) instead of `autogroup:member` if
+the tailnet has other users. Tagged nodes get no access by default, so the
+gateway itself can't reach other tailnet devices.
+
+### First start
+
+After `task system`, `sudo obot-compose ps` shows both containers and
+`tailscale status` lists `mcp`. Then, from a Mac on the tailnet:
+
+1. Open `https://mcp.mermaid-agama.ts.net/activate#token=<owner-setup-token>`,
+   set a password (12+ characters), sign in with `owner-email`.
+2. Check that the gateway isn't reachable off the tailnet: from a phone on
+   cellular with Tailscale off, the URL doesn't resolve.
+
+### Upstream OAuth apps
+
+Prefer Obot's catalog entries. Register this redirect URI on each OAuth
+app (Obot's MCP OAuth callback; confirm it on the server's configuration
+page): `https://mcp.mermaid-agama.ts.net/oauth/mcp/callback`. Every
+browser that does a login must be on the tailnet.
+
+- Google Cloud OAuth client (Gmail, Sheets, Drive). In Testing mode
+  refresh tokens expire after 7 days. Workspace accounts: set the user type
+  to **Internal** (no verification, no expiry). Personal @gmail.com: Gmail's
+  scopes are restricted, so expect a weekly re-login in Testing, or publish
+  unverified and accept the warning screens; check Google's current policy
+  first.
+- Microsoft Entra app registration (Outlook / M365).
+- Slack app, Zoom app. Linear: OAuth or a personal API key.
+
+### Accounts and vMCPs
+
+1. Add one server per account, with the account in its name:
+   `gmail-work`, `gmail-personal`, `sheets-work`, `outlook`, `slack`, ...
+   Authorize each once.
+2. **vMCPs > Create vMCP**, drag in the servers. For each component choose
+   **Managed** tools, expose only the ones you use, and set a prefix equal
+   to the server name (`gmail-work_`), so tool names say which account.
+   One vMCP (`personal`) or several (`comms`, `work`).
+3. Put each vMCP in `clb.obot.vmcps` in
+   `modules/common/programs/obot.nix`: the Claude Code server name and the
+   ID after `/mcp-connect/` in its **Connect URL**.
+
+### Per-host API keys
+
+One agent authorization scope per Mac (Obot > **Identity & Access >
+Agents**), limited to the vMCPs above, with an API key (`ok1-...`). Save each in Agents as `obot-<host>` (API Credential,
+`credential`), e.g. `obot-clb-work`. Create the item before that host's
+`task switch`: op-agents-load reports a missing item as failed. To cut off
+one Mac, revoke its key in Obot; the others keep working.
+
+`modules/common/programs/obot.nix` adds every vMCP to Claude Code
+(`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
+that reads the host's key from op-agents' keychain cache. Check with
+`/mcp` in Claude Code, or `curl -H "Authorization: Bearer <key>"
+https://mcp.mermaid-agama.ts.net/api/me`. Clients that only do stdio can
+use `mcp-proxy` as a bridge.
+
+### Backups
+
+`obot-backup.timer` runs daily at about 04:15: it stops `obot`, archives
+`/var/lib/obot/data` to `/var/lib/obot/backups/obot-data-<version>-<time>.tar.gz`,
+starts it again, and keeps 14 days. The encryption key is in 1Password, not
+in the archive. The archives stay on this VM; the Proxmox VM backup is the
+off-host copy. Run one now with `sudo systemctl start obot-backup`.
+
+Restore, onto the same pinned version (the archive name says which):
+
+```sh
+sudo systemctl stop obot
+sudo mv /var/lib/obot/data /var/lib/obot/data.old
+sudo install -d -m 0700 /var/lib/obot/data
+sudo tar -C /var/lib/obot/data -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
+sudo systemctl start obot
+```
+
+### Upgrade
+
+Obot is 0.x and moves fast (v0.15 rebuilt the gateway; v0.28 moves to
+vMCPs), so upgrade on purpose:
+
+1. Read the release notes between the pinned and the new version. A new
+   embedded Postgres major refuses to start until migrated (Obot's
+   "Upgrade embedded PostgreSQL" doc).
+2. `sudo systemctl start obot-backup`.
+3. Bump `version` in `obot.nix`, `task system`.
+4. Recheck: `/mcp` connects on each Mac, a Gmail and an Outlook tool work.
+
+The Tailscale sidecar image is pinned separately (`tailscaleImage`).
+
+### Checks
+
+- Off the tailnet the URL fails; on it, HTTPS works.
+- Every Mac calls tools without a new login.
+- Two Google accounts show as separate, prefixed tool sets.
+- Gmail and Outlook tools still work more than 24 hours after login
+  (refresh works).
+- Revoking one host's key blocks only that host.
+- A backup restores onto a fresh data dir with the same pinned version.
 
 ## Rename from srv-devbox
 

@@ -7,7 +7,7 @@ Clayton's Nix configuration for macOS (nix-darwin) and NixOS machines, plus a st
 ### Machines
 
 **Host**:
-One machine this repository configures, identified by its name (e.g. `clb-work`, `srv-devbox`). Name prefixes like `clb-` and `srv-` are labels only and never select configuration.
+One machine this repository configures, identified by its name (e.g. `clb-work`, `ai-hub`). Name prefixes like `clb-` are labels only and never select configuration.
 _Avoid_: Machine, box, system
 
 **Host table**:

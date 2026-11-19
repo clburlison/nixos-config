@@ -1,4 +1,4 @@
-# Host override file for srv-devbox (system): Proxmox VM, x86_64,
+# Host override file for ai-hub (system): Proxmox VM, x86_64,
 # headless, SSH-first.
 { config, ... }:
 
@@ -20,7 +20,7 @@
 
   # tailscaled starts at boot and reconnects with the node key in
   # /var/lib/tailscale. Log in once with `sudo tailscale up`
-  # (docs/srv-devbox.md step 9).
+  # (docs/ai-hub.md step 9).
   # openFirewall allows the UDP port for direct connections instead of DERP
   # relays.
   services.tailscale = {

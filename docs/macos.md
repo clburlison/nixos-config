@@ -63,8 +63,8 @@ the Mac's hostname. Where it fits in the whole setup:
    rm ./task
    ```
 
-Claude Code and Codex now route through the CLIProxyAPI hub on srv-devbox,
-with no further step ([srv-devbox.md](srv-devbox.md#clients)).
+Claude Code and Codex now route through the CLIProxyAPI hub on ai-hub,
+with no further step ([ai-hub.md](ai-hub.md#clients)).
 
 ## 3. Shared memory
 

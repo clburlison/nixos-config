@@ -3,9 +3,9 @@
 #   nix run nixpkgs#ssh-to-age -- < /etc/ssh/ssh_host_ed25519_key.pub
 # Each host's secrets.yaml holds only the op-agents service account token.
 keys:
-  - &srv-devbox age1xcyftsx9j79jup6fg33fpf4xw9lq42kpglt4czcycd6wpwyhgdxqanvd8c
+  - &ai-hub age1xcyftsx9j79jup6fg33fpf4xw9lq42kpglt4czcycd6wpwyhgdxqanvd8c
 creation_rules:
-  - path_regex: ^hosts/srv-devbox/secrets\.yaml$
+  - path_regex: ^hosts/ai-hub/secrets\.yaml$
     key_groups:
       - age:
-          - *srv-devbox
+          - *ai-hub

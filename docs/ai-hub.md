@@ -1,11 +1,14 @@
-# srv-devbox
+# ai-hub
 
-Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. It
-is the hub every other host uses: the Claude and Codex logins (CLIProxyAPI)
-and the shared memory server (claude-mem). Defined by
-the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
+Headless NixOS host for the AI subscription tooling: a Proxmox VM, x86_64,
+reached over SSH. It is the hub every other host uses: the Claude and Codex
+logins (CLIProxyAPI), usage analytics, the shared memory server
+(claude-mem), the MCP gateway (Obot), and a T3 Code server. General
+development happens elsewhere. Formerly `srv-devbox`; see
+[Rename from srv-devbox](#rename-from-srv-devbox). Defined by
+the `ai-hub` entry in the host table (`flake.nix`), the NixOS platform
 aggregator (`modules/nixos/`), and the host override files in
-`hosts/srv-devbox/`. Files named below without a path are in that
+`hosts/ai-hub/`. Files named below without a path are in that
 directory.
 
 Do the steps in order; each one assumes the ones before it. Where it fits in
@@ -80,8 +83,8 @@ nix-shell -p git
 git clone https://github.com/clburlison/nixos-config /tmp/nixos-config
 cd /tmp/nixos-config
 nixos-generate-config --root /mnt --show-hardware-config \
-  > hosts/srv-devbox/hardware-configuration.nix
-git add hosts/srv-devbox/hardware-configuration.nix
+  > hosts/ai-hub/hardware-configuration.nix
+git add hosts/ai-hub/hardware-configuration.nix
 ```
 
 Commit and push it **before installing**. Step 5 clones from GitHub, so
@@ -91,10 +94,10 @@ On the installer, run `passwd` so root can accept SSH, then on the Mac:
 
 ```sh
 cd ~/dev/me/nixos-config
-scp root@<installer-ip>:/tmp/nixos-config/hosts/srv-devbox/hardware-configuration.nix \
-  hosts/srv-devbox/
-git add hosts/srv-devbox/hardware-configuration.nix
-git commit -m "feat(srv-devbox): Add hardware configuration"
+scp root@<installer-ip>:/tmp/nixos-config/hosts/ai-hub/hardware-configuration.nix \
+  hosts/ai-hub/
+git add hosts/ai-hub/hardware-configuration.nix
+git commit -m "feat(ai-hub): Add hardware configuration"
 git push
 ```
 
@@ -103,7 +106,7 @@ git push
 Still as root (`sudo -i` again if you left the root shell for step 3):
 
 ```sh
-nixos-install --flake /tmp/nixos-config#srv-devbox
+nixos-install --flake /tmp/nixos-config#ai-hub
 ```
 
 `nixos-install` asks for a root password at the end. Then set the user
@@ -129,7 +132,7 @@ that holds a GitHub key. Plain `ssh -A` forwards the empty launchd agent
 instead. From a Mac with agent-git set up (`docs/agent-git.md`):
 
 ```sh
-ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@srv-devbox
+ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@ai-hub
 ssh-add -l   # lists the agent-git key
 ```
 
@@ -148,7 +151,7 @@ cd ~/dev/me/nixos-config
 Check that the clone has the generated hardware file, not the placeholder:
 
 ```sh
-! grep -q 'TEMPORARY PLACEHOLDER' hosts/srv-devbox/hardware-configuration.nix \
+! grep -q 'TEMPORARY PLACEHOLDER' hosts/ai-hub/hardware-configuration.nix \
   || echo 'Push the generated hardware file first (step 3)'
 ```
 
@@ -161,7 +164,7 @@ library, which can't use the forwarded agent and fails with
 
 ```sh
 nix shell nixpkgs#git -c nix run home-manager/release-26.05 -- \
-  switch --flake .#clburlison@srv-devbox
+  switch --flake .#clburlison@ai-hub
 ```
 
 After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
@@ -173,7 +176,7 @@ The host holds one secret, the op-agents service account token
 Every other secret on this host comes from the Agents vault through it
 (`docs/op-agents.md`).
 
-1. Check that every Agents item this host reads exists: the srv-devbox rows
+1. Check that every Agents item this host reads exists: the ai-hub rows
    of [Agents vault items](op-agents.md#agents-vault-items). op-agents
    fetches them all in one run and fails if any is missing, and each service
    that reads one requires it, so one missing item stops the hub, Keeper,
@@ -230,14 +233,14 @@ Tailscale Serve. Lingering starts it at boot. Serve needs step 9 done and
 HTTPS certificates enabled for the tailnet (admin console > DNS > HTTPS
 Certificates).
 
-- Direct: `http://srv-devbox:3773` from the LAN or the tailnet (plain HTTP).
-- Tailnet HTTPS: the `https://srv-devbox.mermaid-agama.ts.net` URL.
+- Direct: `http://ai-hub:3773` from the LAN or the tailnet (plain HTTP).
+- Tailnet HTTPS: the `https://ai-hub.mermaid-agama.ts.net` URL.
 
 ```sh
 systemctl --user status t3-serve
 journalctl --user -u t3-serve
 t3 pair --tailscale   # pairing link through the tailnet HTTPS URL
-t3 pair               # direct; swap the printed host for srv-devbox:3773
+t3 pair               # direct; swap the printed host for ai-hub:3773
 ```
 
 ## 11. CLIProxyAPI hub
@@ -248,8 +251,8 @@ as the `cliproxyapi` system service, following
 and Codex accounts sign in here once; every other machine uses this host as
 its API endpoint. It listens on port 8317 on all interfaces (plain HTTP):
 
-- LAN: `http://192.xxx.xxx.xxx:8317` (srv-devbox's LAN IP)
-- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8317`
+- LAN: `http://192.xxx.xxx.xxx:8317` (ai-hub's LAN IP)
+- Tailnet: `http://ai-hub.mermaid-agama.ts.net:8317`
 
 The module comes from nixpkgs-unstable; `packages/cliproxyapi.nix` pins a
 newer release. Its Claude cloaking reports a fixed Claude Code version
@@ -291,14 +294,14 @@ prints a URL to open on your laptop. The running service picks up new
 accounts without a restart.
 
 Claude's browser login is the annoying one: its OAuth callback lands on
-port 54545 on srv-devbox, not on the laptop with the browser. Fix: open a
+port 54545 on ai-hub, not on the laptop with the browser. Fix: open a
 tunnel from the laptop first and keep it open:
 
 ```sh
-ssh -L 54545:localhost:54545 -L 1455:localhost:1455 srv-devbox
+ssh -L 54545:localhost:54545 -L 1455:localhost:1455 ai-hub
 ```
 
-Then, in that SSH session on srv-devbox, run once per account:
+Then, in that SSH session on ai-hub, run once per account:
 
 ```sh
 # Claude
@@ -318,11 +321,11 @@ Meta's terms say a Muse Code subscription is for use with the Muse Code CLI.
 Only the `muse` CLI uses the hub's Meta login here, but Meta may still
 answer a proxied request with 403 `client_attestation_denied`.
 
-Check accounts in the panel at `http://srv-devbox:8317/management.html`
+Check accounts in the panel at `http://ai-hub:8317/management.html`
 (management key) and verify from another machine:
 
 ```sh
-curl -s http://srv-devbox.mermaid-agama.ts.net:8317/v1/models \
+curl -s http://ai-hub.mermaid-agama.ts.net:8317/v1/models \
   -H "Authorization: Bearer <api key>" | head -c 300
 ```
 
@@ -348,9 +351,9 @@ because of `patches/cliproxyapi-muse-code-relay.patch`, which is upstream
 PR [#6563](https://github.com/router-for-me/CLIProxyAPI/pull/6563); drop the patch
 once that PR ships.
 
-srv-devbox uses `http://127.0.0.1:8317` and reads the op-agents file
-directly (`hosts/srv-devbox/home.nix`). Macs on the home LAN use
-`http://srv-devbox.home.clb.ai:8317`. clb-work roams, so it uses
+ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
+directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use
+`http://ai-hub.home.clb.ai:8317`. clb-work roams, so it uses
 `http://127.0.0.1:8317`, a local failover proxy
 (`hosts/clb-work/hub-proxy.nix`): a Caddy launchd daemon that sends each
 request to the LAN name when it answers, else the tailnet name, so the hub
@@ -391,7 +394,7 @@ covers.
 The dashboard listens on port 8080 on all interfaces:
 
 - LAN: `http://192.xxx.xxx.xxx:8080`
-- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8080`
+- Tailnet: `http://ai-hub.mermaid-agama.ts.net:8080`
 
 It reads the hub with the management key. The login password is the
 `password` of `cpa-usage-keeper` in the Agents vault:
@@ -413,7 +416,7 @@ only the new password, but browsers already logged in keep their session
 system service, pinned to a release tag. Compose builds the images locally,
 so the first `task system` start takes several minutes. The server listens
 on port 37877 on all interfaces. Each host's hooks and MCP server connect to
-it (`docs/claude-mem.md`, "Hosted server") at `srv-devbox.home.clb.ai:37877`;
+it (`docs/claude-mem.md`, "Hosted server") at `ai-hub.home.clb.ai:37877`;
 clb-work goes through its failover proxy at `http://127.0.0.1:37877`
 (step 11).
 
@@ -492,7 +495,7 @@ replace the placeholder `claude-mem-viewer` from step 7.
 The server serves the memory viewer at `/`, but the viewer's browser code
 sends no API key, so opened directly on 37877 every data call gets 401 and
 the page stays empty. Caddy fronts it on the tailnet:
-<http://srv-devbox.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
+<http://ai-hub.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
 read key to every request.
 
 Anyone who reaches that port reads as the key's team, so it is
@@ -536,6 +539,23 @@ sudo claude-mem-server-compose exec postgres \
 the private `ai-analytics` repo (the `ai-analytics` flake input, fetched
 over SSH like `clb-skills`).
 
+## Rename from srv-devbox
+
+One time, on the existing VM. The SSH host key (and so the sops age key)
+and the tailnet IP don't change.
+
+1. DNS: add `ai-hub.home.clb.ai` with the same LAN address (keep the old
+   record until every Mac has switched).
+2. On the host, from the clone:
+   `sudo nixos-rebuild switch --flake .#ai-hub`, then
+   `home-manager switch --flake .#clburlison@ai-hub`. This sets the
+   hostname.
+3. Tailscale: `sudo tailscale set --hostname=ai-hub`, or rename the machine
+   in the admin console. The tailnet name becomes
+   `ai-hub.mermaid-agama.ts.net`; restart `t3-serve` so Serve picks it up.
+4. On each Mac: `task switch`, then `ssh ai-hub` once to accept the host
+   key under its new name.
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it
@@ -543,7 +563,7 @@ over SSH like `clb-skills`).
 - If the Determinate module fails on `nixos-26.05`, drop
   `determinate.nixosModules.default` from `modules/nixos/default.nix` and keep
   the stock `nix.settings`.
-- `homeConfigurations."clburlison@srv-devbox".activationPackage` can't be
+- `homeConfigurations."clburlison@ai-hub".activationPackage` can't be
   evaluated from a Mac without an `x86_64-linux` builder. `agent-skills-nix`
   reads each transformed `SKILL.md` (our `linear-cli` skill) from a
   derivation built for the target system, which is import from derivation.

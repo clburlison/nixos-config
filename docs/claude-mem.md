@@ -42,8 +42,8 @@ Claude receives upstream plugin skills; Codex/OpenCode additionally receive
 
 ## Hosted server
 
-Hooks on every host send to the hosted server on srv-devbox
-(`docs/srv-devbox.md` step 13): `home.sessionVariables` set
+Hooks on every host send to the hosted server on ai-hub
+(`docs/ai-hub.md` step 13): `home.sessionVariables` set
 `CLAUDE_MEM_RUNTIME=server`, the server URL (tailnet name), and the project
 ID. The server stores memory in Postgres and generates observations itself,
 so the local SQLite worker below is only the fallback.
@@ -65,7 +65,7 @@ Agents vault through `op-agents`, so set the op-agents token first
    `~/.claude-mem/settings.json` (mode 0600) with the other server keys, and
    pins the legacy `CLAUDE_MEM_SERVER_BETA_*` fallbacks to match (beta key
    empty). Darwin reads op-agents' keychain cache, or 1Password directly on
-   a first activation; srv-devbox reads `/run/op-agents/claude-mem-api-key`.
+   a first activation; ai-hub reads `/run/op-agents/claude-mem-api-key`.
    If the key can't be read, activation warns and keeps the current one. A
    host without a key keeps the local SQLite worker.
 
@@ -78,12 +78,12 @@ Agents vault through `op-agents`, so set the op-agents token first
 
 3. Approve the Codex hooks ("Apply and use" step 4).
 
-To rotate the key, see "API keys" in `docs/srv-devbox.md`, then run
+To rotate the key, see "API keys" in `docs/ai-hub.md`, then run
 `op-agents-load` (Darwin) and `task home` on every host.
 
 ### Reaching the server
 
-Hosts on the home LAN use the LAN name `srv-devbox.home.clb.ai`, so they
+Hosts on the home LAN use the LAN name `ai-hub.home.clb.ai`, so they
 need no Tailscale. clb-work roams: its local failover proxy
 (`hosts/clb-work/hub-proxy.nix`) tries the LAN name, then the tailnet name.
 Away from home it still needs Tailscale: upstream says not to expose the
@@ -92,7 +92,7 @@ server to the internet.
 Existing SQLite memory is not migrated: the server has no import path.
 
 The memory viewer for the server is
-<http://srv-devbox.mermaid-agama.ts.net:37878> (tailnet only; `docs/srv-devbox.md`,
+<http://ai-hub.mermaid-agama.ts.net:37878> (tailnet only; `docs/ai-hub.md`,
 "Viewer"). The local viewer on `127.0.0.1:37777` shows only the local
 worker.
 

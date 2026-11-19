@@ -1,0 +1,4 @@
+Host ai-hub ai-hub.home.clb.ai
+	HostName ai-hub.home.clb.ai
+	User clburlison
+	ForwardAgent yes

@@ -98,7 +98,7 @@
           platform = "darwin";
           user = "clburlison";
         };
-        srv-devbox = {
+        ai-hub = {
           system = "x86_64-linux";
           platform = "nixos";
           user = "clburlison";

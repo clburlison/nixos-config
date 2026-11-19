@@ -29,25 +29,25 @@ in `Agents`; your Private and other vaults stay out of reach.
     whose secrets changed.
 
 Consumers: agent-git (`docs/agent-git.md`), the CLIProxyAPI client key
-(`modules/common/programs/cliproxyapi.nix`), and srv-devbox's services
-(`docs/srv-devbox.md`).
+(`modules/common/programs/cliproxyapi.nix`), and ai-hub's services
+(`docs/ai-hub.md`).
 
 ## Agents vault items
 
-**Boot** marks the items srv-devbox's system services read through
+**Boot** marks the items ai-hub's system services read through
 `op-agents.service`. It fetches them all in one run and fails if any is
 missing, and every service that reads one requires it, so they must all
-exist before the `task system` in `docs/srv-devbox.md` step 7.
+exist before the `task system` in `docs/ai-hub.md` step 7.
 
 | Item | Field | Boot | Used by |
 | --- | --- | --- | --- |
 | `git-agent` (SSH Key) | `private key`, `public key` | | agent-git, every host |
-| `CLIProxyAPI` (API Credential) | `cliproxyapi-api-key` | yes | Claude Code and Codex wrappers on every host; the hub and claude-mem worker on srv-devbox |
+| `CLIProxyAPI` (API Credential) | `cliproxyapi-api-key` | yes | Claude Code and Codex wrappers on every host; the hub and claude-mem worker on ai-hub |
 | `CLIProxyAPI` | `password` (the management key) | yes | hub panel, CPA Usage Keeper |
 | `OpenRouter` (API Credential) | `credential` | yes | hub's OpenRouter upstream |
 | `cpa-usage-keeper` (Password) | `password` | yes | Keeper dashboard login |
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | yes | claude-mem worker dotenv |
-| `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on srv-devbox |
+| `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on ai-hub |
 | `claude-mem-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | yes | claude-mem hooks and MCP server on every host (`docs/claude-mem.md`) |
 
 To add one: create the item in `Agents`, then add it to
@@ -84,7 +84,7 @@ prompt truncates input at 128 characters.
 
 ## NixOS host
 
-For srv-devbox this is step 7 of `docs/srv-devbox.md`; create the Boot items
+For ai-hub this is step 7 of `docs/ai-hub.md`; create the Boot items
 above first.
 
 1. On the host, convert its SSH host key to an age recipient:
@@ -106,7 +106,7 @@ above first.
    ```
 
    Only the host can decrypt the file, so to change it, rerun this instead of
-   `sops edit`. srv-devbox's file still stores the token as `agent-git-token`
+   `sops edit`. ai-hub's file still stores the token as `agent-git-token`
    (`sops.secrets.op-agents-token.key` in its `system.nix`); rerunning this
    for it lets you drop that line.
 

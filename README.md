@@ -5,7 +5,7 @@ My Nix and dotfile configurations for macOS (nix-darwin) and NixOS hosts, with a
 ## Setup
 
 New machine or rebuilding from scratch: follow [docs/README.md](docs/README.md).
-It is the order of operations across 1Password, srv-devbox (the NixOS hub)
+It is the order of operations across 1Password, ai-hub (the NixOS hub)
 and each Mac, linking into the guides in `docs/`.
 
 ## Tasks
@@ -55,7 +55,7 @@ Dotfiles linked with `mkOutOfStoreSymlink` in `home.file` are live: edits show u
 | `modules/common/` | Home Manager config every host gets. `darwin.nix` holds the macOS-only bits; `programs/` holds one file per larger program |
 | `modules/darwin/` | Darwin **platform aggregator**: system config every Mac gets (Nix daemon, users, defaults, Homebrew install, shells) |
 | `modules/nixos/` | NixOS **platform aggregator**: system config every NixOS host gets (Determinate Nix, user, SSH, firewall, locale) |
-| `hosts/<name>/` | **Host override files**: `system.nix`, `home.nix`, and anything only that host needs (e.g. `srv-devbox` hardware config and services) |
+| `hosts/<name>/` | **Host override files**: `system.nix`, `home.nix`, and anything only that host needs (e.g. `ai-hub` hardware config and services) |
 
 **Supporting files** (not Nix modules)
 
@@ -91,7 +91,7 @@ There is no role layer. Config for one host goes in `hosts/<name>/`. If a second
 
 ## AI agents
 
-Claude Code and Codex route through the CLIProxyAPI hub on srv-devbox, and
+Claude Code and Codex route through the CLIProxyAPI hub on ai-hub, and
 Claude Code, Codex, and OpenCode share [Nix-managed claude-mem](docs/claude-mem.md)
 backed by the hosted server there. See [docs/README.md](docs/README.md).
 

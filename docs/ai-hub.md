@@ -573,9 +573,13 @@ A Docker Compose stack with pinned images, run by `obot.service`:
 Known limit (upstream): Obot talks to the MCP servers it runs in
 containers over plain HTTP on that shared Docker network, and Docker gives
 containers `NET_RAW`, so a compromised local MCP server could spoof a peer
-and read another local server's tool calls. Prefer catalog entries that
-are remote (hosted by the provider, proxied by Obot itself) over local
-containers, and run local ones only from sources you trust.
+and read another local server's tool calls. Those containers also reach
+Obot directly over HTTP (they need to), so one could hammer the login and
+trip its per-account throttle; and Obot publishes each one on a
+`127.0.0.1` host port, which local processes on ai-hub can reach without
+Obot's checks. Prefer catalog entries that are remote (hosted by the
+provider, proxied by Obot itself) over local containers, and run local
+ones only from sources you trust.
 
 Login is Obot's Local auth provider with one preconfigured owner
 (`ownerEmail` in `obot.nix`), so no one else can sign in. (Google and

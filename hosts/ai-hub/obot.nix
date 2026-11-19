@@ -51,7 +51,8 @@ let
   # MCP containers it starts to its own network. Runs once, at initdb (the
   # image's init dir is /var/lib/postgres/initdb, not
   # /docker-entrypoint-initdb.d): loopback only, so those containers can't
-  # reach the database. obot-ready enforces it on existing databases too.
+  # reach the database. obot-prepare enforces it on existing databases,
+  # before Postgres starts.
   initdbListen = pkgs.writeText "10-listen-localhost.sql" ''
     ALTER SYSTEM SET listen_addresses = 'localhost';
   '';
@@ -147,6 +148,7 @@ let
     name = "obot-prepare";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.gnugrep
       pkgs.openssl
     ];
     text = ''
@@ -164,6 +166,20 @@ let
             exit 1
           fi
         done
+
+        # Loopback only from the first moment Postgres starts, for a database
+        # made without the init script (e.g. restored). The same setting
+        # ALTER SYSTEM writes; Postgres is stopped here.
+        auto=${dataDir}/postgresql/postgresql.auto.conf
+        if ! grep -qx "listen_addresses = 'localhost'" "$auto" 2>/dev/null; then
+          echo "setting listen_addresses = 'localhost' in $auto" >&2
+          { grep -v '^listen_addresses' "$auto" 2>/dev/null || true
+            echo "listen_addresses = 'localhost'"
+          } > "$auto.tmp"
+          chown --reference=${dataDir}/postgresql/PG_VERSION "$auto.tmp"
+          chmod 0600 "$auto.tmp"
+          mv "$auto.tmp" "$auto"
+        fi
       fi
 
       if [ ! -s ${secretsDir}/encryption.yaml ]; then
@@ -209,8 +225,9 @@ let
   };
 
   # Fails the start unless Obot answers, its Postgres listens on loopback
-  # only (fixing an existing database that doesn't), and the sidecar serves
-  # HTTPS as `mcp` on the tailnet.
+  # only, and Obot answers over HTTPS on the tailnet as `mcp`. The HTTPS
+  # probe runs from this host, a tailnet member the policy lets in, and
+  # pins the name to the sidecar's address, so it needs no MagicDNS here.
   ready = pkgs.writeShellApplication {
     name = "obot-ready";
     runtimeInputs = [
@@ -220,45 +237,34 @@ let
       pkgs.jq
     ];
     text = ''
-      # Runs in the container, with its own env; the SQL is $1 there.
-      psql() {
-        # shellcheck disable=SC2016
-        obot-compose exec -T obot sh -c \
-          'PGPASSWORD="$POSTGRES_PASSWORD" psql -h /var/run/postgresql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "$1"' \
-          sh "$1"
-      }
+      host=${nodeName}.mermaid-agama.ts.net
 
-      healthy() {
-        for _ in $(seq 1 60); do
-          curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz && return 0
-          sleep 5
-        done
-        echo "Obot isn't healthy; see 'obot-compose logs obot'." >&2
-        return 1
-      }
+      for _ in $(seq 1 60); do
+        curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz && break
+        sleep 5
+      done
 
-      healthy
-      if [ "$(psql 'SHOW listen_addresses')" != localhost ]; then
-        echo "Postgres listens beyond loopback; setting listen_addresses = localhost." >&2
-        psql "ALTER SYSTEM SET listen_addresses = 'localhost'" >/dev/null
-        obot-compose restart obot
-        healthy
-        if [ "$(psql 'SHOW listen_addresses')" != localhost ]; then
-          echo "Postgres still listens beyond loopback; stopping." >&2
-          exit 1
-        fi
+      # In the container over TCP (the socket is in /tmp there); the SQL
+      # is $1 inside.
+      # shellcheck disable=SC2016
+      if ! listen="$(obot-compose exec -T obot sh -c \
+        'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SHOW listen_addresses"')"; then
+        echo "Can't query Obot's Postgres; see 'obot-compose logs obot'." >&2
+        exit 1
+      fi
+      if [ "$listen" != localhost ]; then
+        echo "Postgres listens on '$listen', not localhost only; stopping." >&2
+        exit 1
       fi
 
       for _ in $(seq 1 60); do
-        if obot-compose exec -T tailscale tailscale status --json 2>/dev/null \
-          | jq -e '.BackendState == "Running" and (.Self.DNSName | startswith("${nodeName}."))' >/dev/null \
-          && obot-compose exec -T tailscale tailscale serve status --json 2>/dev/null \
-            | jq -e '.TCP["443"].HTTPS == true' >/dev/null; then
+        if ip="$(obot-compose exec -T tailscale tailscale ip -4 2>/dev/null)" && [ -n "$ip" ] \
+          && curl -fsS -o /dev/null --max-time 10 --resolve "$host:443:$ip" "https://$host/api/healthz"; then
           exit 0
         fi
         sleep 5
       done
-      echo "The tailscale sidecar isn't serving HTTPS as ${nodeName}; see 'obot-compose logs tailscale'." >&2
+      echo "https://$host isn't answering; see 'obot-compose logs tailscale'." >&2
       echo "First start: is the auth key in ${secretsDir}/ts-authkey? Are HTTPS certificates on for the tailnet?" >&2
       echo "Renamed (${nodeName}-1)? Delete the old ${nodeName} machine in the admin console." >&2
       exit 1

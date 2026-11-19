@@ -567,7 +567,7 @@ Login is Obot's Local auth provider with one preconfigured owner
 GitHub sign-in only restrict by email domain.)
 
 The embedded Postgres gets a random password and listens on loopback only
-(set at initdb, checked at every start), so the MCP containers Obot starts on its network can't
+(set at initdb and before every start, verified after), so the MCP containers Obot starts on its network can't
 reach the database.
 
 ### Secrets
@@ -636,7 +636,7 @@ answers and the sidecar serves HTTPS as `mcp`, so do these before the first
    read -rs key
    sudo install -d -m 0700 /var/lib/obot /var/lib/obot/secrets
    printf '%s' "$key" | sudo install -m 0400 /dev/stdin /var/lib/obot/secrets/ts-authkey
-   unset key
+   unset key   # fish: set -e key
    ```
 
 4. `task system`. `sudo obot-compose ps` shows both containers and
@@ -688,9 +688,12 @@ browser that does a login must be on the tailnet.
 One agent authorization scope per Mac (Obot > **Identity & Access >
 Agents**), named after the host and limited to the vMCPs above, with an
 API key (`ok1-...`). Each key lives only on its Mac, not in the shared
-Agents vault, so a compromised Mac can't fetch another's key. Copy the key,
-then on that Mac run `obot-set-key` (reads the clipboard, stores it in the
-login keychain, clears the clipboard). To cut off one Mac, revoke its scope
+Agents vault, so a compromised Mac can't fetch another's key. On that Mac,
+run `obot-set-key` and paste the key at its hidden prompt; it stores it in
+the login keychain. Universal Clipboard shares what you copy with your
+other Apple devices, so turn Handoff off while you copy it (System Settings
+> General > AirDrop & Handoff), or create the scope in a browser on that
+Mac with Handoff off. To cut off one Mac, revoke its scope
 in Obot; the others keep working.
 
 `modules/common/programs/obot.nix` adds every vMCP to Claude Code
@@ -769,7 +772,7 @@ and the tailnet IP don't change.
 1. DNS: add `ai-hub.home.clb.ai` with the same LAN address (keep the old
    record until every Mac has switched).
 2. Obot comes in the same switch: do step 15's Tailscale policy and the
-   auth key (First start, 1 and 2) first, or `obot.service` fails its start.
+   auth key (First start, 1 to 3) first, or `obot.service` fails its start.
    Nothing else depends on it.
 3. On the host, from the clone (the hostname is still the old one, so name
    the host): `NIXNAME=ai-hub task system`, then `NIXNAME=ai-hub task home`.

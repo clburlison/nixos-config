@@ -29,15 +29,17 @@ let
     printf '%s' "$key" | ${pkgs.jq}/bin/jq -Rs '{Authorization: ("Bearer " + .)}'
   '';
 
-  # Stores this host's key from the clipboard or stdin. `security -i` reads
-  # the command from stdin, keeping the key out of argv.
+  # Stores this host's key, typed or pasted at a hidden prompt, or from
+  # stdin. `security -i` reads the command from stdin, keeping the key out
+  # of argv. Not from the clipboard on purpose: Universal Clipboard would
+  # hand it to your other Macs.
   setKey = pkgs.writeShellApplication {
     name = "obot-set-key";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
       if [ -t 0 ]; then
-        echo "Reading the key from the clipboard." >&2
-        key="$(/usr/bin/pbpaste)"
+        read -rsp "Obot API key for this Mac (hidden): " key
+        echo >&2
       else
         key="$(cat)"
       fi
@@ -53,10 +55,6 @@ let
       printf 'add-generic-password -s %s -a %s -T /usr/bin/security -w %s\n' \
         ${keychainService} "$USER" "$key" | /usr/bin/security -i
       unset key
-      if [ -t 0 ]; then
-        /usr/bin/pbcopy </dev/null
-        echo "Cleared the clipboard." >&2
-      fi
       echo "Stored in keychain service ${keychainService}. Restart Claude Code." >&2
     '';
   };

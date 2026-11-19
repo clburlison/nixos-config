@@ -1,6 +1,6 @@
-# Local failover proxy to srv-devbox's services. clb-work leaves the home
+# Local failover proxy to ai-hub's services. clb-work leaves the home
 # LAN and may run another VPN or tailnet, so it keeps the CLIProxyAPI hub
-# and the claude-mem server whichever network reaches srv-devbox. Clients
+# and the claude-mem server whichever network reaches ai-hub. Clients
 # use 127.0.0.1 (home.nix); Caddy sends each request to the LAN name when it answers, else the
 # tailnet name, and switches mid-session when either drops.
 #
@@ -11,10 +11,10 @@
 { pkgs, ... }:
 
 let
-  lanHost = "srv-devbox.home.clb.ai";
-  tailnetHost = "srv-devbox.mermaid-agama.ts.net";
+  lanHost = "ai-hub.home.clb.ai";
+  tailnetHost = "ai-hub.mermaid-agama.ts.net";
 
-  # Local port = srv-devbox port.
+  # Local port = ai-hub port.
   ports = {
     cliproxyapi = 8317;
     claude-mem = 37877;

@@ -1,5 +1,5 @@
 # Route Claude Code, Codex, and Muse Code through the CLIProxyAPI hub on
-# srv-devbox (docs/srv-devbox.md step 11), on every host. They keep their
+# ai-hub (docs/ai-hub.md step 11), on every host. They keep their
 # usual config dirs (~/.claude, ~/.codex, ~/.config/muse). The access key
 # is a secret, so it stays out of Nix: the wrappers read it at each run.
 # Darwin reads op-agents' keychain cache of the Agents vault item; Linux
@@ -56,7 +56,7 @@ in
       type = lib.types.str;
       # The LAN name: hosts are on the home LAN. A roaming host overrides
       # this (hosts/clb-work/home.nix).
-      default = "http://srv-devbox.home.clb.ai:8317";
+      default = "http://ai-hub.home.clb.ai:8317";
       description = "CLIProxyAPI base URL, without /v1.";
     };
     apiKeyFile = lib.mkOption {

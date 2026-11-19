@@ -1,7 +1,7 @@
-# CPA Usage Keeper on srv-devbox: usage history, cost estimates, and quota
+# CPA Usage Keeper on ai-hub: usage history, cost estimates, and quota
 # tracking for the CLIProxyAPI hub (cliproxyapi.nix). It reads the hub's
 # usage queue and management API and keeps the history in SQLite. See
-# docs/srv-devbox.md step 12.
+# docs/ai-hub.md step 12.
 {
   config,
   lib,
@@ -38,7 +38,7 @@ in
       # The hub's HTTP API and its usage queue (RESP on the same port).
       CPA_BASE_URL = "http://127.0.0.1:${toString config.services.cliproxyapi.settings.server.port}";
       # "Back to CPA" link in the dashboard.
-      CPA_PUBLIC_URL = "http://srv-devbox.mermaid-agama.ts.net:${toString config.services.cliproxyapi.settings.server.port}";
+      CPA_PUBLIC_URL = "http://ai-hub.mermaid-agama.ts.net:${toString config.services.cliproxyapi.settings.server.port}";
       APP_PORT = toString port;
       TZ = config.time.timeZone;
       WORK_DIR = stateDir;

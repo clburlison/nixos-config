@@ -145,14 +145,14 @@ in
       CLAUDE_MEM_PROJECT_NAME_SOURCE = "git-remote";
       # Worker snapshots the SQLite store to ~/.claude-mem/backups (daily, keep 7).
       CLAUDE_MEM_BACKUP_ENABLED = "true";
-      # Hooks send to the hosted server on srv-devbox (docs/srv-devbox.md
+      # Hooks send to the hosted server on ai-hub (docs/ai-hub.md
       # step 13). The API key is a secret, so activation writes it into
       # settings.json from op-agents (claudeMemServerSettings below). Without
       # it, the worker falls back to local SQLite.
       CLAUDE_MEM_RUNTIME = "server";
-      # The LAN name: hosts are on the home LAN. srv-devbox overrides this
+      # The LAN name: hosts are on the home LAN. ai-hub overrides this
       # with loopback and clb-work with its failover proxy (hosts/*/home.nix).
-      CLAUDE_MEM_SERVER_URL = lib.mkDefault "http://srv-devbox.home.clb.ai:37877";
+      CLAUDE_MEM_SERVER_URL = lib.mkDefault "http://ai-hub.home.clb.ai:37877";
       CLAUDE_MEM_SERVER_PROJECT_ID = "3bee384a-652b-4947-bd36-027c429b4589";
     };
 

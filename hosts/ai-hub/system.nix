@@ -1,4 +1,4 @@
-# Host override file for srv-devbox (system): Proxmox VM, x86_64,
+# Host override file for ai-hub (system): Proxmox VM, x86_64,
 # headless, SSH-first.
 { config, ... }:
 
@@ -11,6 +11,7 @@
     ./cliproxyapi.nix
     ./cpa-usage-keeper.nix
     ./cpa-clickhouse.nix
+    ./obot.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -20,7 +21,7 @@
 
   # tailscaled starts at boot and reconnects with the node key in
   # /var/lib/tailscale. Log in once with `sudo tailscale up`
-  # (docs/srv-devbox.md step 9).
+  # (docs/ai-hub.md step 9).
   # openFirewall allows the UDP port for direct connections instead of DERP
   # relays.
   services.tailscale = {
@@ -38,8 +39,6 @@
   # (docs/op-agents.md), encrypted to this host's SSH host key (.sops.yaml).
   # Every other secret comes from the Agents vault through it.
   sops.defaultSopsFile = ./secrets.yaml;
-  # Stored under its old name; renaming means re-encrypting the file.
-  sops.secrets.op-agents-token.key = "agent-git-token";
   # Lingering starts the user's agent-git services at boot, before anyone
   # logs in.
   users.users.${config.clb.host.user}.linger = true;

@@ -1,12 +1,13 @@
-# srv-devbox
+# ai-hub
 
-Headless NixOS development host: a Proxmox VM, x86_64, reached over SSH. It
-is the hub every other host uses: the Claude and Codex logins (CLIProxyAPI)
-and the shared memory server (claude-mem). Defined by
-the `srv-devbox` entry in the host table (`flake.nix`), the NixOS platform
-aggregator (`modules/nixos/`), and the host override files in
-`hosts/srv-devbox/`. Files named below without a path are in that
-directory.
+Headless NixOS host for the AI subscription tooling: a Proxmox VM, x86_64,
+reached over SSH. It is the hub every other host uses: the Claude and Codex
+logins (CLIProxyAPI), usage analytics, the shared memory server
+(claude-mem), the MCP gateway (Obot), and a T3 Code server. General
+development happens elsewhere. Defined by the `ai-hub` entry in the host
+table (`flake.nix`), the NixOS platform aggregator (`modules/nixos/`), and
+the host override files in `hosts/ai-hub/`. Files named below without a
+path are in that directory.
 
 Do the steps in order; each one assumes the ones before it. Where it fits in
 the whole setup: [docs/README.md](README.md).
@@ -27,6 +28,7 @@ the whole setup: [docs/README.md](README.md).
 | [12. CPA Usage Keeper](#12-cpa-usage-keeper) | 7, 11 |
 | [13. claude-mem hosted server](#13-claude-mem-hosted-server) | 7, 9, 11 |
 | [14. AI usage analytics](#14-ai-usage-analytics) | 11 |
+| [15. Obot MCP gateway](#15-obot-mcp-gateway) | 7, 9 |
 
 ## 1. Create the Proxmox VM
 
@@ -80,8 +82,8 @@ nix-shell -p git
 git clone https://github.com/clburlison/nixos-config /tmp/nixos-config
 cd /tmp/nixos-config
 nixos-generate-config --root /mnt --show-hardware-config \
-  > hosts/srv-devbox/hardware-configuration.nix
-git add hosts/srv-devbox/hardware-configuration.nix
+  > hosts/ai-hub/hardware-configuration.nix
+git add hosts/ai-hub/hardware-configuration.nix
 ```
 
 Commit and push it **before installing**. Step 5 clones from GitHub, so
@@ -91,10 +93,10 @@ On the installer, run `passwd` so root can accept SSH, then on the Mac:
 
 ```sh
 cd ~/dev/me/nixos-config
-scp root@<installer-ip>:/tmp/nixos-config/hosts/srv-devbox/hardware-configuration.nix \
-  hosts/srv-devbox/
-git add hosts/srv-devbox/hardware-configuration.nix
-git commit -m "feat(srv-devbox): Add hardware configuration"
+scp root@<installer-ip>:/tmp/nixos-config/hosts/ai-hub/hardware-configuration.nix \
+  hosts/ai-hub/
+git add hosts/ai-hub/hardware-configuration.nix
+git commit -m "feat(ai-hub): Add hardware configuration"
 git push
 ```
 
@@ -103,7 +105,7 @@ git push
 Still as root (`sudo -i` again if you left the root shell for step 3):
 
 ```sh
-nixos-install --flake /tmp/nixos-config#srv-devbox
+nixos-install --flake /tmp/nixos-config#ai-hub
 ```
 
 `nixos-install` asks for a root password at the end. Then set the user
@@ -129,7 +131,7 @@ that holds a GitHub key. Plain `ssh -A` forwards the empty launchd agent
 instead. From a Mac with agent-git set up (`docs/agent-git.md`):
 
 ```sh
-ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@srv-devbox
+ssh -o ForwardAgent=~/.ssh/agent-git.sock clburlison@ai-hub
 ssh-add -l   # lists the agent-git key
 ```
 
@@ -148,7 +150,7 @@ cd ~/dev/me/nixos-config
 Check that the clone has the generated hardware file, not the placeholder:
 
 ```sh
-! grep -q 'TEMPORARY PLACEHOLDER' hosts/srv-devbox/hardware-configuration.nix \
+! grep -q 'TEMPORARY PLACEHOLDER' hosts/ai-hub/hardware-configuration.nix \
   || echo 'Push the generated hardware file first (step 3)'
 ```
 
@@ -161,7 +163,7 @@ library, which can't use the forwarded agent and fails with
 
 ```sh
 nix shell nixpkgs#git -c nix run home-manager/release-26.05 -- \
-  switch --flake .#clburlison@srv-devbox
+  switch --flake .#clburlison@ai-hub
 ```
 
 After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
@@ -171,9 +173,9 @@ After that, use `task home` (no sudo), `task system` (sudo), or `task switch`.
 The host holds one secret, the op-agents service account token
 (`secrets.yaml`, encrypted to this host's SSH host key in `.sops.yaml`).
 Every other secret on this host comes from the Agents vault through it
-(`docs/op-agents.md`).
+(`docs/op-agents.md`), except Obot's, which it generates itself (step 15).
 
-1. Check that every Agents item this host reads exists: the srv-devbox rows
+1. Check that every Agents item this host reads exists: the ai-hub rows
    of [Agents vault items](op-agents.md#agents-vault-items). op-agents
    fetches them all in one run and fails if any is missing, and each service
    that reads one requires it, so one missing item stops the hub, Keeper,
@@ -182,7 +184,12 @@ Every other secret on this host comes from the Agents vault through it
    with any placeholder `credential` now.
 2. Encrypt the token to this host: "NixOS host" in `docs/op-agents.md`,
    steps 1 to 4. It ends with `task system`, `task home` and
-   `op-agents-check`.
+   `op-agents-check`. That `task system` also starts the Obot gateway,
+   whose start check needs this host on the tailnet and the sidecar's
+   auth key: do step 9's `sudo tailscale up` and step 15's Tailscale
+   policy and First start 1 to 3 before it, or `obot.service` fails
+   (nothing else depends on it; `sudo systemctl start obot` once they're
+   done).
 
 After a reinstall, the host key changes: redo item 2 before `task system`.
 
@@ -230,14 +237,14 @@ Tailscale Serve. Lingering starts it at boot. Serve needs step 9 done and
 HTTPS certificates enabled for the tailnet (admin console > DNS > HTTPS
 Certificates).
 
-- Direct: `http://srv-devbox:3773` from the LAN or the tailnet (plain HTTP).
-- Tailnet HTTPS: the `https://srv-devbox.mermaid-agama.ts.net` URL.
+- Direct: `http://ai-hub:3773` from the LAN or the tailnet (plain HTTP).
+- Tailnet HTTPS: the `https://ai-hub.mermaid-agama.ts.net` URL.
 
 ```sh
 systemctl --user status t3-serve
 journalctl --user -u t3-serve
 t3 pair --tailscale   # pairing link through the tailnet HTTPS URL
-t3 pair               # direct; swap the printed host for srv-devbox:3773
+t3 pair               # direct; swap the printed host for ai-hub:3773
 ```
 
 ## 11. CLIProxyAPI hub
@@ -248,8 +255,8 @@ as the `cliproxyapi` system service, following
 and Codex accounts sign in here once; every other machine uses this host as
 its API endpoint. It listens on port 8317 on all interfaces (plain HTTP):
 
-- LAN: `http://192.xxx.xxx.xxx:8317` (srv-devbox's LAN IP)
-- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8317`
+- LAN: `http://192.xxx.xxx.xxx:8317` (ai-hub's LAN IP)
+- Tailnet: `http://ai-hub.mermaid-agama.ts.net:8317`
 
 The module comes from nixpkgs-unstable; `packages/cliproxyapi.nix` pins a
 newer release. Its Claude cloaking reports a fixed Claude Code version
@@ -291,14 +298,14 @@ prints a URL to open on your laptop. The running service picks up new
 accounts without a restart.
 
 Claude's browser login is the annoying one: its OAuth callback lands on
-port 54545 on srv-devbox, not on the laptop with the browser. Fix: open a
+port 54545 on ai-hub, not on the laptop with the browser. Fix: open a
 tunnel from the laptop first and keep it open:
 
 ```sh
-ssh -L 54545:localhost:54545 -L 1455:localhost:1455 srv-devbox
+ssh -L 54545:localhost:54545 -L 1455:localhost:1455 ai-hub
 ```
 
-Then, in that SSH session on srv-devbox, run once per account:
+Then, in that SSH session on ai-hub, run once per account:
 
 ```sh
 # Claude
@@ -318,11 +325,11 @@ Meta's terms say a Muse Code subscription is for use with the Muse Code CLI.
 Only the `muse` CLI uses the hub's Meta login here, but Meta may still
 answer a proxied request with 403 `client_attestation_denied`.
 
-Check accounts in the panel at `http://srv-devbox:8317/management.html`
+Check accounts in the panel at `http://ai-hub:8317/management.html`
 (management key) and verify from another machine:
 
 ```sh
-curl -s http://srv-devbox.mermaid-agama.ts.net:8317/v1/models \
+curl -s http://ai-hub.mermaid-agama.ts.net:8317/v1/models \
   -H "Authorization: Bearer <api key>" | head -c 300
 ```
 
@@ -348,9 +355,9 @@ because of `patches/cliproxyapi-muse-code-relay.patch`, which is upstream
 PR [#6563](https://github.com/router-for-me/CLIProxyAPI/pull/6563); drop the patch
 once that PR ships.
 
-srv-devbox uses `http://127.0.0.1:8317` and reads the op-agents file
-directly (`hosts/srv-devbox/home.nix`). Macs on the home LAN use
-`http://srv-devbox.home.clb.ai:8317`. clb-work roams, so it uses
+ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
+directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use
+`http://ai-hub.home.clb.ai:8317`. clb-work roams, so it uses
 `http://127.0.0.1:8317`, a local failover proxy
 (`hosts/clb-work/hub-proxy.nix`): a Caddy launchd daemon that sends each
 request to the LAN name when it answers, else the tailnet name, so the hub
@@ -391,7 +398,7 @@ covers.
 The dashboard listens on port 8080 on all interfaces:
 
 - LAN: `http://192.xxx.xxx.xxx:8080`
-- Tailnet: `http://srv-devbox.mermaid-agama.ts.net:8080`
+- Tailnet: `http://ai-hub.mermaid-agama.ts.net:8080`
 
 It reads the hub with the management key. The login password is the
 `password` of `cpa-usage-keeper` in the Agents vault:
@@ -413,7 +420,7 @@ only the new password, but browsers already logged in keep their session
 system service, pinned to a release tag. Compose builds the images locally,
 so the first `task system` start takes several minutes. The server listens
 on port 37877 on all interfaces. Each host's hooks and MCP server connect to
-it (`docs/claude-mem.md`, "Hosted server") at `srv-devbox.home.clb.ai:37877`;
+it (`docs/claude-mem.md`, "Hosted server") at `ai-hub.home.clb.ai:37877`;
 clb-work goes through its failover proxy at `http://127.0.0.1:37877`
 (step 11).
 
@@ -492,7 +499,7 @@ replace the placeholder `claude-mem-viewer` from step 7.
 The server serves the memory viewer at `/`, but the viewer's browser code
 sends no API key, so opened directly on 37877 every data call gets 401 and
 the page stays empty. Caddy fronts it on the tailnet:
-<http://srv-devbox.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
+<http://ai-hub.mermaid-agama.ts.net:37878>. It adds the `claude-mem-viewer`
 read key to every request.
 
 Anyone who reaches that port reads as the key's team, so it is
@@ -536,6 +543,302 @@ sudo claude-mem-server-compose exec postgres \
 the private `ai-analytics` repo (the `ai-analytics` flake input, fetched
 over SSH like `clb-skills`).
 
+## 15. Obot MCP gateway
+
+`obot.nix` runs [Obot](https://docs.obot.ai) `v0.28.0`, an MCP gateway. It
+does each provider's OAuth once (Gmail, Sheets/Drive, Outlook, Slack, Zoom,
+Linear), stores the grants encrypted, refreshes them, and serves the tools
+to every Mac through vMCPs (virtual MCP servers). It replaces the
+claude.ai connectors, which an `ANTHROPIC_BASE_URL` setup can't reach.
+Obot's LLM gateway is unused; CLIProxyAPI stays the model router.
+
+A Docker Compose stack with pinned images, run by `obot.service`:
+
+- `obot`: the server, embedded Postgres in `/var/lib/obot/data`. No host
+  port: Docker would forward it over the network the MCP containers
+  share. `sudo obot-netns <cmd>` runs a command in its network namespace
+  (e.g. `curl http://127.0.0.1:8080/api/healthz`). It mounts the Docker socket to start local MCP
+  servers, so it is root-equivalent on this host. Keep anything that
+  shouldn't trust it off ai-hub.
+- `tailscale`: a sidecar in Obot's network namespace that joins the
+  tailnet as its own node `ai-hub-mcp` (`tag:mcp-gateway`) and serves
+  `https://ai-hub-mcp.mermaid-agama.ts.net` with the ts.net cert. It hands
+  requests to Obot over loopback, so decrypted traffic never crosses the
+  Docker network the MCP containers share. If Docker restarts a crashed
+  Obot, the sidecar loses that namespace; `obot-watchdog.timer` probes the
+  HTTPS endpoint every 5 minutes and restarts `obot.service` when it fails. The host's own Serve :443 belongs to t3-serve.
+
+Known limit (upstream): Obot talks to the MCP servers it runs in
+containers over plain HTTP on that shared Docker network, and Docker gives
+containers `NET_RAW`, so a compromised local MCP server could spoof a peer
+and read another local server's tool calls. Those containers also reach
+Obot directly over HTTP (they need to), so one could hammer the login and
+trip its per-account throttle; and Obot publishes each one on a
+`127.0.0.1` host port, which local processes on ai-hub can reach without
+Obot's checks. Prefer catalog entries that are remote (hosted by the
+provider, proxied by Obot itself) over local containers, and run local
+ones only from sources you trust.
+
+Login is Obot's Local auth provider with one preconfigured owner
+(`ownerEmail` in `obot.nix`), so no one else can sign in. (Google and
+GitHub sign-in only restrict by email domain.)
+
+The embedded Postgres gets a random password and listens on loopback only
+(on Postgres's command line at every start, verified after), so the MCP
+containers Obot starts on its network can't reach the database.
+
+### Secrets
+
+The server's secrets are generated on the host at the first start, into
+`/var/lib/obot/secrets` (root only), never into the Agents vault: every
+Mac can read that vault and none needs these.
+
+| File | Holds |
+| --- | --- |
+| `encryption.yaml` | the credential encryption key (AES-GCM). Losing it loses every stored grant; never change it on an existing install |
+| `obot.env` | the Postgres password (fixed at initdb) and the owner's one-time setup token |
+| `ts-authkey` | the Tailscale auth key you add below; only read while the sidecar has no state |
+
+After the first start, save `encryption.yaml` and `obot.env` in your
+**Private** vault (one Secure Note each): `sudo cat
+/var/lib/obot/secrets/<file>`. The backups don't contain them, and a
+restored database needs both: the key decrypts it and the Postgres password
+opens it. `obot-prepare` refuses to start a database whose secrets are
+missing rather than generate new ones.
+
+### Tailscale policy
+
+In the tailnet policy file (admin console > **Access controls**). Rules
+only add access, so a narrow grant does nothing while the default allow-all
+rule (`{"src": ["*"], "dst": ["*"], "ip": ["*"]}`, or an `acls` entry
+with `*` to `*:*`) is still there: replace it with what your devices need,
+leaving `tag:mcp-gateway` out of every other rule. The Macs are tagged
+`tag:dev-host`, so they aren't `autogroup:member` (ai-hub and phones are);
+every rule names both. With grants:
+
+```hujson
+"tagOwners": {
+  "tag:dev-host": ["autogroup:admin"],
+  "tag:mcp-gateway": ["autogroup:admin"],
+},
+"grants": [
+  // Your devices reach each other (replaces allow-all; narrow as you like).
+  {"src": ["autogroup:member", "tag:dev-host"], "dst": ["autogroup:member", "tag:dev-host"], "ip": ["*"]},
+  // Only your devices reach the gateway, and only on 443.
+  {"src": ["autogroup:member", "tag:dev-host"], "dst": ["tag:mcp-gateway"], "ip": ["tcp:443"]},
+],
+"tests": [
+  {"src": "you@example.com", "accept": ["tag:mcp-gateway:443"], "deny": ["tag:mcp-gateway:22"]},
+  {"src": "tag:dev-host", "accept": ["tag:mcp-gateway:443", "100.75.137.72:22", "100.75.137.72:8317"], "deny": ["tag:mcp-gateway:22"]},
+  // The gateway reaches nothing, e.g. ai-hub's tailnet address.
+  {"src": "tag:mcp-gateway", "deny": ["100.75.137.72:22", "100.75.137.72:8317"]},
+],
+```
+
+Use your login instead of `you@example.com`, and your login instead of
+`autogroup:member` if the tailnet has other users. ai-hub's own start check
+reaches the gateway as a member device. The policy won't save while a test
+fails. Tagged nodes get only what a rule gives them, so the gateway can't
+reach other tailnet devices.
+
+### First start
+
+`obot.service` fails its start (and takes its containers down) until Obot
+answers and the sidecar serves HTTPS as `ai-hub-mcp`, so do these before the first
+`task system` that includes `obot.nix`:
+
+1. Tailnet HTTPS certificates on (admin console > **DNS > HTTPS
+   Certificates**; t3-serve already needs them).
+2. Tailscale admin console > **Settings > Keys > Generate auth key**:
+   reusable off, ephemeral off, pre-approved, tag `tag:mcp-gateway` (the
+   policy above must exist first).
+3. On ai-hub (`read -s` keeps it out of history; fish: `read -s key`):
+
+   ```sh
+   read -rs key
+   sudo install -d -m 0700 /var/lib/obot /var/lib/obot/secrets
+   printf '%s' "$key" | sudo install -m 0400 /dev/stdin /var/lib/obot/secrets/ts-authkey
+   unset key   # fish: set -e key
+   ```
+
+4. `task system`. `sudo obot-compose ps` shows both containers and
+   `tailscale status` lists `ai-hub-mcp`.
+5. From a Mac on the tailnet, open
+   `https://ai-hub-mcp.mermaid-agama.ts.net/activate#token=<setup token>` (the
+   token is in `sudo cat /var/lib/obot/secrets/obot.env`), set a password
+   (12+ characters), and sign in with the owner email.
+6. Save `encryption.yaml` and `obot.env` (Secrets, above).
+7. Check that the gateway isn't reachable off the tailnet: from a phone on
+   cellular with Tailscale off, the URL doesn't resolve.
+
+The activation link is valid for 7 days from the first start. If it
+expires before you use it, replace only the token line in `obot.env`
+(keep `POSTGRES_PASSWORD`; the database expects it) and restart. In bash
+(fish has no heredocs); the token is made and written inside the root
+shell, so it never reaches a command line or sudo's log:
+
+```sh
+sudo sh -s <<'EOF'
+set -e
+f=/var/lib/obot/secrets/obot.env
+T="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+[ "${#T}" -eq 64 ]
+export T
+awk '/^OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=/ { print "OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=" ENVIRON["T"]; next } { print }' "$f" > "$f.tmp"
+chmod 0400 "$f.tmp"
+mv "$f.tmp" "$f"
+systemctl restart obot
+EOF
+```
+
+The sidecar keeps its node in the `tailscale-state` volume. If that volume
+is lost, delete the old `ai-hub-mcp` machine in the admin console (or the
+new one comes up as `ai-hub-mcp-1`, which no client uses), write a fresh
+auth key to `ts-authkey`, and `sudo systemctl restart obot`.
+
+### Upstream OAuth apps
+
+Prefer Obot's catalog entries. Register this redirect URI on each OAuth
+app (Obot's MCP OAuth callback; confirm it on the server's configuration
+page): `https://ai-hub-mcp.mermaid-agama.ts.net/oauth/mcp/callback`. Every
+browser that does a login must be on the tailnet.
+
+- Google Cloud OAuth client (Gmail, Sheets, Drive). In Testing mode
+  refresh tokens expire after 7 days. Workspace accounts: set the user type
+  to **Internal** (no verification, no expiry). Personal @gmail.com: Gmail's
+  scopes are restricted, so expect a weekly re-login in Testing, or publish
+  unverified and accept the warning screens; check Google's current policy
+  first.
+- Microsoft Entra app registration (Outlook / M365).
+- Slack app, Zoom app. Linear: OAuth or a personal API key.
+
+### Accounts and vMCPs
+
+1. Add one server per account, with the account in its name:
+   `gmail-work`, `gmail-personal`, `sheets-work`, `outlook`, `slack`, ...
+   Authorize each once.
+2. **vMCPs > Create vMCP**, drag in the servers. For each component choose
+   **Managed** tools, expose only the ones you use, and set a prefix equal
+   to the server name (`gmail-work_`), so tool names say which account.
+   One vMCP (`personal`) or several (`comms`, `work`).
+3. Put each vMCP in `clb.obot.vmcps` in
+   `modules/common/programs/obot.nix`: the Claude Code server name and the
+   ID after `/mcp-connect/` in its **Connect URL**.
+
+### Per-host API keys
+
+One agent authorization scope per Mac (Obot > **Identity & Access >
+Agents**), named after the host and limited to the vMCPs above, with an
+API key (`ok1-...`). Save each key in the Agents vault as an API Credential
+named `MCP hub token <host>` (e.g. `MCP hub token clb-work`), key in
+`credential`. Each host's override file points `clb.obot.apiKeyReference`
+at its own item; op-agents caches it in the keychain (`docs/op-agents.md`).
+Any host's op-agents token can read every item, so a compromised host
+exposes all the keys; rotate them all then. To cut off one Mac, revoke its
+scope in Obot; the others keep working.
+
+`modules/common/programs/obot.nix` adds every vMCP to Claude Code
+(`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
+that reads the cached key at each connect. After creating the item, run
+`launchctl kickstart -k gui/$(id -u)/com.clburlison.op-agents-load` and
+`op-agents-check`. Check with `/mcp` in Claude Code, or (bash and fish; the
+key goes through stdin, not argv):
+
+```sh
+printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s op-agents:obot-api-key -a "$USER" -w)" \
+  | curl -fsS -K - https://ai-hub-mcp.mermaid-agama.ts.net/api/me
+```
+
+Clients that only do stdio can use `mcp-proxy` as a bridge.
+
+### Backups
+
+`obot-backup.timer` runs daily at about 04:15: it stops `obot`, archives
+`/var/lib/obot/data` to `/var/lib/obot/backups/obot-data-<version>-<time>.tar.gz`,
+starts it again, and keeps 14 days. A failed run leaves no partial
+archive. The encryption key isn't in the archive; it is in your Private
+vault (Secrets, above). The archives stay on this VM; the Proxmox VM backup is the
+off-host copy. Run one now with `sudo systemctl start obot-backup`.
+
+Restore, onto the same pinned version (the archive name says which). The
+archive may predate a key revocation, so bring it up with the sidecar off
+(loopback only) and revoke again before the tailnet can reach it. The
+`restore-pending` marker keeps `obot.service` from starting the stack,
+reboots included, until you remove it:
+
+1. On a fresh host, put the saved `encryption.yaml` and `obot.env` in
+   `/var/lib/obot/secrets` first (`sudo install -m 0400`), and the
+   Tailscale auth key as in First start.
+2. Restore the data dir and start Obot alone. Stop on any error; on a
+   retry, run the whole block again (it takes everything down first and
+   extracts into a fresh directory):
+
+   ```sh
+   set -e
+   sudo touch /var/lib/obot/restore-pending /var/lib/obot/initialized
+   sudo systemctl stop obot
+   sudo obot-compose down
+   sudo rm -rf /var/lib/obot/data.new
+   sudo install -d -m 0711 /var/lib/obot/data.new
+   sudo tar -C /var/lib/obot/data.new -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
+   [ ! -e /var/lib/obot/data ] || sudo mv /var/lib/obot/data "/var/lib/obot/data.old-$(date +%s)"
+   sudo mv /var/lib/obot/data.new /var/lib/obot/data
+   sudo obot-compose up --detach --force-recreate obot
+   ```
+
+   (fish: drop `set -e` and run the lines one by one, stopping at any
+   error.)
+
+3. On ai-hub, `sudo obot-ui` (foreground; Ctrl-C ends it): Obot's UI on
+   a socket only you can open. From a Mac,
+   `ssh -L 8090:/run/obot-ui/ui.sock ai-hub` and open
+   `http://localhost:8090` in Chrome or Firefox (Safari drops Obot's
+   `Secure` session cookie on plain HTTP), in a private window, and sign
+   in as the owner. The backup also restores old browser sessions and the
+   old password:
+   - Under **Identity & Access > Agents**, delete every scope revoked
+     after the backup was taken (or every scope, and issue new keys).
+   - If the backup predates a password change, or the restored password
+     may be known to someone else: **Identity & Access > Users**, reset
+     the owner's password to a new one. That also signs out every other
+     session.
+   - Otherwise (the restored password is the one you use now): **Log out
+     all other sessions** in your account menu.
+   If the backup predates the owner's activation, there is no password to
+   sign in with: activate instead. If the link has expired, run the token
+   refresh from First start without its `systemctl restart obot` line.
+   Stop `obot-ui` (Ctrl-C; it stays in the old container's network), run
+   `sudo obot-compose up --detach --force-recreate obot`, then `sudo
+   obot-ui` again (the SSH forward can stay open). Open
+   `http://localhost:8090/activate#token=<setup token>` through the
+   tunnel.
+4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:
+   starts the sidecar and runs the checks.
+
+### Upgrade
+
+Obot is 0.x and moves fast (v0.15 rebuilt the gateway; v0.28 moves to
+vMCPs), so upgrade on purpose:
+
+1. Read the release notes between the pinned and the new version. A new
+   embedded Postgres major refuses to start until migrated (Obot's
+   "Upgrade embedded PostgreSQL" doc).
+2. `sudo systemctl start obot-backup`.
+3. Bump `version` in `obot.nix`, `task system`.
+4. Recheck: `/mcp` connects on each Mac, a Gmail and an Outlook tool work.
+
+The Tailscale sidecar image is pinned separately (`tailscaleImage`).
+
+### Checks
+
+- Off the tailnet the URL fails; on it, HTTPS works.
+- Every Mac calls tools without a new login.
+- Two Google accounts show as separate, prefixed tool sets.
+- Gmail and Outlook tools still work more than 24 hours after login
+  (refresh works).
+- Revoking one host's key blocks only that host.
+- A backup restores onto a fresh data dir with the same pinned version.
+
 ## Notes
 
 - `system.stateVersion` in `system.nix` is pinned at install. Don't bump it
@@ -543,7 +846,7 @@ over SSH like `clb-skills`).
 - If the Determinate module fails on `nixos-26.05`, drop
   `determinate.nixosModules.default` from `modules/nixos/default.nix` and keep
   the stock `nix.settings`.
-- `homeConfigurations."clburlison@srv-devbox".activationPackage` can't be
+- `homeConfigurations."clburlison@ai-hub".activationPackage` can't be
   evaluated from a Mac without an `x86_64-linux` builder. `agent-skills-nix`
   reads each transformed `SKILL.md` (our `linear-cli` skill) from a
   derivation built for the target system, which is import from derivation.

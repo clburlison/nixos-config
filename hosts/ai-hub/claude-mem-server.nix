@@ -1,8 +1,8 @@
-# claude-mem hosted server (beta) on srv-devbox: upstream's Docker Compose
+# claude-mem hosted server (beta) on ai-hub: upstream's Docker Compose
 # stack (Postgres 17 with pgvector and pg_textsearch, Valkey, the HTTP
 # server on port 37877, and the generation worker), pinned to a release tag.
 # Compose builds the images locally from the pinned source. See
-# docs/srv-devbox.md step 13 and https://docs.claude-mem.ai/hosted-server.
+# docs/ai-hub.md step 13 and https://docs.claude-mem.ai/hosted-server.
 {
   config,
   pkgs,
@@ -52,7 +52,7 @@ let
 
   stateDir = "/var/lib/claude-mem-server";
 
-  # srv-devbox's tailnet address (stable per node). Postgres is published
+  # ai-hub's tailnet address (stable per node). Postgres is published
   # only here, so database clients on the tailnet can connect.
   tailnetIp = "100.75.137.72";
 
@@ -80,7 +80,7 @@ in
 
   clb.opAgents.secrets = {
     # Dotenv file, kept whole in a Secure Note. Holds the worker's provider
-    # settings and credential. docs/srv-devbox.md step 13 shows how to
+    # settings and credential. docs/ai-hub.md step 13 shows how to
     # replace it.
     claude-mem-server-env = {
       reference = "op://Agents/claude-mem-server-env/notesPlain";
@@ -105,7 +105,7 @@ in
     };
   };
 
-  # Viewer at http://srv-devbox.mermaid-agama.ts.net:37878. Caddy adds the
+  # Viewer at http://ai-hub.mermaid-agama.ts.net:37878. Caddy adds the
   # read key, so anyone who reaches this port reads the key's team: bind the
   # tailnet address only, open the port only on tailscale0, and refuse any
   # source outside the tailnet ranges.

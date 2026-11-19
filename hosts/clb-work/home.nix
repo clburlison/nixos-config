@@ -2,7 +2,7 @@
 {
   _class = "homeManager";
 
-  # The local failover proxy to srv-devbox (hub-proxy.nix): LAN when home,
+  # The local failover proxy to ai-hub (hub-proxy.nix): LAN when home,
   # else the tailnet.
   clb.cliproxyapi.url = "http://127.0.0.1:8317";
   home.sessionVariables.CLAUDE_MEM_SERVER_URL = "http://127.0.0.1:37877";
@@ -12,4 +12,7 @@
     type = "http";
     url = "https://mcp.intercom.com/mcp";
   };
+
+  # This host's Obot gateway key (docs/ai-hub.md step 15).
+  clb.obot.apiKeyReference = "op://Agents/MCP hub token clb-work/credential";
 }

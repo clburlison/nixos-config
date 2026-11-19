@@ -115,7 +115,7 @@ host's sops-nix secret, `/run/secrets/op-agents-token`; see "NixOS host" in
 
 - systemd user services replace the launchd jobs: `agent-git-ssh-agent` and an
   `agent-git-load` timer every 5 minutes. The host enables lingering
-  (`users.users.<user>.linger` in `hosts/srv-devbox/system.nix`), so they
+  (`users.users.<user>.linger` in `hosts/ai-hub/system.nix`), so they
   start at boot without a login.
 - If the agent key isn't loaded, `agent-git-sign` falls back to the personal
   key through the session agent, such as one forwarded over SSH. There is no

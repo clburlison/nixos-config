@@ -17,6 +17,9 @@
   # it grants.
   clb.obot = {
     apiKeyReference = "op://Agents/MCP hub token clb-work/credential";
-    vmcps.personal = "vmcp1vqt8x";
+    vmcps = {
+      personal = "vmcp1vqt8x";
+      gl = "vmcp1rtvnp";
+    };
   };
 }

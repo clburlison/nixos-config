@@ -40,7 +40,7 @@ in
     };
     vmcps = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
-      # Filled in once the vMCPs exist in Obot (docs/ai-hub.md step 15).
+      # Set per host in its override file (docs/ai-hub.md step 15).
       default = { };
       example = {
         personal = "ms1qc7nz";

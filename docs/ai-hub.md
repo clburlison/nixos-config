@@ -721,9 +721,10 @@ browser that does a login must be on the tailnet.
    **Managed** tools, expose only the ones you use, and set a prefix equal
    to the server name (`gmail-work_`), so tool names say which account.
    One vMCP (`personal`) or several (`comms`, `work`).
-3. Put each vMCP in `clb.obot.vmcps` in
-   `modules/common/programs/obot.nix`: the Claude Code server name and the
-   ID after `/mcp-connect/` in its **Connect URL**.
+3. Put each vMCP in `clb.obot.vmcps` in the host override file
+   (`hosts/<host>/home.nix`) of each Mac whose key grants it: the Claude
+   Code server name and the ID after `/mcp-connect/` in its **Connect
+   URL**.
 
 ### Per-host API keys
 

@@ -39,8 +39,6 @@
   # (docs/op-agents.md), encrypted to this host's SSH host key (.sops.yaml).
   # Every other secret comes from the Agents vault through it.
   sops.defaultSopsFile = ./secrets.yaml;
-  # Stored under its old name; renaming means re-encrypting the file.
-  sops.secrets.op-agents-token.key = "agent-git-token";
   # Lingering starts the user's agent-git services at boot, before anyone
   # logs in.
   users.users.${config.clb.host.user}.linger = true;

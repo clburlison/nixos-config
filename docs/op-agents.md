@@ -109,9 +109,7 @@ above first.
    ```
 
    Only the host can decrypt the file, so to change it, rerun this instead of
-   `sops edit`. ai-hub's file still stores the token as `agent-git-token`
-   (`sops.secrets.op-agents-token.key` in its `system.nix`); rerunning this
-   for it lets you drop that line.
+   `sops edit`.
 
 3. Set `sops.defaultSopsFile = ./secrets.yaml;` in `hosts/<name>/system.nix`.
    Commit, push, pull on the host, then `task system` and `task home`.

@@ -186,10 +186,12 @@ Every other secret on this host comes from the Agents vault through it
    with any placeholder `credential` now.
 2. Encrypt the token to this host: "NixOS host" in `docs/op-agents.md`,
    steps 1 to 4. It ends with `task system`, `task home` and
-   `op-agents-check`. That `task system` also starts the Obot gateway:
-   do step 15's Tailscale policy and First start 1 to 3 before it, or
-   `obot.service` fails (nothing else depends on it; it starts at the
-   next `task system` once they're done).
+   `op-agents-check`. That `task system` also starts the Obot gateway,
+   whose start check needs this host on the tailnet and the sidecar's
+   auth key: do step 9's `sudo tailscale up` and step 15's Tailscale
+   policy and First start 1 to 3 before it, or `obot.service` fails
+   (nothing else depends on it; `sudo systemctl start obot` once they're
+   done).
 
 After a reinstall, the host key changes: redo item 2 before `task system`.
 
@@ -567,8 +569,8 @@ Login is Obot's Local auth provider with one preconfigured owner
 GitHub sign-in only restrict by email domain.)
 
 The embedded Postgres gets a random password and listens on loopback only
-(set at initdb and before every start, verified after), so the MCP containers Obot starts on its network can't
-reach the database.
+(on Postgres's command line at every start, verified after), so the MCP
+containers Obot starts on its network can't reach the database.
 
 ### Secrets
 
@@ -702,7 +704,7 @@ that reads the key from the keychain at each connect. Check with `/mcp` in
 Claude Code, or (bash and fish; the key goes through stdin, not argv):
 
 ```sh
-printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s obot-api-key -a "$USER" -w)" \
+printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s obot-api-key -a "$USER" -w ~/Library/Keychains/login.keychain-db)" \
   | curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me
 ```
 
@@ -719,7 +721,9 @@ off-host copy. Run one now with `sudo systemctl start obot-backup`.
 
 Restore, onto the same pinned version (the archive name says which). The
 archive may predate a key revocation, so bring it up with the sidecar off
-(loopback only) and revoke again before the tailnet can reach it:
+(loopback only) and revoke again before the tailnet can reach it. The
+`restore-pending` marker keeps `obot.service` from starting the stack,
+reboots included, until you remove it:
 
 1. On a fresh host, put the saved `encryption.yaml` and `obot.env` in
    `/var/lib/obot/secrets` first (`sudo install -m 0400`), and the
@@ -727,6 +731,7 @@ archive may predate a key revocation, so bring it up with the sidecar off
 2. Restore the data dir and start Obot alone:
 
    ```sh
+   sudo touch /var/lib/obot/restore-pending
    sudo systemctl stop obot
    sudo mv /var/lib/obot/data /var/lib/obot/data.old
    sudo install -d -m 0711 /var/lib/obot/data
@@ -735,10 +740,12 @@ archive may predate a key revocation, so bring it up with the sidecar off
    ```
 
 3. From a Mac, `ssh -L 8090:127.0.0.1:8090 ai-hub` and open
-   `http://localhost:8090`. Under **Identity & Access > Agents**, delete
+   `http://localhost:8090` in Chrome or Firefox (Safari drops Obot's
+   `Secure` session cookie on plain HTTP). Under **Identity & Access > Agents**, delete
    every scope revoked after the backup was taken (or every scope, and
    issue new keys).
-4. `sudo systemctl restart obot`: starts the sidecar and runs the checks.
+4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:
+   starts the sidecar and runs the checks.
 
 ### Upgrade
 

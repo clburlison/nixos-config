@@ -48,14 +48,18 @@ let
   backupDir = "${stateDir}/backups";
 
   # The image's Postgres listens on all interfaces, and Obot attaches the
-  # MCP containers it starts to its own network. Runs once, at initdb (the
-  # image's init dir is /var/lib/postgres/initdb, not
-  # /docker-entrypoint-initdb.d): loopback only, so those containers can't
-  # reach the database. obot-prepare enforces it on existing databases,
-  # before Postgres starts.
-  initdbListen = pkgs.writeText "10-listen-localhost.sql" ''
-    ALTER SYSTEM SET listen_addresses = 'localhost';
+  # MCP containers it starts to its own network. The entrypoint runs
+  # `postgres` from PATH, so this wrapper, first on PATH, adds loopback
+  # only on the command line: every start, before any config file, init
+  # or not.
+  postgresLoopback = pkgs.writeScript "postgres" ''
+    #!/bin/sh
+    exec /usr/bin/postgres "$@" -c listen_addresses=localhost
   '';
+
+  # Present while a restored backup may hold revoked keys: obot-prepare
+  # refuses to start the stack (docs/ai-hub.md step 15, Backups).
+  restoreMarker = "${stateDir}/restore-pending";
 
   # Tailscale Serve config; containerboot fills in ${TS_CERT_DOMAIN}.
   serveConfig = pkgs.writeText "obot-tailscale-serve.json" (
@@ -90,12 +94,14 @@ let
           }
           "/var/run/docker.sock:/var/run/docker.sock"
           (bind "${secretsDir}/encryption.yaml" "/config/encryption.yaml")
-          (bind "${initdbListen}" "/var/lib/postgres/initdb/10-listen-localhost.sql")
+          (bind "${postgresLoopback}" "/opt/obot-pg/postgres")
         ];
         # POSTGRES_PASSWORD (read at initdb and for Obot's DSN) and the
         # owner's one-time setup token.
         env_file = [ "${secretsDir}/obot.env" ];
         environment = {
+          # The image's PATH, with postgresLoopback first.
+          PATH = "/opt/obot-pg:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin";
           OBOT_SERVER_HOSTNAME = url;
           OBOT_SERVER_ENABLE_AUTHENTICATION = "true";
           OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_EMAIL = ownerEmail;
@@ -148,11 +154,14 @@ let
     name = "obot-prepare";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.gnugrep
       pkgs.openssl
     ];
     text = ''
       umask 077
+      if [ -e ${restoreMarker} ]; then
+        echo "${restoreMarker} exists: finish the restore (revoke keys), then remove it." >&2
+        exit 1
+      fi
       install -d -m 0700 ${stateDir} ${secretsDir} ${backupDir}
       install -d -m 0711 ${dataDir}
       chmod 0711 ${dataDir}
@@ -166,20 +175,6 @@ let
             exit 1
           fi
         done
-
-        # Loopback only from the first moment Postgres starts, for a database
-        # made without the init script (e.g. restored). The same setting
-        # ALTER SYSTEM writes; Postgres is stopped here.
-        auto=${dataDir}/postgresql/postgresql.auto.conf
-        if ! grep -qx "listen_addresses = 'localhost'" "$auto" 2>/dev/null; then
-          echo "setting listen_addresses = 'localhost' in $auto" >&2
-          { grep -v '^listen_addresses' "$auto" 2>/dev/null || true
-            echo "listen_addresses = 'localhost'"
-          } > "$auto.tmp"
-          chown --reference=${dataDir}/postgresql/PG_VERSION "$auto.tmp"
-          chmod 0600 "$auto.tmp"
-          mv "$auto.tmp" "$auto"
-        fi
       fi
 
       if [ ! -s ${secretsDir}/encryption.yaml ]; then
@@ -299,10 +294,9 @@ in
 
   # Wraps compose with this stack's file for operations as root:
   # `sudo obot-compose ps`, `logs -f obot`.
-  environment.systemPackages = [
-    compose
-    backup
-  ];
+  # Backups only through the unit (`systemctl start obot-backup`), so two
+  # can't overlap.
+  environment.systemPackages = [ compose ];
 
   systemd.services.obot = {
     description = "Obot MCP gateway (Docker Compose)";

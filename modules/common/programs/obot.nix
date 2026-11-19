@@ -17,10 +17,12 @@ let
   inherit (pkgs.stdenv) isDarwin;
   cfg = config.clb.obot;
   keychainService = "obot-api-key";
+  # The login keychain explicitly, not whatever the default is.
+  keychain = ''"$HOME/Library/Keychains/login.keychain-db"'';
 
   readKey =
     if isDarwin then
-      ''/usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w 2>/dev/null''
+      ''/usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w ${keychain} 2>/dev/null''
     else
       "cat ${lib.escapeShellArg cfg.apiKeyFile} 2>/dev/null";
   # The key goes to jq on stdin, not in argv.
@@ -51,9 +53,9 @@ let
           exit 1
           ;;
       esac
-      /usr/bin/security delete-generic-password -s ${keychainService} -a "$USER" >/dev/null 2>&1 || true
-      printf 'add-generic-password -s %s -a %s -T /usr/bin/security -w %s\n' \
-        ${keychainService} "$USER" "$key" | /usr/bin/security -i
+      # -U updates an existing key in place, so a failed write keeps it.
+      printf 'add-generic-password -U -s %s -a %s -T /usr/bin/security -w %s %s\n' \
+        ${keychainService} "$USER" "$key" ${keychain} | /usr/bin/security -i
       unset key
       echo "Stored in keychain service ${keychainService}. Restart Claude Code." >&2
     '';

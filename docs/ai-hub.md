@@ -651,6 +651,15 @@ answers and the sidecar serves HTTPS as `mcp`, so do these before the first
 7. Check that the gateway isn't reachable off the tailnet: from a phone on
    cellular with Tailscale off, the URL doesn't resolve.
 
+The activation link is valid for 7 days from the first start. If it
+expires before you use it, replace only the token line in `obot.env`
+(keep `POSTGRES_PASSWORD`; the database expects it) and restart:
+
+```sh
+sudo sed -i "s/^OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=.*/OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=$(nix run nixpkgs#openssl -- rand -hex 32)/" /var/lib/obot/secrets/obot.env
+sudo systemctl restart obot
+```
+
 The sidecar keeps its node in the `tailscale-state` volume. If that volume
 is lost, delete the old `mcp` machine in the admin console (or the new one
 comes up as `mcp-1`, which no client uses), write a fresh auth key to
@@ -750,9 +759,14 @@ reboots included, until you remove it:
 
 3. From a Mac, `ssh -L 8090:127.0.0.1:8090 ai-hub` and open
    `http://localhost:8090` in Chrome or Firefox (Safari drops Obot's
-   `Secure` session cookie on plain HTTP). Under **Identity & Access > Agents**, delete
-   every scope revoked after the backup was taken (or every scope, and
-   issue new keys).
+   `Secure` session cookie on plain HTTP), in a private window, and sign
+   in as the owner. The backup also restores old browser sessions and the
+   old password:
+   - Under **Identity & Access > Agents**, delete every scope revoked
+     after the backup was taken (or every scope, and issue new keys).
+   - Change the owner password (to the current one, if it changed since
+     the backup); a password change signs out every other session. Or
+     use **Log out all other sessions** in your account menu.
 4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:
    starts the sidecar and runs the checks.
 

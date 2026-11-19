@@ -60,6 +60,10 @@ let
   # Present while a restored backup may hold revoked keys: obot-prepare
   # refuses to start the stack (docs/ai-hub.md step 15, Backups).
   restoreMarker = "${stateDir}/restore-pending";
+  # Written by obot-ready once Obot's database answers: initdb finished.
+  # Postgres writes PG_VERSION before it creates the `obot` database, so a
+  # data dir without this marker may be a first start cut short.
+  initMarker = "${stateDir}/initialized";
 
   # Tailscale Serve config; containerboot fills in ${TS_CERT_DOMAIN}.
   serveConfig = pkgs.writeText "obot-tailscale-serve.json" (
@@ -169,6 +173,12 @@ let
       # An existing (or restored) database needs its own secrets back: a new
       # password wouldn't match it, a new key can't decrypt it.
       if [ -e ${dataDir}/postgresql/PG_VERSION ]; then
+        if [ ! -e ${initMarker} ]; then
+          echo "${dataDir} holds a database that never passed a start check; its first start may have been cut short." >&2
+          echo "If Obot was never used: sudo mv ${dataDir} ${dataDir}.failed-init, then start again (secrets are kept)." >&2
+          echo "If it is a restored backup: sudo touch ${initMarker} (docs/ai-hub.md step 15, Backups)." >&2
+          exit 1
+        fi
         for f in encryption.yaml obot.env; do
           if [ ! -s "${secretsDir}/$f" ]; then
             echo "${dataDir} holds a database but ${secretsDir}/$f is missing; restore it (docs/ai-hub.md step 15, Backups)." >&2
@@ -234,10 +244,18 @@ let
     text = ''
       host=${nodeName}.mermaid-agama.ts.net
 
+      healthy=
       for _ in $(seq 1 60); do
-        curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz && break
+        if curl -fsS -o /dev/null --max-time 5 http://127.0.0.1:${toString localPort}/api/healthz; then
+          healthy=1
+          break
+        fi
         sleep 5
       done
+      if [ -z "$healthy" ]; then
+        echo "Obot doesn't answer on 127.0.0.1:${toString localPort}; see 'obot-compose logs obot'." >&2
+        exit 1
+      fi
 
       # In the container over TCP (the socket is in /tmp there); the SQL
       # is $1 inside.
@@ -251,6 +269,7 @@ let
         echo "Postgres listens on '$listen', not localhost only; stopping." >&2
         exit 1
       fi
+      touch ${initMarker}
 
       for _ in $(seq 1 60); do
         if ip="$(obot-compose exec -T tailscale tailscale ip -4 2>/dev/null)" && [ -n "$ip" ] \

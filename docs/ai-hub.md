@@ -728,16 +728,25 @@ reboots included, until you remove it:
 1. On a fresh host, put the saved `encryption.yaml` and `obot.env` in
    `/var/lib/obot/secrets` first (`sudo install -m 0400`), and the
    Tailscale auth key as in First start.
-2. Restore the data dir and start Obot alone:
+2. Restore the data dir and start Obot alone. Stop on any error; on a
+   retry, run the whole block again (it takes everything down first and
+   extracts into a fresh directory):
 
    ```sh
-   sudo touch /var/lib/obot/restore-pending
+   set -e
+   sudo touch /var/lib/obot/restore-pending /var/lib/obot/initialized
    sudo systemctl stop obot
-   sudo mv /var/lib/obot/data /var/lib/obot/data.old
-   sudo install -d -m 0711 /var/lib/obot/data
-   sudo tar -C /var/lib/obot/data -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
-   sudo obot-compose up --detach obot
+   sudo obot-compose down
+   sudo rm -rf /var/lib/obot/data.new
+   sudo install -d -m 0711 /var/lib/obot/data.new
+   sudo tar -C /var/lib/obot/data.new -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
+   [ ! -e /var/lib/obot/data ] || sudo mv /var/lib/obot/data "/var/lib/obot/data.old-$(date +%s)"
+   sudo mv /var/lib/obot/data.new /var/lib/obot/data
+   sudo obot-compose up --detach --force-recreate obot
    ```
+
+   (fish: drop `set -e` and run the lines one by one, stopping at any
+   error.)
 
 3. From a Mac, `ssh -L 8090:127.0.0.1:8090 ai-hub` and open
    `http://localhost:8090` in Chrome or Firefox (Safari drops Obot's

@@ -4,12 +4,10 @@ Headless NixOS host for the AI subscription tooling: a Proxmox VM, x86_64,
 reached over SSH. It is the hub every other host uses: the Claude and Codex
 logins (CLIProxyAPI), usage analytics, the shared memory server
 (claude-mem), the MCP gateway (Obot), and a T3 Code server. General
-development happens elsewhere. Formerly `srv-devbox`; see
-[Rename from srv-devbox](#rename-from-srv-devbox). Defined by
-the `ai-hub` entry in the host table (`flake.nix`), the NixOS platform
-aggregator (`modules/nixos/`), and the host override files in
-`hosts/ai-hub/`. Files named below without a path are in that
-directory.
+development happens elsewhere. Defined by the `ai-hub` entry in the host
+table (`flake.nix`), the NixOS platform aggregator (`modules/nixos/`), and
+the host override files in `hosts/ai-hub/`. Files named below without a
+path are in that directory.
 
 Do the steps in order; each one assumes the ones before it. Where it fits in
 the whole setup: [docs/README.md](README.md).
@@ -835,25 +833,6 @@ The Tailscale sidecar image is pinned separately (`tailscaleImage`).
   (refresh works).
 - Revoking one host's key blocks only that host.
 - A backup restores onto a fresh data dir with the same pinned version.
-
-## Rename from srv-devbox
-
-One time, on the existing VM. The SSH host key (and so the sops age key)
-and the tailnet IP don't change.
-
-1. DNS: add `ai-hub.home.clb.ai` with the same LAN address (keep the old
-   record until every Mac has switched).
-2. Obot comes in the same switch: do step 15's Tailscale policy and the
-   auth key (First start, 1 to 3) first, or `obot.service` fails its start.
-   Nothing else depends on it.
-3. On the host, from the clone (the hostname is still the old one, so name
-   the host): `NIXNAME=ai-hub task system`, then `NIXNAME=ai-hub task home`.
-   This sets the hostname.
-4. Tailscale: `sudo tailscale set --hostname=ai-hub`, or rename the machine
-   in the admin console. The tailnet name becomes
-   `ai-hub.mermaid-agama.ts.net`; restart `t3-serve` so Serve picks it up.
-5. On each Mac: `task switch`, then `ssh ai-hub` once to accept the host
-   key under its new name.
 
 ## Notes
 

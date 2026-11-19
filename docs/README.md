@@ -43,7 +43,7 @@ All in [ai-hub.md](ai-hub.md):
 | [12](ai-hub.md#12-cpa-usage-keeper) | CPA Usage Keeper dashboard |
 | [13](ai-hub.md#13-claude-mem-hosted-server) | claude-mem server: create the host and viewer keys, save them in 1Password |
 | [14](ai-hub.md#14-ai-usage-analytics) | AI usage analytics (nothing to do) |
-| [15](ai-hub.md#15-obot-mcp-gateway) | Obot MCP gateway: Tailscale policy, owner login, OAuth apps, vMCPs, per-host keys |
+| [15](ai-hub.md#15-obot-mcp-gateway) | Obot MCP gateway: Tailscale policy, auth key, owner login, OAuth apps, vMCPs, per-host keys (`obot-set-key`) |
 
 ## 2. Each Mac
 

@@ -14,6 +14,10 @@
 #              (tag:mcp-gateway) and serves HTTPS with the ts.net cert.
 #              The host's own Tailscale Serve :443 belongs to t3-serve.
 # Nothing is published beyond 127.0.0.1 on the host.
+#
+# The server's secrets are generated here, once, not read from the Agents
+# vault: every Mac's service account reads that vault, and none of them
+# needs these. Save the encryption key in your own vault (docs).
 {
   config,
   pkgs,
@@ -32,13 +36,23 @@ let
   # Local access on the host only (e.g. `curl` over SSH). 8080 is taken
   # by CPA Usage Keeper.
   localPort = 8090;
+  # The Local auth owner, the only account. Not a mailbox Obot writes to.
+  ownerEmail = "git@clburlison.com";
 
   stateDir = "/var/lib/obot";
-  # Obot's /data: embedded Postgres (/data/postgresql), cache, files.
+  # Obot's /data: embedded Postgres (/data/postgresql), cache, files. 0711:
+  # Postgres runs as UID 70 in the container and must traverse it.
   dataDir = "${stateDir}/data";
+  # Generated secrets (root only), and the Tailscale auth key you add.
+  secretsDir = "${stateDir}/secrets";
   backupDir = "${stateDir}/backups";
 
-  secret = config.clb.opAgents.secrets;
+  # The image's Postgres listens on all interfaces, and Obot attaches the
+  # MCP containers it starts to its own network. Runs once, at initdb:
+  # loopback only, so those containers can't reach the database.
+  initdbListen = pkgs.writeText "10-listen-localhost.sql" ''
+    ALTER SYSTEM SET listen_addresses = 'localhost';
+  '';
 
   # Tailscale Serve config; containerboot fills in ${TS_CERT_DOMAIN}.
   serveConfig = pkgs.writeText "obot-tailscale-serve.json" (
@@ -49,6 +63,15 @@ let
     }
   );
 
+  # Long syntax, so a missing source fails the start instead of Docker
+  # creating an empty directory in its place.
+  bind = source: target: {
+    type = "bind";
+    inherit source target;
+    read_only = true;
+    bind.create_host_path = false;
+  };
+
   composeFile = (pkgs.formats.yaml { }).generate "obot-compose.yml" {
     services = {
       obot = {
@@ -56,14 +79,23 @@ let
         restart = "unless-stopped";
         ports = [ "127.0.0.1:${toString localPort}:8080" ];
         volumes = [
-          "${dataDir}:/data"
+          {
+            type = "bind";
+            source = dataDir;
+            target = "/data";
+            bind.create_host_path = false;
+          }
           "/var/run/docker.sock:/var/run/docker.sock"
-          "${secret.obot-encryption.path}:/config/encryption.yaml:ro"
+          (bind "${secretsDir}/encryption.yaml" "/config/encryption.yaml")
+          (bind "${initdbListen}" "/docker-entrypoint-initdb.d/10-listen-localhost.sql")
         ];
-        env_file = [ secret.obot-env.path ];
+        # POSTGRES_PASSWORD (read at initdb and for Obot's DSN) and the
+        # owner's one-time setup token.
+        env_file = [ "${secretsDir}/obot.env" ];
         environment = {
           OBOT_SERVER_HOSTNAME = url;
           OBOT_SERVER_ENABLE_AUTHENTICATION = "true";
+          OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_EMAIL = ownerEmail;
           OBOT_SERVER_ENCRYPTION_PROVIDER = "custom";
           OBOT_SERVER_ENCRYPTION_CONFIG_FILE = "/config/encryption.yaml";
           OBOT_SERVER_DISABLE_UPDATE_CHECK = "true";
@@ -77,14 +109,18 @@ let
         hostname = nodeName;
         volumes = [
           "tailscale-state:/var/lib/tailscale"
-          "${serveConfig}:/config/serve.json:ro"
+          (bind "${serveConfig}" "/config/serve.json")
+          (bind "${secretsDir}/ts-authkey" "/config/ts-authkey")
         ];
-        env_file = [ secret.obot-tailscale-env.path ];
         environment = {
           TS_HOSTNAME = nodeName;
           TS_STATE_DIR = "/var/lib/tailscale";
           TS_SERVE_CONFIG = "/config/serve.json";
           TS_USERSPACE = "true";
+          # The key is read from the file, so it isn't in argv; with
+          # AUTH_ONCE it is used only while the node has no state.
+          TS_AUTHKEY = "file:/config/ts-authkey";
+          TS_AUTH_ONCE = "true";
           TS_EXTRA_ARGS = "--advertise-tags=tag:mcp-gateway";
         };
         depends_on = [ "obot" ];
@@ -102,39 +138,24 @@ let
       "$@"
   '';
 
-  # Stops Obot for a consistent copy of the embedded Postgres, archives
-  # the data dir, and starts it again. The encryption key lives in
-  # 1Password (Agents/obot), not in the archive.
-  backup = pkgs.writeShellApplication {
-    name = "obot-backup";
+  # Creates the dirs and, once, the secrets. Never rotates them: the
+  # Postgres password is fixed at initdb, and a new encryption key would
+  # orphan every stored grant.
+  prepare = pkgs.writeShellApplication {
+    name = "obot-prepare";
     runtimeInputs = [
-      compose
       pkgs.coreutils
-      pkgs.findutils
-      pkgs.gnutar
-      pkgs.gzip
+      pkgs.openssl
     ];
     text = ''
       umask 077
-      install -d -m 0700 ${backupDir}
-      archive="${backupDir}/obot-data-${version}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
-      obot-compose stop obot
-      trap 'obot-compose start obot' EXIT
-      tar -C ${dataDir} -czf "$archive.tmp" .
-      mv "$archive.tmp" "$archive"
-      find ${backupDir} -name 'obot-data-*.tar.gz' -mtime +14 -delete
-      echo "wrote $archive"
-    '';
-  };
-in
-{
-  virtualisation.docker.enable = true;
+      install -d -m 0700 ${stateDir} ${secretsDir} ${backupDir}
+      install -d -m 0711 ${dataDir}
+      chmod 0711 ${dataDir}
 
-  clb.opAgents.secrets = {
-    # Credential encryption (AES-GCM) for OAuth tokens, credentials and
-    # identities. Losing the key loses every stored grant.
-    obot-encryption.services = [ "obot" ];
-    obot-encryption.template = ''
+      if [ ! -s ${secretsDir}/encryption.yaml ]; then
+        key="$(openssl rand -base64 32)"
+        cat > ${secretsDir}/encryption.yaml.tmp <<EOF
       apiVersion: apiserver.config.k8s.io/v1
       kind: EncryptionConfiguration
       resources:
@@ -152,22 +173,76 @@ in
             - aesgcm:
                 keys:
                   - name: key0
-                    secret: "{{ op://Agents/obot/encryption-key }}"
+                    secret: "$key"
             - identity: {}
-    '';
-    # The built-in Local auth provider with one preconfigured owner: the
-    # only account. Obot revokes the setup token once the password is set.
-    obot-env.services = [ "obot" ];
-    obot-env.template = ''
-      OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_EMAIL={{ op://Agents/obot/owner-email }}
-      OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN={{ op://Agents/obot/owner-setup-token }}
-    '';
-    # Used once, to register the sidecar node; its state volume keeps it.
-    obot-tailscale-env.services = [ "obot" ];
-    obot-tailscale-env.template = ''
-      TS_AUTHKEY={{ op://Agents/obot/tailscale-authkey }}
+      EOF
+        unset key
+        mv ${secretsDir}/encryption.yaml.tmp ${secretsDir}/encryption.yaml
+      fi
+
+      # Hex keeps the password safe inside Obot's DSN.
+      if [ ! -s ${secretsDir}/obot.env ]; then
+        printf 'POSTGRES_PASSWORD=%s\nOBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=%s\n' \
+          "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > ${secretsDir}/obot.env.tmp
+        mv ${secretsDir}/obot.env.tmp ${secretsDir}/obot.env
+      fi
+
+      # You write the key (docs); an empty file is fine once enrolled.
+      if [ ! -e ${secretsDir}/ts-authkey ]; then
+        install -m 0400 /dev/null ${secretsDir}/ts-authkey
+      fi
+      chmod 0400 ${secretsDir}/*
     '';
   };
+
+  # Fails the start unless Obot answers and the sidecar is on the tailnet.
+  ready = pkgs.writeShellApplication {
+    name = "obot-ready";
+    runtimeInputs = [
+      compose
+      pkgs.curl
+      pkgs.jq
+    ];
+    text = ''
+      for _ in $(seq 1 60); do
+        if curl -fsS -o /dev/null http://127.0.0.1:${toString localPort}/api/healthz \
+          && obot-compose exec -T tailscale tailscale status --json 2>/dev/null \
+            | jq -e '.BackendState == "Running"' >/dev/null; then
+          exit 0
+        fi
+        sleep 5
+      done
+      echo "Obot or its tailscale sidecar isn't ready; see 'obot-compose logs'." >&2
+      echo "First start: is the auth key in ${secretsDir}/ts-authkey?" >&2
+      exit 1
+    '';
+  };
+
+  # Stops Obot for a consistent copy of the embedded Postgres, archives
+  # the data dir, and starts it again. The encryption key isn't in it.
+  backup = pkgs.writeShellApplication {
+    name = "obot-backup";
+    runtimeInputs = [
+      compose
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.gnutar
+      pkgs.gzip
+    ];
+    text = ''
+      umask 077
+      archive="${backupDir}/obot-data-${version}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
+      obot-compose stop obot
+      trap 'rm -f "$archive.tmp"; obot-compose start obot' EXIT
+      tar -C ${dataDir} -czf "$archive.tmp" .
+      mv "$archive.tmp" "$archive"
+      find ${backupDir} -name 'obot-data-*.tar.gz' -mtime +14 -delete
+      echo "wrote $archive"
+    '';
+  };
+in
+{
+  virtualisation.docker.enable = true;
 
   # Wraps compose with this stack's file for operations as root:
   # `sudo obot-compose ps`, `logs -f obot`.
@@ -188,15 +263,12 @@ in
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      StateDirectory = [
-        "obot"
-        "obot/data"
-        "obot/backups"
-      ];
-      StateDirectoryMode = "0700";
+      ExecStartPre = "${prepare}/bin/obot-prepare";
       # Compose restarts crashed containers (restart: unless-stopped).
       ExecStart = "${compose}/bin/obot-compose up --detach --remove-orphans";
+      ExecStartPost = "${ready}/bin/obot-ready";
       ExecStop = "${compose}/bin/obot-compose down";
+      # The first start pulls the images.
       TimeoutStartSec = "30min";
     };
   };

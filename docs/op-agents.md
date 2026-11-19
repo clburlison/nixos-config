@@ -49,8 +49,6 @@ exist before the `task system` in `docs/ai-hub.md` step 7.
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | yes | claude-mem worker dotenv |
 | `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on ai-hub |
 | `claude-mem-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | yes | claude-mem hooks and MCP server on every host (`docs/claude-mem.md`) |
-| `obot` | `encryption-key`, `owner-email`, `owner-setup-token`, `tailscale-authkey` | yes | Obot MCP gateway on ai-hub (`docs/ai-hub.md` step 15) |
-| `obot-<host>` (API Credential) | `credential` (that host's Obot API key) | | Claude Code's Obot servers on that Mac, once `clb.obot.vmcps` is set |
 
 To add one: create the item in `Agents`, then add it to
 `clb.opAgents.secrets` (system or Home Manager) and point the consumer at its

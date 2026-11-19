@@ -1,10 +1,11 @@
 # Claude Code's MCP servers from the Obot gateway on ai-hub
 # (hosts/ai-hub/obot.nix, docs/ai-hub.md step 15): one server per vMCP in
 # clb.obot.vmcps, over Streamable HTTP on the tailnet. Each host has its own
-# Obot API key, in the Agents vault item `obot-<host>`, so revoking one
-# host's key leaves the others working. The key stays out of Nix and
-# ~/.claude.json: Claude Code runs a headers helper at each connect.
-# Darwin reads op-agents' keychain cache; Linux reads apiKeyFile.
+# Obot API key, stored only on that host, so revoking one host's key cuts
+# off that host alone; the shared Agents vault never holds it. The key stays
+# out of Nix and ~/.claude.json: Claude Code runs a headers helper at each
+# connect. Darwin reads the login keychain (set with `obot-set-key`); Linux
+# reads apiKeyFile.
 {
   config,
   lib,
@@ -15,18 +16,52 @@
 let
   inherit (pkgs.stdenv) isDarwin;
   cfg = config.clb.obot;
+  keychainService = "obot-api-key";
 
   readKey =
     if isDarwin then
-      config.clb.opAgents.secrets.obot-api-key.readCommand
+      ''/usr/bin/security find-generic-password -s ${keychainService} -a "$USER" -w 2>/dev/null''
     else
       "cat ${lib.escapeShellArg cfg.apiKeyFile} 2>/dev/null";
+  # The key goes to jq on stdin, not in argv.
   headers = pkgs.writeShellScript "obot-mcp-headers" ''
     key="$(${readKey})" && [ -n "$key" ] || exit 1
-    ${pkgs.jq}/bin/jq -n --arg key "$key" '{Authorization: ("Bearer " + $key)}'
+    printf '%s' "$key" | ${pkgs.jq}/bin/jq -Rs '{Authorization: ("Bearer " + .)}'
   '';
+
+  # Stores this host's key from the clipboard or stdin. `security -i` reads
+  # the command from stdin, keeping the key out of argv.
+  setKey = pkgs.writeShellApplication {
+    name = "obot-set-key";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      if [ -t 0 ]; then
+        echo "Reading the key from the clipboard." >&2
+        key="$(/usr/bin/pbpaste)"
+      else
+        key="$(cat)"
+      fi
+      key="$(printf '%s' "$key" | tr -d '[:space:]')"
+      case "$key" in
+        ok1-*) ;;
+        *)
+          echo "Not an Obot API key (ok1-...)." >&2
+          exit 1
+          ;;
+      esac
+      /usr/bin/security delete-generic-password -s ${keychainService} -a "$USER" >/dev/null 2>&1 || true
+      printf 'add-generic-password -s %s -a %s -T /usr/bin/security -w %s\n' \
+        ${keychainService} "$USER" "$key" | /usr/bin/security -i
+      unset key
+      if [ -t 0 ]; then
+        /usr/bin/pbcopy </dev/null
+        echo "Cleared the clipboard." >&2
+      fi
+      echo "Stored in keychain service ${keychainService}. Restart Claude Code." >&2
+    '';
+  };
+
   hasKey = isDarwin || cfg.apiKeyFile != null;
-  enabled = cfg.vmcps != { } && hasKey;
 in
 {
   _class = "homeManager";
@@ -49,11 +84,6 @@ in
         /mcp-connect/ in the vMCP's Connect URL. Empty, no servers.
       '';
     };
-    keyReference = lib.mkOption {
-      type = lib.types.str;
-      default = "op://Agents/obot-${config.clb.host.name}/credential";
-      description = "Darwin: 1Password reference for this host's Obot API key.";
-    };
     apiKeyFile = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -61,15 +91,14 @@ in
     };
   };
 
-  config = lib.mkIf enabled {
-    clb.opAgents.secrets = lib.mkIf isDarwin {
-      obot-api-key.reference = cfg.keyReference;
-    };
-
-    programs.claude-code.mcpServers = lib.mapAttrs (_: id: {
-      type = "http";
-      url = "${cfg.url}/mcp-connect/${id}";
-      headersHelper = "${headers}";
-    }) cfg.vmcps;
-  };
+  config = lib.mkMerge [
+    (lib.mkIf isDarwin { home.packages = [ setKey ]; })
+    (lib.mkIf (cfg.vmcps != { } && hasKey) {
+      programs.claude-code.mcpServers = lib.mapAttrs (_: id: {
+        type = "http";
+        url = "${cfg.url}/mcp-connect/${id}";
+        headersHelper = "${headers}";
+      }) cfg.vmcps;
+    })
+  ];
 }

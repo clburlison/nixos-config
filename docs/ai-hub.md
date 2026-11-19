@@ -559,23 +559,29 @@ A Docker Compose stack with pinned images, run by `obot.service`:
   (`tag:mcp-gateway`) and serves `https://mcp.mermaid-agama.ts.net` with the
   ts.net cert. The host's own Serve :443 belongs to t3-serve.
 
-Login is Obot's Local auth provider with one preconfigured owner, so no one
-else can sign in. (Google and GitHub sign-in only restrict by email domain.)
+Login is Obot's Local auth provider with one preconfigured owner
+(`ownerEmail` in `obot.nix`), so no one else can sign in. (Google and
+GitHub sign-in only restrict by email domain.)
 
-### 1Password
+The embedded Postgres gets a random password and listens on loopback only
+(set at initdb), so the MCP containers Obot starts on its network can't
+reach the database.
 
-Agents item `obot` (Secure Note or Password), fields:
+### Secrets
 
-| Field | Value |
+The server's secrets are generated on the host at the first start, into
+`/var/lib/obot/secrets` (root only), never into the Agents vault: every
+Mac can read that vault and none needs these.
+
+| File | Holds |
 | --- | --- |
-| `encryption-key` | `openssl rand -base64 32`. Losing it loses every stored grant; never change it on an existing install |
-| `owner-email` | your email, the owner's login |
-| `owner-setup-token` | `openssl rand -hex 32`, used once by the activation link |
-| `tailscale-authkey` | an auth key, below. Used once; keep the field afterwards, op-agents needs it to exist |
+| `encryption.yaml` | the credential encryption key (AES-GCM). Losing it loses every stored grant; never change it on an existing install |
+| `obot.env` | the Postgres password (fixed at initdb) and the owner's one-time setup token |
+| `ts-authkey` | the Tailscale auth key you add below; only read while the sidecar has no state |
 
-Tailscale admin console > **Settings > Keys > Generate auth key**:
-reusable off, ephemeral off, pre-approved, tag `tag:mcp-gateway`. The tag
-needs an owner in the policy (below) first.
+After the first start, save `encryption.yaml` in your **Private** vault (a
+Secure Note): `sudo cat /var/lib/obot/secrets/encryption.yaml`. The
+backups don't contain it.
 
 ### Tailscale policy
 
@@ -598,13 +604,33 @@ gateway itself can't reach other tailnet devices.
 
 ### First start
 
-After `task system`, `sudo obot-compose ps` shows both containers and
-`tailscale status` lists `mcp`. Then, from a Mac on the tailnet:
+`obot.service` fails its start until Obot answers and the sidecar is on
+the tailnet, so add the auth key before the first `task system`:
 
-1. Open `https://mcp.mermaid-agama.ts.net/activate#token=<owner-setup-token>`,
-   set a password (12+ characters), sign in with `owner-email`.
-2. Check that the gateway isn't reachable off the tailnet: from a phone on
+1. Tailscale admin console > **Settings > Keys > Generate auth key**:
+   reusable off, ephemeral off, pre-approved, tag `tag:mcp-gateway` (the
+   policy above must exist first).
+2. On ai-hub (`read -s` keeps it out of history; fish: `read -s key`):
+
+   ```sh
+   read -rs key
+   sudo install -d -m 0700 /var/lib/obot /var/lib/obot/secrets
+   printf '%s' "$key" | sudo install -m 0400 /dev/stdin /var/lib/obot/secrets/ts-authkey
+   unset key
+   ```
+
+3. `task system`. `sudo obot-compose ps` shows both containers and
+   `tailscale status` lists `mcp`.
+4. From a Mac on the tailnet, open
+   `https://mcp.mermaid-agama.ts.net/activate#token=<setup token>` (the
+   token is in `sudo cat /var/lib/obot/secrets/obot.env`), set a password
+   (12+ characters), and sign in with the owner email.
+5. Save the encryption key (Secrets, above).
+6. Check that the gateway isn't reachable off the tailnet: from a phone on
    cellular with Tailscale off, the URL doesn't resolve.
+
+The sidecar keeps its node in the `tailscale-state` volume. If that volume
+is lost, write a fresh auth key to `ts-authkey` and restart `obot`.
 
 ### Upstream OAuth apps
 
@@ -638,32 +664,45 @@ browser that does a login must be on the tailnet.
 ### Per-host API keys
 
 One agent authorization scope per Mac (Obot > **Identity & Access >
-Agents**), limited to the vMCPs above, with an API key (`ok1-...`). Save each in Agents as `obot-<host>` (API Credential,
-`credential`), e.g. `obot-clb-work`. Create the item before that host's
-`task switch`: op-agents-load reports a missing item as failed. To cut off
-one Mac, revoke its key in Obot; the others keep working.
+Agents**), named after the host and limited to the vMCPs above, with an
+API key (`ok1-...`). Each key lives only on its Mac, not in the shared
+Agents vault, so a compromised Mac can't fetch another's key. Copy the key,
+then on that Mac run `obot-set-key` (reads the clipboard, stores it in the
+login keychain, clears the clipboard). To cut off one Mac, revoke its scope
+in Obot; the others keep working.
 
 `modules/common/programs/obot.nix` adds every vMCP to Claude Code
 (`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
-that reads the host's key from op-agents' keychain cache. Check with
-`/mcp` in Claude Code, or `curl -H "Authorization: Bearer <key>"
-https://mcp.mermaid-agama.ts.net/api/me`. Clients that only do stdio can
-use `mcp-proxy` as a bridge.
+that reads the key from the keychain at each connect. Check with `/mcp` in
+Claude Code, or (fish: `set key (...)`):
+
+```sh
+key="$(security find-generic-password -s obot-api-key -a "$USER" -w)"
+curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me \
+  <<<"header = \"Authorization: Bearer $key\""
+unset key
+```
+
+Clients that only do stdio can use `mcp-proxy` as a bridge.
 
 ### Backups
 
 `obot-backup.timer` runs daily at about 04:15: it stops `obot`, archives
 `/var/lib/obot/data` to `/var/lib/obot/backups/obot-data-<version>-<time>.tar.gz`,
-starts it again, and keeps 14 days. The encryption key is in 1Password, not
-in the archive. The archives stay on this VM; the Proxmox VM backup is the
+starts it again, and keeps 14 days. A failed run leaves no partial
+archive. The encryption key isn't in the archive; it is in your Private
+vault (Secrets, above). The archives stay on this VM; the Proxmox VM backup is the
 off-host copy. Run one now with `sudo systemctl start obot-backup`.
 
-Restore, onto the same pinned version (the archive name says which):
+Restore, onto the same pinned version (the archive name says which). On
+a fresh host, first put the saved `encryption.yaml` back in
+`/var/lib/obot/secrets` (0400) and the old `obot.env`, whose Postgres
+password the restored database expects:
 
 ```sh
 sudo systemctl stop obot
 sudo mv /var/lib/obot/data /var/lib/obot/data.old
-sudo install -d -m 0700 /var/lib/obot/data
+sudo install -d -m 0711 /var/lib/obot/data
 sudo tar -C /var/lib/obot/data -xzf /var/lib/obot/backups/obot-data-<...>.tar.gz
 sudo systemctl start obot
 ```
@@ -699,14 +738,16 @@ and the tailnet IP don't change.
 
 1. DNS: add `ai-hub.home.clb.ai` with the same LAN address (keep the old
    record until every Mac has switched).
-2. On the host, from the clone:
-   `sudo nixos-rebuild switch --flake .#ai-hub`, then
-   `home-manager switch --flake .#clburlison@ai-hub`. This sets the
-   hostname.
-3. Tailscale: `sudo tailscale set --hostname=ai-hub`, or rename the machine
+2. Obot comes in the same switch: do step 15's Tailscale policy and the
+   auth key (First start, 1 and 2) first, or `obot.service` fails its start.
+   Nothing else depends on it.
+3. On the host, from the clone (the hostname is still the old one, so name
+   the host): `NIXNAME=ai-hub task system`, then `NIXNAME=ai-hub task home`.
+   This sets the hostname.
+4. Tailscale: `sudo tailscale set --hostname=ai-hub`, or rename the machine
    in the admin console. The tailnet name becomes
    `ai-hub.mermaid-agama.ts.net`; restart `t3-serve` so Serve picks it up.
-4. On each Mac: `task switch`, then `ssh ai-hub` once to accept the host
+5. On each Mac: `task switch`, then `ssh ai-hub` once to accept the host
    key under its new name.
 
 ## Notes

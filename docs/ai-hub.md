@@ -739,10 +739,11 @@ exposes all the keys; rotate them all then. To cut off one Mac, revoke its
 scope in Obot; the others keep working.
 
 `modules/common/programs/obot.nix` adds every vMCP to Claude Code
-(`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
-that reads the cached key at each connect. After creating the item, run
+(`programs.claude-code.mcpServers`) and Codex (`-c mcp_servers.*` in the
+`codex` wrapper), over Streamable HTTP, with a headers helper that reads
+the cached key at each connect. After creating the item, run
 `launchctl kickstart -k gui/$(id -u)/com.clburlison.op-agents-load` and
-`op-agents-check`. Check with `/mcp` in Claude Code, or (bash and fish; the
+`op-agents-check`. Check with `/mcp` in Claude Code or Codex, or (bash and fish; the
 key goes through stdin, not argv):
 
 ```sh

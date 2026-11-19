@@ -123,6 +123,7 @@ in
       # (cliproxyapi.nix).
       (pkgs.writeShellScriptBin "codex" ''
         ${config.clb.cliproxyapi.codexEnv}
+        ${config.clb.obot.codexEnv}
         exec ${claudeMem}/bin/claude-mem-codex \
           -c 'tui.keymap.composer.submit=["enter"]' \
           -c 'tui.keymap.editor.insert_newline=["shift-enter"]' \

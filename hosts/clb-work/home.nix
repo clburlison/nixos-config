@@ -12,4 +12,7 @@
     type = "http";
     url = "https://mcp.intercom.com/mcp";
   };
+
+  # This host's Obot gateway key (docs/ai-hub.md step 15).
+  clb.obot.apiKeyReference = "op://Agents/MCP hub token clb-work/credential";
 }

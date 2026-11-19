@@ -4,11 +4,10 @@ Where this fits in the setup order: [docs/README.md](README.md).
 
 Every host holds exactly one secret: the token for the `agents` 1Password
 service account. That account can only read the `Agents` vault, and every
-other secret the hosts need lives there, except two kinds every host could
-otherwise read: the Obot gateway's server secrets (generated on ai-hub) and
-each Mac's Obot API key (in that Mac's keychain); see `docs/ai-hub.md`
-step 15. What a host can reach is what you put
-in `Agents`; your Private and other vaults stay out of reach.
+other secret the hosts need lives there, except the Obot gateway's server
+secrets, generated on ai-hub (`docs/ai-hub.md` step 15). What a host can
+reach is what you put in `Agents`; your Private and other vaults stay out
+of reach.
 
 - `modules/common/programs/op-agents.nix` (Home Manager, every host):
   - `op-agents`: `op` as the service account, e.g.
@@ -51,6 +50,7 @@ exist before the `task system` in `docs/ai-hub.md` step 7.
 | `cpa-usage-keeper` (Password) | `password` | yes | Keeper dashboard login |
 | `claude-mem-server-env` (Secure Note) | `notesPlain` | yes | claude-mem worker dotenv |
 | `claude-mem-viewer` (API Credential) | `credential` (`memories:read` key) | yes | claude-mem viewer proxy (Caddy) on ai-hub |
+| `MCP hub token <host>` (API Credential) | `credential` (Obot API key) | | Obot MCP servers in Claude Code on that host (`docs/ai-hub.md` step 15) |
 | `claude-mem-rw` (API Credential) | `credential` (`memories:read,memories:write` key) | yes | claude-mem hooks and MCP server on every host (`docs/claude-mem.md`) |
 
 To add one: create the item in `Agents`, then add it to

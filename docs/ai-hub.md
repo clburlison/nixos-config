@@ -726,22 +726,23 @@ browser that does a login must be on the tailnet.
 
 One agent authorization scope per Mac (Obot > **Identity & Access >
 Agents**), named after the host and limited to the vMCPs above, with an
-API key (`ok1-...`). Each key lives only on its Mac, not in the shared
-Agents vault, so a compromised Mac can't fetch another's key. On that Mac,
-run `obot-set-key` and paste the key at its hidden prompt; it stores it in
-the login keychain. Universal Clipboard shares what you copy with your
-other Apple devices, so turn Handoff off while you copy it (System Settings
-> General > AirDrop & Handoff), or create the scope in a browser on that
-Mac with Handoff off. To cut off one Mac, revoke its scope
-in Obot; the others keep working.
+API key (`ok1-...`). Save each key in the Agents vault as an API Credential
+named `MCP hub token <host>` (e.g. `MCP hub token clb-work`), key in
+`credential`. Each host's override file points `clb.obot.apiKeyReference`
+at its own item; op-agents caches it in the keychain (`docs/op-agents.md`).
+Any host's op-agents token can read every item, so a compromised host
+exposes all the keys; rotate them all then. To cut off one Mac, revoke its
+scope in Obot; the others keep working.
 
 `modules/common/programs/obot.nix` adds every vMCP to Claude Code
 (`programs.claude-code.mcpServers`, Streamable HTTP) with a headers helper
-that reads the key from the keychain at each connect. Check with `/mcp` in
-Claude Code, or (bash and fish; the key goes through stdin, not argv):
+that reads the cached key at each connect. After creating the item, run
+`launchctl kickstart -k gui/$(id -u)/com.clburlison.op-agents-load` and
+`op-agents-check`. Check with `/mcp` in Claude Code, or (bash and fish; the
+key goes through stdin, not argv):
 
 ```sh
-printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s obot-api-key -a "$USER" -w ~/Library/Keychains/login.keychain-db)" \
+printf 'header = "Authorization: Bearer %s"\n' "$(security find-generic-password -s op-agents:obot-api-key -a "$USER" -w)" \
   | curl -fsS -K - https://mcp.mermaid-agama.ts.net/api/me
 ```
 

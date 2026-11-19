@@ -34,9 +34,9 @@ let
   # The sidecar's node name; with the tailnet name it makes the URL.
   nodeName = "mcp";
   url = "https://${nodeName}.mermaid-agama.ts.net";
-  # Local access on the host only (e.g. `curl` over SSH). 8080 is taken
-  # by CPA Usage Keeper.
-  localPort = 8090;
+  # No host port: Docker would forward it over the bridge the MCP
+  # containers share. Local access goes into Obot's network namespace
+  # instead (inObot, obot-ui).
   # The Local auth owner, the only account. Not a mailbox Obot writes to.
   ownerEmail = "git@clburlison.com";
 
@@ -91,7 +91,6 @@ let
       obot = {
         image = "ghcr.io/obot-platform/obot:${version}";
         restart = "unless-stopped";
-        ports = [ "127.0.0.1:${toString localPort}:8080" ];
         volumes = [
           {
             type = "bind";
@@ -153,6 +152,50 @@ let
       --file ${composeFile} \
       "$@"
   '';
+
+  # Runs a command in Obot's network namespace (keeping the host's
+  # filesystem), where Obot listens on 127.0.0.1:8080.
+  inObot = pkgs.writeShellApplication {
+    name = "obot-netns";
+    runtimeInputs = [
+      compose
+      config.virtualisation.docker.package
+      pkgs.util-linux
+    ];
+    text = ''
+      id="$(obot-compose ps -q obot)"
+      [ -n "$id" ] || { echo "obot isn't running" >&2; exit 1; }
+      pid="$(docker inspect -f '{{.State.Pid}}' "$id")"
+      exec nsenter -t "$pid" -n "$@"
+    '';
+  };
+
+  # Obot's UI for the host user on a unix socket, for an SSH forward
+  # (restore, docs/ai-hub.md step 15). In the foreground; Ctrl-C ends it.
+  ui = pkgs.writeShellApplication {
+    name = "obot-ui";
+    runtimeInputs = [
+      inObot
+      pkgs.coreutils
+      pkgs.socat
+    ];
+    text = ''
+      install -d -m 0700 -o ${config.clb.host.user} /run/obot-ui
+      echo "On your Mac: ssh -L 8090:/run/obot-ui/ui.sock ai-hub, then http://localhost:8090" >&2
+      exec obot-netns socat \
+        UNIX-LISTEN:/run/obot-ui/ui.sock,fork,unlink-early,user=${config.clb.host.user},mode=0600 \
+        TCP:127.0.0.1:8080
+    '';
+  };
+
+  # Only during a restore: no stopping what the operator started by hand.
+  down = pkgs.writeShellScript "obot-down" ''
+    [ -e ${restoreMarker} ] && exit 0
+    exec ${compose}/bin/obot-compose down
+  '';
+
+  # Serializes backups and watchdog restarts.
+  lock = "/run/obot.lock";
 
   # Creates the dirs and, once, the secrets. Never rotates them: the
   # Postgres password is fixed at initdb, and a new encryption key would
@@ -240,23 +283,23 @@ let
     name = "obot-ready";
     runtimeInputs = [
       compose
+      inObot
       pkgs.coreutils
       pkgs.curl
-      pkgs.jq
     ];
     text = ''
       host=${nodeName}.mermaid-agama.ts.net
 
       healthy=
       for _ in $(seq 1 60); do
-        if curl -fsS -o /dev/null --max-time 5 http://127.0.0.1:${toString localPort}/api/healthz; then
+        if obot-netns curl -fsS -o /dev/null --max-time 5 http://127.0.0.1:8080/api/healthz 2>/dev/null; then
           healthy=1
           break
         fi
         sleep 5
       done
       if [ -z "$healthy" ]; then
-        echo "Obot doesn't answer on 127.0.0.1:${toString localPort}; see 'obot-compose logs obot'." >&2
+        echo "Obot doesn't answer on 127.0.0.1:8080 in its namespace; see 'obot-compose logs obot'." >&2
         exit 1
       fi
 
@@ -290,28 +333,32 @@ let
 
   # Restarts the stack when the HTTPS endpoint stops answering, e.g. after
   # Docker restarted a crashed Obot and left the sidecar in its old network
-  # namespace.
+  # namespace. Skips while a backup holds the lock or a restore is pending,
+  # and never starts a unit someone stopped (try-restart, job-mode fail).
   watchdog = pkgs.writeShellApplication {
     name = "obot-watchdog";
     runtimeInputs = [
       compose
       pkgs.curl
       pkgs.systemd
+      pkgs.util-linux
     ];
     text = ''
       host=${nodeName}.mermaid-agama.ts.net
-      systemctl is-active --quiet obot.service || exit 0
-      # A backup stops the stack on purpose.
-      ! systemctl is-active --quiet obot-backup.service || exit 0
+      exec 9>${lock}
+      flock -n 9 || exit 0
       for _ in 1 2 3; do
+        [ ! -e ${restoreMarker} ] || exit 0
+        systemctl is-active --quiet obot.service || exit 0
         if ip="$(obot-compose exec -T tailscale tailscale ip -4 2>/dev/null)" && [ -n "$ip" ] \
           && curl -fsS -o /dev/null --max-time 10 --resolve "$host:443:$ip" "https://$host/api/healthz"; then
           exit 0
         fi
         sleep 20
       done
+      [ ! -e ${restoreMarker} ] || exit 0
       echo "https://$host isn't answering; restarting obot.service." >&2
-      systemctl restart obot.service
+      systemctl --job-mode=fail try-restart obot.service
     '';
   };
 
@@ -325,9 +372,13 @@ let
       pkgs.findutils
       pkgs.gnutar
       pkgs.gzip
+      pkgs.util-linux
     ];
     text = ''
       umask 077
+      # Held through stop, archive and start, so the watchdog stays out.
+      exec 9>${lock}
+      flock 9
       archive="${backupDir}/obot-data-${version}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"
       # Both: the sidecar lives in Obot's network namespace, which a
       # restart of Obot alone would leave it without.
@@ -347,7 +398,11 @@ in
   # `sudo obot-compose ps`, `logs -f obot`.
   # Backups only through the unit (`systemctl start obot-backup`), so two
   # can't overlap.
-  environment.systemPackages = [ compose ];
+  environment.systemPackages = [
+    compose
+    inObot
+    ui
+  ];
 
   systemd.services.obot = {
     description = "Obot MCP gateway (Docker Compose)";
@@ -365,18 +420,21 @@ in
       # Compose restarts crashed containers (restart: unless-stopped).
       ExecStart = "${compose}/bin/obot-compose up --detach --remove-orphans";
       ExecStartPost = "${ready}/bin/obot-ready";
-      # Post, so it also runs after a failed start and leaves nothing up.
-      ExecStopPost = "${compose}/bin/obot-compose down";
+      # Post, so it also runs after a failed start and leaves nothing up
+      # (except during a restore).
+      ExecStopPost = "${down}";
       # The first start pulls the images.
       TimeoutStartSec = "30min";
+      # A failed start (e.g. the tailnet down) retries until it works.
+      Restart = "on-failure";
+      RestartSec = "5min";
     };
+    unitConfig.StartLimitIntervalSec = 0;
   };
 
   systemd.services.obot-backup = {
     description = "Back up the Obot data dir";
     after = [ "obot.service" ];
-    # Stops a running watchdog, which would restart the stack mid-backup.
-    conflicts = [ "obot-watchdog.service" ];
     requisite = [ "obot.service" ];
     serviceConfig = {
       Type = "oneshot";

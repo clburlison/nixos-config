@@ -556,8 +556,10 @@ Obot's LLM gateway is unused; CLIProxyAPI stays the model router.
 
 A Docker Compose stack with pinned images, run by `obot.service`:
 
-- `obot`: the server, embedded Postgres in `/var/lib/obot/data`, on
-  `127.0.0.1:8090` only. It mounts the Docker socket to start local MCP
+- `obot`: the server, embedded Postgres in `/var/lib/obot/data`. No host
+  port: Docker would forward it over the network the MCP containers
+  share. `sudo obot-netns <cmd>` runs a command in its network namespace
+  (e.g. `curl http://127.0.0.1:8080/api/healthz`). It mounts the Docker socket to start local MCP
   servers, so it is root-equivalent on this host. Keep anything that
   shouldn't trust it off ai-hub.
 - `tailscale`: a sidecar in Obot's network namespace that joins the
@@ -772,7 +774,9 @@ reboots included, until you remove it:
    (fish: drop `set -e` and run the lines one by one, stopping at any
    error.)
 
-3. From a Mac, `ssh -L 8090:127.0.0.1:8090 ai-hub` and open
+3. On ai-hub, `sudo obot-ui` (foreground; Ctrl-C ends it): Obot's UI on
+   a socket only you can open. From a Mac,
+   `ssh -L 8090:/run/obot-ui/ui.sock ai-hub` and open
    `http://localhost:8090` in Chrome or Firefox (Safari drops Obot's
    `Secure` session cookie on plain HTTP), in a private window, and sign
    in as the owner. The backup also restores old browser sessions and the

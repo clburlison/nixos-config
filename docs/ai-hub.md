@@ -570,6 +570,13 @@ A Docker Compose stack with pinned images, run by `obot.service`:
   Obot, the sidecar loses that namespace; `obot-watchdog.timer` probes the
   HTTPS endpoint every 5 minutes and restarts `obot.service` when it fails. The host's own Serve :443 belongs to t3-serve.
 
+Known limit (upstream): Obot talks to the MCP servers it runs in
+containers over plain HTTP on that shared Docker network, and Docker gives
+containers `NET_RAW`, so a compromised local MCP server could spoof a peer
+and read another local server's tool calls. Prefer catalog entries that
+are remote (hosted by the provider, proxied by Obot itself) over local
+containers, and run local ones only from sources you trust.
+
 Login is Obot's Local auth provider with one preconfigured owner
 (`ownerEmail` in `obot.nix`), so no one else can sign in. (Google and
 GitHub sign-in only restrict by email domain.)
@@ -791,8 +798,10 @@ reboots included, until you remove it:
      all other sessions** in your account menu.
    If the backup predates the owner's activation, there is no password to
    sign in with: activate instead. If the link has expired, run the token
-   refresh from First start without its `systemctl restart obot` line,
-   then `sudo obot-compose up --detach --force-recreate obot`. Open
+   refresh from First start without its `systemctl restart obot` line.
+   Stop `obot-ui` (Ctrl-C; it stays in the old container's network), run
+   `sudo obot-compose up --detach --force-recreate obot`, then `sudo
+   obot-ui` again (the SSH forward can stay open). Open
    `http://localhost:8090/activate#token=<setup token>` through the
    tunnel.
 4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:

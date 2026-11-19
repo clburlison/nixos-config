@@ -194,8 +194,10 @@ let
     exec ${compose}/bin/obot-compose down
   '';
 
-  # Serializes backups and watchdog restarts.
-  lock = "/run/obot.lock";
+  # Serializes backups and watchdog restarts. In a root-only dir: anyone
+  # who can open a lock file can flock it.
+  lockDir = "/run/obot";
+  lock = "${lockDir}/lock";
 
   # Creates the dirs and, once, the secrets. Never rotates them: the
   # Postgres password is fixed at initdb, and a new encryption key would
@@ -345,6 +347,8 @@ let
     ];
     text = ''
       host=${nodeName}.mermaid-agama.ts.net
+      umask 077
+      install -d -m 0700 ${lockDir}
       exec 9>${lock}
       flock -n 9 || exit 0
       for _ in 1 2 3; do
@@ -377,6 +381,8 @@ let
     text = ''
       umask 077
       # Held through stop, archive and start, so the watchdog stays out.
+      umask 077
+      install -d -m 0700 ${lockDir}
       exec 9>${lock}
       flock 9
       archive="${backupDir}/obot-data-${version}-$(date -u +%Y%m%dT%H%M%SZ).tar.gz"

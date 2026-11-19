@@ -653,11 +653,22 @@ answers and the sidecar serves HTTPS as `mcp`, so do these before the first
 
 The activation link is valid for 7 days from the first start. If it
 expires before you use it, replace only the token line in `obot.env`
-(keep `POSTGRES_PASSWORD`; the database expects it) and restart:
+(keep `POSTGRES_PASSWORD`; the database expects it) and restart. In bash
+(fish has no heredocs); the token is made and written inside the root
+shell, so it never reaches a command line or sudo's log:
 
 ```sh
-sudo sed -i "s/^OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=.*/OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=$(nix run nixpkgs#openssl -- rand -hex 32)/" /var/lib/obot/secrets/obot.env
-sudo systemctl restart obot
+sudo sh -s <<'EOF'
+set -e
+f=/var/lib/obot/secrets/obot.env
+T="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+[ "${#T}" -eq 64 ]
+export T
+awk '/^OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=/ { print "OBOT_SERVER_LOCAL_AUTH_INITIAL_OWNER_SETUP_TOKEN=" ENVIRON["T"]; next } { print }' "$f" > "$f.tmp"
+chmod 0400 "$f.tmp"
+mv "$f.tmp" "$f"
+systemctl restart obot
+EOF
 ```
 
 The sidecar keeps its node in the `tailscale-state` volume. If that volume
@@ -764,9 +775,12 @@ reboots included, until you remove it:
    old password:
    - Under **Identity & Access > Agents**, delete every scope revoked
      after the backup was taken (or every scope, and issue new keys).
-   - Change the owner password (to the current one, if it changed since
-     the backup); a password change signs out every other session. Or
-     use **Log out all other sessions** in your account menu.
+   - If the backup predates a password change, or the restored password
+     may be known to someone else: **Identity & Access > Users**, reset
+     the owner's password to a new one. That also signs out every other
+     session.
+   - Otherwise (the restored password is the one you use now): **Log out
+     all other sessions** in your account menu.
 4. `sudo rm /var/lib/obot/restore-pending && sudo systemctl restart obot`:
    starts the sidecar and runs the checks.
 

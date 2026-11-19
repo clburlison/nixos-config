@@ -612,29 +612,34 @@ In the tailnet policy file (admin console > **Access controls**). Rules
 only add access, so a narrow grant does nothing while the default allow-all
 rule (`{"src": ["*"], "dst": ["*"], "ip": ["*"]}`, or an `acls` entry
 with `*` to `*:*`) is still there: replace it with what your devices need,
-leaving `tag:mcp-gateway` out of every other rule. With grants:
+leaving `tag:mcp-gateway` out of every other rule. The Macs are tagged
+`tag:dev-host`, so they aren't `autogroup:member` (ai-hub and phones are);
+every rule names both. With grants:
 
 ```hujson
 "tagOwners": {
+  "tag:dev-host": ["autogroup:admin"],
   "tag:mcp-gateway": ["autogroup:admin"],
 },
 "grants": [
   // Your devices reach each other (replaces allow-all; narrow as you like).
-  {"src": ["autogroup:member"], "dst": ["autogroup:member"], "ip": ["*"]},
+  {"src": ["autogroup:member", "tag:dev-host"], "dst": ["autogroup:member", "tag:dev-host"], "ip": ["*"]},
   // Only your devices reach the gateway, and only on 443.
-  {"src": ["autogroup:member"], "dst": ["tag:mcp-gateway"], "ip": ["tcp:443"]},
+  {"src": ["autogroup:member", "tag:dev-host"], "dst": ["tag:mcp-gateway"], "ip": ["tcp:443"]},
 ],
 "tests": [
   {"src": "you@example.com", "accept": ["tag:mcp-gateway:443"], "deny": ["tag:mcp-gateway:22"]},
+  {"src": "tag:dev-host", "accept": ["tag:mcp-gateway:443", "100.75.137.72:22", "100.75.137.72:8317"], "deny": ["tag:mcp-gateway:22"]},
   // The gateway reaches nothing, e.g. ai-hub's tailnet address.
   {"src": "tag:mcp-gateway", "deny": ["100.75.137.72:22", "100.75.137.72:8317"]},
 ],
 ```
 
 Use your login instead of `you@example.com`, and your login instead of
-`autogroup:member` if the tailnet has other users. The policy won't save
-while a test fails. Tagged nodes get only what a rule gives them, so the
-gateway can't reach other tailnet devices.
+`autogroup:member` if the tailnet has other users. ai-hub's own start check
+reaches the gateway as a member device. The policy won't save while a test
+fails. Tagged nodes get only what a rule gives them, so the gateway can't
+reach other tailnet devices.
 
 ### First start
 

@@ -23,16 +23,16 @@ let
 in
 buildNpmPackage (finalAttrs: {
   pname = "claude-mem";
-  version = "15.6.0";
+  version = "16.0.1";
 
   # Reuse published bundles (including the OpenCode adapter). This is not a
   # from-source build. Root + plugin runtime dependencies are locked together.
   src = fetchurl {
     url = "https://registry.npmjs.org/claude-mem/-/claude-mem-${finalAttrs.version}.tgz";
-    hash = "sha256-Fjwpm6gySNQK98kic+hSuxvGFrbfwpTiK7mOVNsS/rQ=";
+    hash = "sha256-O3UJUQB059iuPcULPjdBFCIO6SNx44Vamu0jxPUg8to=";
   };
   nodejs = nodejs_24;
-  npmDepsHash = "sha256-qFJKHnJrYgs1pDbqrKAqUkkGzoixJeiP7+u+Waxxuv0=";
+  npmDepsHash = "sha256-MqfDu2AvsDjjPZwOstP/e9TrGZiaND554x7rtP+4k8M=";
   postPatch = ''
     cp ${./claude-mem/package.json} package.json
     cp ${./claude-mem/package-lock.json} package-lock.json
@@ -106,7 +106,7 @@ buildNpmPackage (finalAttrs: {
     runHook preInstallCheck
     export HOME="$TMPDIR/claude-mem-check"
     mkdir -p "$HOME"
-    test "$("$out/bin/claude-mem" --version)" = 2
+    test "$("$out/bin/claude-mem" --version)" = 3
     ${python3}/bin/python ${./claude-mem/check.py} "$out"
     ${lib.getExe nodejs_24} ${./claude-mem/check-opencode.mjs} "$out"
     runHook postInstallCheck

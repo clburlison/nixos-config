@@ -126,7 +126,7 @@ worker.
 - Do not run `npx claude-mem install/update/repair` or install a second marketplace
   copy alongside this configuration. Updates are through Nix. The exposed
   `claude-mem` is the **hook launcher**, not npm's installer CLI;
-  `claude-mem --version` prints launcher protocol **2**, not package semver.
+  `claude-mem --version` prints launcher protocol **3**, not package semver.
 - Back up the data directory before upgrades. Database migrations are not
   reversed by rolling back the Nix generation.
 - `CLAUDE_MEM_BACKUP_ENABLED=true` makes the worker snapshot SQLite to

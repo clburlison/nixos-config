@@ -10,7 +10,7 @@
 }:
 
 let
-  version = "15.17.0";
+  version = "16.0.1";
   # The image runs `npm install` with no lockfile. tree-sitter-sql 0.3.12+
   # (2026-11-10) builds with a tree-sitter-cli binary that needs glibc 2.39,
   # newer than the node:20 base image's, so pin the last release that builds.
@@ -20,7 +20,7 @@ let
       owner = "thedotmack";
       repo = "claude-mem";
       tag = "v${version}";
-      hash = "sha256-8qmM7mthX8TNqSDtp6ktYpLciCK2+L68QX33sPLOOfg=";
+      hash = "sha256-9owX34IihWpfZVF9nkrR2VWuV3P/6VgGAO7aQ9BRXFo=";
     };
     postPatch = ''
       substituteInPlace plugin/package.json \

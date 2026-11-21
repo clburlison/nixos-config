@@ -115,6 +115,7 @@ in
       # rule on the alias sets its thinking level, replacing the client's.
       # Payload paths are relative to Antigravity's `request` wrapper.
       oauth.model-alias.antigravity = agyModels.aliases;
+      oauth.excluded-models.antigravity = agyModels.excluded;
       requests.payload =
         let
           rule = v: {

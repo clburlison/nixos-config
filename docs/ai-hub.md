@@ -384,7 +384,8 @@ and a `requests.payload` rule on the alias sets its thinking level,
 replacing any effort the client sends. Claude and GPT models from this
 account get an `agy-` prefix (`agy-claude-opus-5-5-high`), so they never
 share a name with the Claude and Codex accounts; their upstream names are
-hidden. Other accounts are unchanged. Any client can also append an effort
+hidden. Gemini 3 models are hidden too (`excluded`). Other accounts are
+unchanged. Any client can also append an effort
 to any model, e.g. `claude-opus-5-5(xhigh)`; the hub applies it, but such
 names aren't listed in `/v1/models`.
 

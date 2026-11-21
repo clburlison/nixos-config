@@ -9,7 +9,8 @@
 # Claude and GPT models get an `agy-` prefix so they never share a name
 # with the Claude and Codex accounts, and their upstream names are hidden.
 # Gemini models keep their upstream names. A model Antigravity adds later
-# shows under its upstream name until it is listed here.
+# shows under its upstream name until it is listed here. Gemini 3 models
+# are hidden on the hub (`excluded`), so they're not listed.
 { lib }:
 
 let
@@ -40,38 +41,6 @@ let
     "gemini-4-argon-high" = [
       "low"
       "medium"
-      "high"
-    ];
-    "gemini-3.8-flash-high" = [
-      "low"
-      "medium"
-      "high"
-    ];
-    "gemini-3.8-flash-tiered" = [
-      "low"
-      "medium"
-      "high"
-    ];
-    "gemini-3-flash" = [
-      "minimal"
-      "low"
-      "medium"
-      "high"
-    ];
-    "gemini-3.1-flash-lite" = [
-      "minimal"
-      "low"
-      "medium"
-      "high"
-    ];
-    "gemini-3.5-flash-lite" = [
-      "minimal"
-      "low"
-      "medium"
-      "high"
-    ];
-    "gemini-3.1-flash-image" = [
-      "minimal"
       "high"
     ];
   };
@@ -107,6 +76,9 @@ let
   );
 in
 {
+  # Upstream models the hub hides (oauth excluded-models, wildcards).
+  excluded = [ "gemini-3*" ];
+
   # model-alias entries for the antigravity channel.
   aliases = map (v: {
     inherit (v) name alias;

@@ -342,8 +342,10 @@ Claude Code and Codex route through the hub on every host
 `CLAUDE_CODE_PROMPT_CACHE_TTL=1h` for Claude (through a custom base URL it
 otherwise caches for 5 minutes, not the subscription's 1 hour), and a
 `cliproxyapi` model provider for Codex. `settings.json` and `config.toml`
-stay untouched. T3 Code runs the same `claude` and `codex`, so it follows
-too; for Codex, pick **Use existing CLI**.
+stay untouched. T3 Code runs the same wrappers: on every host, activation
+merges its Claude, Codex (**Use existing CLI**) and Muse Code providers
+into `~/.t3/userdata/settings.json`, with each wrapper's absolute path
+(`modules/common/programs/t3.nix`, `clb.t3.providerInstances`).
 
 Muse Code (`muse`) reads its endpoint only from settings.json: `--base-url`
 makes it withhold its key, and `-c` works only on `exec` and `serve`. So
@@ -371,20 +373,21 @@ plus the host's Obot vMCPs. agy can't read a key at connect time, so the
 Obot key is written into `mcp_config.json` (mode 600) and refreshed at each
 switch. Skills from agent-skills sync to `~/.gemini/config/skills`.
 
-In T3 Code, use the **Antigravity (hub)** provider: activation adds it to
-an existing `~/.t3/userdata/settings.json` as a local ACP agent (`agy
-acp` through the wrapper). T3's built-in Antigravity provider runs agy with
-its own `GEMINI_HOME`, so it skips the hooks, MCP servers and skills above.
-agy groups the hub's per-effort names (below) into one model with a
-**Thinking Level** setting, in its own `/model` and in T3 Code. The
-first-listed name is the default level. agy labels each group with that
-id (e.g. `claude-opus-5-5-high`) and takes no display names, so the
-wrapper runs `agy acp` through a `jq` filter that swaps in the `label`s
-from `lib/effort-models.nix` (Gemini 4 Neon, Claude Opus 5.5). T3 Code
-shows those; agy's own `/model` still shows ids. The hub's ids don't
-change, so other clients' lists are unaffected.
-T3 can't remove its built-in Antigravity provider (each built-in driver
-keeps a default instance), only disable it.
+In T3 Code, use the built-in **Antigravity** provider: activation enables
+it with the wrapper as its binary (T3 accepts a custom binary named
+`agy`), so it uses the hub. T3 runs agy with a private `GEMINI_HOME`,
+`~/.t3/userdata/providers/antigravity/<sha256 of "antigravity">`, and at
+each start links `~/.gemini`'s skills and `AGENTS.md`/`GEMINI.md` into it;
+activation links `hooks.json` and `mcp_config.json` into its `config/`.
+The former local ACP instance, **Antigravity (hub)**, stays disabled so
+its threads keep their provider. agy groups the hub's per-effort names
+(below) into one model with a **Thinking Level** setting, in its own
+`/model` and in T3 Code. The first-listed name is the default level. agy
+labels each group with that id (e.g. `claude-opus-5-5-high`) and takes no
+display names, so the wrapper runs `agy acp` through a `jq` filter that
+swaps in the `label`s from `lib/effort-models.nix` (Gemini 4 Neon, Claude
+Opus 5.5). T3 Code shows those; agy's own `/model` still shows ids. The
+hub's ids don't change, so other clients' lists are unaffected.
 
 The hub serves some models once per reasoning effort
 (`lib/effort-models.nix`), for every client: the Antigravity account's

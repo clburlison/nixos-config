@@ -30,6 +30,7 @@ in
     ./programs/uv.nix
     ./programs/op-agents.nix
     ./programs/antigravity.nix
+    ./programs/t3.nix
     ./programs/agent-git.nix
     ./programs/agent-skills.nix
     ./programs/homebrew.nix

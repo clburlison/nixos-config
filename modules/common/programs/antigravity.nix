@@ -58,15 +58,16 @@ let
       else $line end
   '';
 
-  t3Instance = {
-    driver = "acpRegistry";
-    displayName = "Antigravity (hub)";
-    config = {
-      source = "local";
-      commandPath = "${config.home.profileDirectory}/bin/agy";
-      commandArgs = [ "acp" ];
-    };
-  };
+  # T3 Code's built-in Antigravity provider runs agy with a private
+  # GEMINI_HOME per instance: <state dir>/providers/antigravity/<hex
+  # sha256 of the instance id>. At each start T3 links ~/.gemini's skills
+  # and AGENTS.md/GEMINI.md into it, but not hooks.json or mcp_config.json.
+  agy = "${config.home.profileDirectory}/bin/agy";
+  t3Profile = "${config.home.homeDirectory}/.t3/userdata/providers/antigravity/${builtins.hashString "sha256" "antigravity"}";
+  t3ProfileConfigs = [
+    "hooks.json"
+    "mcp_config.json"
+  ];
 
   # Obot's vMCPs (obot.nix). agy has no headers helper and expands no
   # variables in mcp_config.json, so the key goes into the file (mode 600),
@@ -167,6 +168,31 @@ in
       })
     ];
 
+    # T3 Code's built-in Antigravity provider on the wrapper, for the hub
+    # env (T3 accepts a custom binary named agy). The former local ACP
+    # instance stays, disabled, so its threads keep their provider.
+    clb.t3.providerInstances = {
+      antigravity = {
+        driver = "antigravity";
+        enabled = true;
+        config = {
+          enabled = true;
+          binaryPath = agy;
+        };
+      };
+      agy = {
+        driver = "acpRegistry";
+        displayName = "Antigravity (hub)";
+        enabled = false;
+        config = {
+          enabled = false;
+          source = "local";
+          commandPath = agy;
+          commandArgs = [ "acp" ];
+        };
+      };
+    };
+
     # Skills from agent-skills.nix. agy reads global skills from
     # ~/.gemini/config/skills, not the target's default
     # ~/.gemini/antigravity/skills.
@@ -213,16 +239,14 @@ in
         unset OBOT_KEY
       ''}
 
-      # T3 Code: agy as a local ACP agent, which keeps ~/.gemini (hooks,
-      # MCP, skills) and the wrapper's hub env. T3's built-in Antigravity
-      # provider runs agy with its own GEMINI_HOME instead. commandArgs is
-      # hidden in T3's form. Only where T3 already has settings.
-      t3=${lib.escapeShellArg "${config.home.homeDirectory}/.t3/userdata/settings.json"}
-      if [ -s "$t3" ]; then
-        merge_json "$t3" 644 \
-          '.providerInstances.agy = ((.providerInstances.agy // {}) * $instance)' \
-          --argjson instance ${lib.escapeShellArg (builtins.toJSON t3Instance)}
-      fi
+      # T3's Antigravity profile reads hooks and MCP servers from its own
+      # config dir: link ~/.gemini's. T3 creates the profile 0700.
+      profile=${lib.escapeShellArg t3Profile}
+      ${pkgs.coreutils}/bin/install -d -m 700 "$profile"
+      ${pkgs.coreutils}/bin/install -d -m 755 "$profile/config"
+      for name in ${lib.escapeShellArgs t3ProfileConfigs}; do
+        ${pkgs.coreutils}/bin/ln -sfn ${lib.escapeShellArg gemini}/"$name" "$profile/config/$name"
+      done
     '';
   };
 }

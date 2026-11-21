@@ -38,11 +38,12 @@ let
   # `openrouter` provider takes any OpenAI-compatible base URL. Inside the
   # container 127.0.0.1 is the container, so the hub is reached through the
   # Docker host gateway. Literal values here win over the env files.
-  # Each worker runs one generation job at a time, so one worker fell
-  # behind event intake. Upstream scales generation with worker replicas.
+  # Each worker runs one generation job at a time (~14 model calls/min),
+  # so agentic workflows with many subagents outran fewer workers.
+  # Upstream scales generation with worker replicas.
   override = (pkgs.formats.yaml { }).generate "claude-mem-server-override.yml" {
     services.claude-mem-worker = {
-      deploy.replicas = 3;
+      deploy.replicas = 10;
       environment = {
         CLAUDE_MEM_SERVER_PROVIDER = "openrouter";
         CLAUDE_MEM_OPENROUTER_BASE_URL = "http://host.docker.internal:8317/v1";

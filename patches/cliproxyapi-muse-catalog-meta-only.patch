@@ -1,0 +1,154 @@
+diff --git a/internal/api/server_muse_code_test.go b/internal/api/server_muse_code_test.go
+index 5f46a07..4eaa416 100644
+--- a/internal/api/server_muse_code_test.go
++++ b/internal/api/server_muse_code_test.go
+@@ -262,7 +262,7 @@ func TestMuseCodeClientEndpointsRelayToMetaOrigin(t *testing.T) {
+ 	}
+ }
+ 
+-func TestMuseCodeModelsUsesFullCPACatalogWithoutUpstreamRelay(t *testing.T) {
++func TestMuseCodeModelsListsOnlyMetaModelsWithoutUpstreamRelay(t *testing.T) {
+ 	var upstreamCalls atomic.Int32
+ 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		upstreamCalls.Add(1)
+@@ -317,11 +317,16 @@ func TestMuseCodeModelsUsesFullCPACatalogWithoutUpstreamRelay(t *testing.T) {
+ 	}
+ 
+ 	entries := parseAPIMuseCodeEntriesByID(t, rec.Body.Bytes())
+-	for _, wantID := range []string{"muse-wonder-1.0", "muse-spark-1.3", "muse-image-1.0", "gpt-6.1-sol", "claude-sonnet-4-5-20250929"} {
++	for _, wantID := range []string{"muse-wonder-1.0", "muse-spark-1.3", "muse-image-1.0"} {
+ 		if _, ok := entries[wantID]; !ok {
+ 			t.Fatalf("missing expected model %q in /muse-code/models response: %s", wantID, rec.Body.String())
+ 		}
+ 	}
++	for _, otherID := range []string{"gpt-6.1-sol", "claude-sonnet-4-5-20250929"} {
++		if _, ok := entries[otherID]; ok {
++			t.Fatalf("non-Meta model %q listed in /muse-code/models response: %s", otherID, rec.Body.String())
++		}
++	}
+ 	if got := entries["muse-wonder-1.0"].Get("metadata.muse-code.background_agent_model").String(); got != "muse-spark-1.3" {
+ 		t.Fatalf("muse-wonder-1.0 background_agent_model = %q, want muse-spark-1.3", got)
+ 	}
+@@ -329,9 +334,6 @@ func TestMuseCodeModelsUsesFullCPACatalogWithoutUpstreamRelay(t *testing.T) {
+ 	if !museImg.Get("is_hidden").Bool() || museImg.Get("tool_call").Bool() {
+ 		t.Fatalf("muse-image-1.0 expected hidden with tool_call=false: %s", museImg.Raw)
+ 	}
+-	if len(entries["claude-sonnet-4-5-20250929"].Get("metadata.muse-code.variants").Map()) == 0 {
+-		t.Fatalf("claude-sonnet-4-5-20250929 should advertise derived reasoning variants")
+-	}
+ }
+ 
+ func TestHomeCodexBucketsAndPrecedenceForOAuthSettings(t *testing.T) {
+@@ -435,7 +437,7 @@ func TestMuseCodeModelsSupportsHomeModeOAuthSettingsHotReloadAndPluginIntercepto
+ 	t.Cleanup(func() { home.SetCurrent(previousHome) })
+ 
+ 	localClientID := "local-only-muse-code-isolation"
+-	registry.GetGlobalRegistry().RegisterClient(localClientID, "openai", []*registry.ModelInfo{{ID: "local-only-secret-model"}})
++	registry.GetGlobalRegistry().RegisterClient(localClientID, "meta", []*registry.ModelInfo{{ID: "local-only-secret-model"}})
+ 	t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(localClientID) })
+ 
+ 	// 1. Real server.engine rejects Home request with 503 when Home heartbeat is absent, without leaking local models.
+diff --git a/internal/client/musecode/models.go b/internal/client/musecode/models.go
+index b09ff16..a0abe6e 100644
+--- a/internal/client/musecode/models.go
++++ b/internal/client/musecode/models.go
+@@ -207,7 +207,7 @@ func (h *Handler) HandleModels(c *gin.Context) {
+ 			return
+ 		}
+ 	} else {
+-		inputs = ModelInputsFromGlobalRegistry(registry.GetGlobalRegistry())
++		inputs = MetaOnlyModelInputs(ModelInputsFromGlobalRegistry(registry.GetGlobalRegistry()))
+ 	}
+ 
+ 	payload := BuildModelsResponse(inputs)
+@@ -271,6 +271,31 @@ func ModelInputsFromGlobalRegistry(reg *registry.ModelRegistry) []ModelInput {
+ 	return inputs
+ }
+ 
++// museCodeProvider is the registry provider of Meta credentials, the only
++// models the Muse Code CLI is shown.
++const museCodeProvider = "meta"
++
++// MetaOnlyModelInputs keeps the models a Meta credential serves, described by
++// their Meta routes alone. A model's top-level fields can come from another
++// provider's registration, so they are dropped and buildModelEntry resolves
++// every field from the Meta routes.
++func MetaOnlyModelInputs(inputs []ModelInput) []ModelInput {
++	kept := make([]ModelInput, 0, len(inputs))
++	for _, input := range inputs {
++		var routes []ModelRoute
++		for _, route := range input.Routes {
++			if normalizeProviderName(route.Provider) == museCodeProvider {
++				routes = append(routes, route)
++			}
++		}
++		if len(routes) == 0 {
++			continue
++		}
++		kept = append(kept, ModelInput{ID: input.ID, Routes: routes})
++	}
++	return kept
++}
++
+ // ModelInputsFromRegistry converts registry ModelInfo records into ModelInput entries.
+ func ModelInputsFromRegistry(infos []*registry.ModelInfo) []ModelInput {
+ 	if len(infos) == 0 {
+diff --git a/internal/client/musecode/models_test.go b/internal/client/musecode/models_test.go
+index 55fa3a3..56bff80 100644
+--- a/internal/client/musecode/models_test.go
++++ b/internal/client/musecode/models_test.go
+@@ -582,12 +582,11 @@ func TestHandleModelsLocalRegistryMultiProviderAndMethodValidation(t *testing.T)
+ 	if obj != "list" {
+ 		t.Fatalf("Object = %q, want list", obj)
+ 	}
+-	if !entries["muse-wonder-1.0"].Exists() || !entries["shared-local-model"].Exists() {
+-		t.Fatalf("expected both Meta and shared multi-provider model; got %s", rec.Body.String())
++	if !entries["muse-wonder-1.0"].Exists() {
++		t.Fatalf("expected the Meta model; got %s", rec.Body.String())
+ 	}
+-	shared := entries["shared-local-model"].Get("metadata.muse-code")
+-	if shared.Get("attachment").Bool() || shared.Get("reasoning").Bool() || shared.Get("limit.context").Int() != 128000 {
+-		t.Fatalf("multi-provider local model did not merge conservatively: %s", shared.Raw)
++	if entries["shared-local-model"].Exists() {
++		t.Fatalf("models no Meta credential serves must stay out of the catalog; got %s", rec.Body.String())
+ 	}
+ 
+ 	// Direct HandleModels invocation must reject non-GET methods with 404.
+@@ -646,3 +645,37 @@ func TestHandleModelsHomeModeHookAndFallback(t *testing.T) {
+ 		t.Fatalf("expected claude-opus-4-6 enriched with static reasoning metadata")
+ 	}
+ }
++
++func TestMetaOnlyModelInputsKeepsMetaRoutes(t *testing.T) {
++	inputs := []ModelInput{
++		{ID: "muse-wonder-1.0", Routes: []ModelRoute{{Provider: "meta", ContextLength: 1000}}},
++		{ID: "gpt-6.1-sol", Routes: []ModelRoute{{Provider: "codex", ContextLength: 500}}},
++		{ID: "no-routes"},
++		{ID: "shared", DisplayName: "Codex Shared", Description: "from codex", Created: 42, Routes: []ModelRoute{
++			{Provider: "codex", ContextLength: 100, DisplayName: "Codex Shared"},
++			{Provider: " Meta ", ContextLength: 900},
++		}},
++	}
++
++	got := MetaOnlyModelInputs(inputs)
++
++	if len(got) != 2 || got[0].ID != "muse-wonder-1.0" || got[1].ID != "shared" {
++		t.Fatalf("MetaOnlyModelInputs IDs = %+v, want muse-wonder-1.0 and shared", got)
++	}
++	if len(got[1].Routes) != 1 || got[1].Routes[0].ContextLength != 900 {
++		t.Fatalf("shared routes = %+v, want only the Meta route", got[1].Routes)
++	}
++	if len(inputs[3].Routes) != 2 {
++		t.Fatalf("MetaOnlyModelInputs changed its input's routes: %+v", inputs[3].Routes)
++	}
++	if got[1].DisplayName != "" || got[1].Description != "" || got[1].Created != 0 {
++		t.Fatalf("shared kept another provider's top-level fields: %+v", got[1])
++	}
++	entries := BuildModelsResponse(got).Data
++	if len(entries) != 2 || entries[1].Metadata.MuseCode.Limit == nil || entries[1].Metadata.MuseCode.Limit.Context != 900 {
++		t.Fatalf("shared catalog entry = %+v, want Meta's 900 context", entries)
++	}
++	if raw, _ := MarshalCompact(Response{Object: "list", Data: entries[1:]}); strings.Contains(string(raw), "Codex Shared") || strings.Contains(string(raw), "from codex") {
++		t.Fatalf("shared catalog entry leaked codex metadata: %s", raw)
++	}
++}

@@ -351,7 +351,9 @@ activation merges `endpoint_transport` (the hub's `/v1`, bearer auth) into
 the mutable `~/.config/muse/settings.json` and leaves every other setting
 alone. The wrapper exports the hub key as `META_API_KEY`. Before it runs, Muse fetches
 `/muse-code/models` from the origin's root, which CLIProxyAPI serves since
-v8.0.70.
+v8.0.70. Upstream builds that list from every provider's models;
+`patches/cliproxyapi-muse-catalog-meta-only.patch` keeps it to the models a
+Meta credential serves, so the Muse picker shows only Muse models.
 
 The Antigravity CLI (`agy`) is opt-in per host (`clb.antigravity.enable`,
 on for clb-work, clb-mini and ai-hub;

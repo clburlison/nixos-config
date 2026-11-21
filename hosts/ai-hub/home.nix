@@ -21,6 +21,9 @@
     apiKeyFile = "/run/op-agents/cliproxyapi-api-key";
   };
 
+  # agy through the hub (loopback, so agy accepts plain http).
+  clb.antigravity.enable = true;
+
   # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so

@@ -121,6 +121,29 @@ in
     };
   };
 
+  # The hub over HTTPS on the tailnet, at
+  # https://ai-hub.mermaid-agama.ts.net:8443, for agy on Macs: it rejects a
+  # remote plain-http gateway. Tailscale Serve terminates TLS with the
+  # ts.net cert; its :443 belongs to t3-serve (home.nix), which adds its
+  # own port and leaves this one alone.
+  systemd.services.cliproxyapi-tailscale-serve = {
+    description = "Serve CLIProxyAPI over HTTPS on the tailnet";
+    after = [
+      "tailscaled.service"
+      "cliproxyapi.service"
+    ];
+    wants = [ "tailscaled.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.tailscale}/bin/tailscale serve --bg --https=8443 http://127.0.0.1:${toString port}";
+      # tailscaled may still be connecting at boot.
+      Restart = "on-failure";
+      RestartSec = 30;
+    };
+  };
+
   # `sudo cliproxyapi-login -claude-login` (and `-codex-login` or
   # `-codex-device-login`): account logins as the service user, saved to
   # the service's auth dir. The running service picks new accounts up

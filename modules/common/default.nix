@@ -29,6 +29,7 @@ in
     ./programs/obot.nix
     ./programs/uv.nix
     ./programs/op-agents.nix
+    ./programs/antigravity.nix
     ./programs/agent-git.nix
     ./programs/agent-skills.nix
     ./programs/homebrew.nix

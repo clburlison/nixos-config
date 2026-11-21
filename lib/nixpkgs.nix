@@ -15,6 +15,7 @@
         };
       in
       {
+        antigravity-cli = unstable.antigravity-cli;
         bun = unstable.bun;
         claude-code = unstable.claude-code;
         claude-mem = final.callPackage ../packages/claude-mem.nix { };

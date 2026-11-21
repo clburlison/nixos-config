@@ -353,6 +353,30 @@ alone. The wrapper exports the hub key as `META_API_KEY`. Before it runs, Muse f
 `/muse-code/models` from the origin's root, which CLIProxyAPI serves since
 v8.0.70.
 
+The Antigravity CLI (`agy`) is opt-in per host (`clb.antigravity.enable`,
+on for clb-work, clb-mini and ai-hub;
+`modules/common/programs/antigravity.nix`). Its wrapper
+sets agy's model gateway (`AGY_LLM_GATEWAY_*`) to the hub in OpenAI
+format, since Claude tool calls fail through the Gemini format. agy rejects
+a plain-http gateway unless it's on loopback, so `clb.antigravity.hubUrl`
+must be loopback (clb-work's proxy, ai-hub itself) or https. Other Macs use
+the hub's tailnet HTTPS port, `https://ai-hub.mermaid-agama.ts.net:8443`
+(Tailscale Serve, `cliproxyapi-tailscale-serve.service`), so they need
+Tailscale up. `clb.antigravity.models` lists the models agy
+offers, and the first is the default. Activation merges claude-mem's hooks
+and MCP server into `~/.gemini/config/hooks.json` and `mcp_config.json`,
+plus the host's Obot vMCPs. agy can't read a key at connect time, so the
+Obot key is written into `mcp_config.json` (mode 600) and refreshed at each
+switch. Skills from agent-skills sync to `~/.gemini/config/skills`.
+
+In T3 Code, use the **Antigravity (hub)** provider: activation adds it to
+an existing `~/.t3/userdata/settings.json` as a local ACP agent (`agy
+acp` through the wrapper). T3's built-in Antigravity provider runs agy with
+its own `GEMINI_HOME`, so it skips the hooks, MCP servers and skills above.
+ACP has no effort setting, so agy in T3 uses each model's default effort.
+In the agy TUI, set effort with `/effort` or `--effort` (Claude and Gemini
+models; agy offers none for GPT models).
+
 ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
 directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use
 `http://ai-hub.home.clb.ai:8317`. clb-work roams, so it uses

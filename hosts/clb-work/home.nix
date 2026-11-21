@@ -7,6 +7,9 @@
   clb.cliproxyapi.url = "http://127.0.0.1:8317";
   home.sessionVariables.CLAUDE_MEM_SERVER_URL = "http://127.0.0.1:37877";
 
+  # agy through the hub (loopback, so agy accepts plain http).
+  clb.antigravity.enable = true;
+
   # Obot gateway (docs/ai-hub.md step 15): this host's key, and the vMCPs
   # it grants.
   clb.obot = {

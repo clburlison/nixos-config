@@ -76,6 +76,15 @@ in
         use; its models then appear without listing them.
       '';
     };
+    agyEnv = lib.mkOption {
+      type = lib.types.lines;
+      readOnly = true;
+      description = ''
+        Shell snippet for the agy wrapper in antigravity.nix: when the key
+        is available, exports it and the wire protocol for agy's model
+        gateway. The wrapper sets the gateway URL.
+      '';
+    };
     codexEnv = lib.mkOption {
       type = lib.types.lines;
       readOnly = true;
@@ -94,6 +103,16 @@ in
         message = "clb.cliproxyapi.apiKeyFile must be set on Linux.";
       }
     ];
+
+    # agy's enterprise model gateway. OpenAI format: through the hub's
+    # Gemini format, Claude tool calls lose their ids and fail.
+    clb.cliproxyapi.agyEnv = ''
+      if cliproxyapi_key="$(${readKey})" && [ -n "$cliproxyapi_key" ]; then
+        export AGY_LLM_GATEWAY_API_KEY="$cliproxyapi_key"
+        export AGY_LLM_GATEWAY_WIRE_PROTOCOL=openai
+      fi
+      unset cliproxyapi_key
+    '';
 
     clb.cliproxyapi.codexEnv = ''
       if cliproxyapi_key="$(${readKey})" && [ -n "$cliproxyapi_key" ]; then

@@ -373,21 +373,26 @@ In T3 Code, use the **Antigravity (hub)** provider: activation adds it to
 an existing `~/.t3/userdata/settings.json` as a local ACP agent (`agy
 acp` through the wrapper). T3's built-in Antigravity provider runs agy with
 its own `GEMINI_HOME`, so it skips the hooks, MCP servers and skills above.
-ACP has no effort setting, so pick effort through the model name (below).
+agy groups the hub's per-effort names (below) into one model with a
+**Thinking Level** setting, in its own `/model` and in T3 Code. Each
+group's label is its first-listed name (e.g. `claude-opus-5-5-high`), which
+is also its default level. Models agy knows natively (Gemini 4 Argon in
+agy 1.5.6) show agy's own display names instead.
 T3 can't remove its built-in Antigravity provider (each built-in driver
 keeps a default instance), only disable it.
 
-The hub serves the Antigravity account's models once per reasoning effort
-(`lib/antigravity-models.nix`), for every client: e.g. `gemini-4-neon-low`
-through `gemini-4-neon-xhigh`. A `model-alias` picks the upstream model
-and a `requests.payload` rule on the alias sets its thinking level,
-replacing any effort the client sends. Claude and GPT models from this
-account get an `agy-` prefix (`agy-claude-opus-5-5-high`), so they never
-share a name with the Claude and Codex accounts; their upstream names are
-hidden. Gemini 3 models are hidden too (`excluded`). Other accounts are
-unchanged. Any client can also append an effort
-to any model, e.g. `claude-opus-5-5(xhigh)`; the hub applies it, but such
-names aren't listed in `/v1/models`.
+The hub serves some models once per reasoning effort
+(`lib/effort-models.nix`), for every client: the Antigravity account's
+Gemini and Claude models (e.g. `gemini-4-neon-low` through
+`gemini-4-neon-xhigh`, `claude-opus-5-5-low` through `-high`) and the Codex
+account's `gpt-6.2-sol` (`gpt-6.2-sol-low` through `-max`). A
+`model-alias` picks the upstream model and a `requests.payload` rule on the
+name sets its effort, replacing any effort the client sends. Upstream names
+stay listed. The Claude account's `claude-opus-5-5` keeps its name, so it
+stays off agy's list: agy would show it as a second, effort-less Opus.
+Gemini 3 models are hidden (`excluded`). Any client can also append an
+effort to any model, e.g. `claude-opus-5-5(xhigh)`; the hub applies it, but
+such names aren't listed in `/v1/models`.
 
 ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
 directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use

@@ -379,10 +379,8 @@ it with the wrapper as its binary (T3 accepts a custom binary named
 `~/.t3/userdata/providers/antigravity/<sha256 of "antigravity">`, and at
 each start links `~/.gemini`'s skills and `AGENTS.md`/`GEMINI.md` into it;
 activation links `hooks.json` and `mcp_config.json` into its `config/`.
-The former local ACP instance, **Antigravity (hub)**, stays disabled so
-its threads keep their provider. agy groups the hub's per-effort names
-(below) into one model with a **Thinking Level** setting, in its own
-`/model` and in T3 Code. The first-listed name is the default level. agy
+agy groups the hub's per-effort names (below) into one model with a
+**Thinking Level** setting, in its own `/model` and in T3 Code. The first-listed name is the default level. agy
 labels each group with that id (e.g. `claude-opus-5-5-high`) and takes no
 display names, so the wrapper runs `agy acp` through a `jq` filter that
 swaps in the `label`s from `lib/effort-models.nix` (Gemini 4 Neon, Claude

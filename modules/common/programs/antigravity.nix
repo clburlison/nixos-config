@@ -169,27 +169,13 @@ in
     ];
 
     # T3 Code's built-in Antigravity provider on the wrapper, for the hub
-    # env (T3 accepts a custom binary named agy). The former local ACP
-    # instance stays, disabled, so its threads keep their provider.
-    clb.t3.providerInstances = {
-      antigravity = {
-        driver = "antigravity";
+    # env (T3 accepts a custom binary named agy).
+    clb.t3.providerInstances.antigravity = {
+      driver = "antigravity";
+      enabled = true;
+      config = {
         enabled = true;
-        config = {
-          enabled = true;
-          binaryPath = agy;
-        };
-      };
-      agy = {
-        driver = "acpRegistry";
-        displayName = "Antigravity (hub)";
-        enabled = false;
-        config = {
-          enabled = false;
-          source = "local";
-          commandPath = agy;
-          commandArgs = [ "acp" ];
-        };
+        binaryPath = agy;
       };
     };
 

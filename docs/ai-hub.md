@@ -376,10 +376,13 @@ an existing `~/.t3/userdata/settings.json` as a local ACP agent (`agy
 acp` through the wrapper). T3's built-in Antigravity provider runs agy with
 its own `GEMINI_HOME`, so it skips the hooks, MCP servers and skills above.
 agy groups the hub's per-effort names (below) into one model with a
-**Thinking Level** setting, in its own `/model` and in T3 Code. Each
-group's label is its first-listed name (e.g. `claude-opus-5-5-high`), which
-is also its default level. Models agy knows natively (Gemini 4 Argon in
-agy 1.5.6) show agy's own display names instead.
+**Thinking Level** setting, in its own `/model` and in T3 Code. The
+first-listed name is the default level. agy labels each group with that
+id (e.g. `claude-opus-5-5-high`) and takes no display names, so the
+wrapper runs `agy acp` through a `jq` filter that swaps in the `label`s
+from `lib/effort-models.nix` (Gemini 4 Neon, Claude Opus 5.5). T3 Code
+shows those; agy's own `/model` still shows ids. The hub's ids don't
+change, so other clients' lists are unaffected.
 T3 can't remove its built-in Antigravity provider (each built-in driver
 keeps a default instance), only disable it.
 

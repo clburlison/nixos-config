@@ -19,7 +19,8 @@
 let
   # Per channel: the payload path that sets the effort, the paths it
   # replaces, and the models in agy's order. `default` is listed first, so
-  # agy picks it. A model without `levels` is listed as is.
+  # agy picks it. A model without `levels` is listed as is. `label` is the
+  # name T3 Code shows for it (agy shows ids; see `labels`).
   channels = {
     antigravity = {
       param = "generationConfig.thinkingConfig.thinkingLevel";
@@ -27,6 +28,7 @@ let
       models = [
         {
           id = "gemini-4-neon-xhigh";
+          label = "Gemini 4 Neon";
           levels = [
             "low"
             "medium"
@@ -37,6 +39,7 @@ let
         }
         {
           id = "gemini-4-hydrogen-xhigh";
+          label = "Gemini 4 Hydrogen";
           levels = [
             "low"
             "medium"
@@ -47,6 +50,7 @@ let
         }
         {
           id = "gemini-4-argon-high";
+          label = "Gemini 4 Argon";
           levels = [
             "low"
             "medium"
@@ -56,6 +60,7 @@ let
         }
         {
           id = "claude-opus-5-5-high";
+          label = "Claude Opus 5.5";
           levels = [
             "low"
             "medium"
@@ -65,6 +70,7 @@ let
         }
         {
           id = "claude-sonnet-5-5-high";
+          label = "Claude Sonnet 5.5";
           levels = [
             "low"
             "medium"
@@ -72,7 +78,10 @@ let
           ];
           default = "high";
         }
-        { id = "gpt-oss-120b-medium"; }
+        {
+          id = "gpt-oss-120b-medium";
+          label = "GPT-OSS 120B";
+        }
       ];
     };
   };
@@ -84,7 +93,8 @@ let
     in
     if m == null then id else builtins.head m;
 
-  # { protocol; name = upstream id; alias = client name; level = effort or null; }
+  # { protocol; name = upstream id; alias = client name; level = effort or
+  # null; label; first = listed first in its model; }
   variants = lib.concatLists (
     lib.mapAttrsToList (
       protocol: c:
@@ -93,22 +103,36 @@ let
         if m ? levels then
           map (level: {
             inherit protocol level;
+            inherit (m) label;
             name = m.id;
             alias = "${base m.id}-${level}";
+            first = level == m.default;
           }) ([ m.default ] ++ lib.remove m.default m.levels)
         else
           [
             {
               inherit protocol;
+              inherit (m) label;
               name = m.id;
               alias = m.id;
               level = null;
+              first = true;
             }
           ]
       ) c.models
     ) channels
   );
   leveled = lib.filter (v: v.level != null) variants;
+  agyVariants = lib.filter (v: v.protocol == "antigravity") variants;
+  # agy's Thinking Level names.
+  levelNames = {
+    minimal = "Minimal";
+    low = "Low";
+    medium = "Medium";
+    high = "High";
+    xhigh = "Extra";
+    max = "Max";
+  };
   rule = v: {
     inherit (v) protocol;
     name = v.alias;
@@ -146,5 +170,23 @@ in
   };
 
   # Every per-effort and as-is name, in agy's order.
-  names = map (v: v.alias) (lib.filter (v: v.protocol == "antigravity") variants);
+  names = map (v: v.alias) agyVariants;
+
+  # Human names for agy's ACP model lists, keyed by the names agy shows
+  # (the ids). agy labels a grouped model with its first-listed id, and
+  # each effort with its own id. agy takes no display names, so its
+  # wrapper rewrites them; the hub's ids stay as they are.
+  labels = {
+    models = lib.listToAttrs (
+      map (v: lib.nameValuePair v.alias v.label) (lib.filter (v: v.first) agyVariants)
+    );
+    efforts = lib.listToAttrs (
+      map (
+        v:
+        lib.nameValuePair v.alias (
+          if v.level == null then v.label else "${v.label} (${levelNames.${v.level}})"
+        )
+      ) agyVariants
+    );
+  };
 }

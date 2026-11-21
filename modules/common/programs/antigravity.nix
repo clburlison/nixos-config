@@ -35,6 +35,29 @@ let
   };
   mcpServer.command = "${claudeMem}/bin/claude-mem-mcp";
 
+  # agy shows hub models by id (gemini-4-neon-xhigh) and takes no display
+  # names, so `agy acp` (T3 Code) runs through this filter, which swaps in
+  # effortModels.labels: grouped models in the `model` config option, and
+  # each effort in `availableModels`. Only those names change; ids and
+  # values stay, so model selection is unaffected. Other lines pass as is.
+  acpLabels = pkgs.writeText "agy-acp-labels.jq" ''
+    def relabel($names): map(.name |= ($names[.] // .));
+    . as $line
+    | if test("\"(availableModels|configOptions)\"") then
+        try (
+          fromjson
+          | walk(
+              if type == "object" then
+                (if .id == "model" and (.options | type) == "array"
+                  then .options |= relabel($labels.models) else . end)
+                | (if (.availableModels | type) == "array"
+                  then .availableModels |= relabel($labels.efforts) else . end)
+              else . end)
+          | tojson
+        ) catch $line
+      else $line end
+  '';
+
   t3Instance = {
     driver = "acpRegistry";
     displayName = "Antigravity (hub)";
@@ -131,6 +154,11 @@ in
             export AGY_LLM_GATEWAY_URL=${lib.escapeShellArg cfg.hubUrl}
           fi
           export AGY_LLM_GATEWAY_MODELS=${lib.escapeShellArg (lib.concatStringsSep "," cfg.models)}
+          if [ "''${1:-}" = acp ]; then
+            exec > >(exec ${pkgs.jq}/bin/jq -R -r --unbuffered \
+              --argjson labels ${lib.escapeShellArg (builtins.toJSON effortModels.labels)} \
+              -f ${acpLabels})
+          fi
           exec -a "$0" ${pkgs.antigravity-cli}/bin/agy "$@"
           EOF
           chmod +x $out/bin/agy

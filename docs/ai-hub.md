@@ -373,9 +373,20 @@ In T3 Code, use the **Antigravity (hub)** provider: activation adds it to
 an existing `~/.t3/userdata/settings.json` as a local ACP agent (`agy
 acp` through the wrapper). T3's built-in Antigravity provider runs agy with
 its own `GEMINI_HOME`, so it skips the hooks, MCP servers and skills above.
-ACP has no effort setting, so agy in T3 uses each model's default effort.
-In the agy TUI, set effort with `/effort` or `--effort` (Claude and Gemini
-models; agy offers none for GPT models).
+ACP has no effort setting, so pick effort through the model name (below).
+T3 can't remove its built-in Antigravity provider (each built-in driver
+keeps a default instance), only disable it.
+
+The hub serves the Antigravity account's models once per reasoning effort
+(`lib/antigravity-models.nix`), for every client: e.g. `gemini-4-neon-low`
+through `gemini-4-neon-xhigh`. A `model-alias` picks the upstream model
+and a `requests.payload` rule on the alias sets its thinking level,
+replacing any effort the client sends. Claude and GPT models from this
+account get an `agy-` prefix (`agy-claude-opus-5-5-high`), so they never
+share a name with the Claude and Codex accounts; their upstream names are
+hidden. Other accounts are unchanged. Any client can also append an effort
+to any model, e.g. `claude-opus-5-5(xhigh)`; the hub applies it, but such
+names aren't listed in `/v1/models`.
 
 ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
 directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use

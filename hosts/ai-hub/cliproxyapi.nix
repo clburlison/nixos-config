@@ -13,6 +13,7 @@
 
 let
   port = 8317;
+  agyModels = import ../../lib/antigravity-models.nix { inherit lib; };
 
   # The module and package are only in nixpkgs-unstable (the package comes
   # from the overlay in lib/nixpkgs.nix). Drop the module's `meta`: its
@@ -108,6 +109,31 @@ in
         usage-statistics-enabled = true;
         redis-usage-queue-retention-seconds = 3600;
       };
+      # One model per reasoning effort for the Antigravity account
+      # (lib/antigravity-models.nix), for clients with no effort setting
+      # (agy in T3 Code). An alias selects the upstream model; a payload
+      # rule on the alias sets its thinking level, replacing the client's.
+      # Payload paths are relative to Antigravity's `request` wrapper.
+      oauth.model-alias.antigravity = agyModels.aliases;
+      requests.payload =
+        let
+          rule = v: {
+            name = v.alias;
+            protocol = "antigravity";
+          };
+        in
+        {
+          override = map (v: {
+            models = [ (rule v) ];
+            params."generationConfig.thinkingConfig.thinkingLevel" = v.level;
+          }) agyModels.levels;
+          filter = [
+            {
+              models = map rule agyModels.levels;
+              params = [ "generationConfig.thinkingConfig.thinkingBudget" ];
+            }
+          ];
+        };
       routing = {
         strategy = "round-robin";
         # Keep a session on one account so its prompt cache is reused.

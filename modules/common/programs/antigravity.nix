@@ -9,6 +9,7 @@
 
 let
   cfg = config.clb.antigravity;
+  agyModels = import ../../../lib/antigravity-models.nix { inherit lib; };
   hub = config.clb.cliproxyapi;
   claudeMem = pkgs.claude-mem;
   gemini = "${config.home.homeDirectory}/.gemini/config";
@@ -78,15 +79,23 @@ in
     enable = lib.mkEnableOption "the Antigravity CLI (agy) through the hub, with claude-mem";
     models = lib.mkOption {
       type = lib.types.listOf lib.types.str;
+      # The Antigravity account's models, one per effort (the hub serves
+      # these), then the Claude and Codex accounts'.
       default = [
         "gemini-4-neon-xhigh"
+      ]
+      ++ lib.remove "gemini-4-neon-xhigh" agyModels.names
+      ++ [
         "claude-opus-5-5"
         "claude-sonnet-5-5"
         "gpt-6.2-sol"
       ];
+      defaultText = lib.literalMD "the Antigravity account's models (`lib/antigravity-models.nix`), then `claude-opus-5-5`, `claude-sonnet-5-5` and `gpt-6.2-sol`";
       description = ''
         Hub model ids agy offers (/v1/models). The first is the default:
         unlisted, agy defaults to the hub's first model, which may be dead.
+        agy's ACP server (T3 Code) has no effort setting, so effort comes
+        from the hub's per-effort names, e.g. `gemini-4-neon-low`.
       '';
     };
     hubUrl = lib.mkOption {

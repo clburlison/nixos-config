@@ -350,10 +350,8 @@ makes it withhold its key, and `-c` works only on `exec` and `serve`. So
 activation merges `endpoint_transport` (the hub's `/v1`, bearer auth) into
 the mutable `~/.config/muse/settings.json` and leaves every other setting
 alone. The wrapper exports the hub key as `META_API_KEY`. Before it runs, Muse fetches
-`/muse-code/models` from the origin's root. The hub only serves that path
-because of `patches/cliproxyapi-muse-code-relay.patch`, which is upstream
-PR [#6563](https://github.com/router-for-me/CLIProxyAPI/pull/6563); drop the patch
-once that PR ships.
+`/muse-code/models` from the origin's root, which CLIProxyAPI serves since
+v8.0.70.
 
 ai-hub uses `http://127.0.0.1:8317` and reads the op-agents file
 directly (`hosts/ai-hub/home.nix`). Macs on the home LAN use

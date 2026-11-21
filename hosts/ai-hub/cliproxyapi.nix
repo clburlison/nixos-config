@@ -110,7 +110,7 @@ in
         redis-usage-queue-retention-seconds = 3600;
       };
       # One model per reasoning effort (lib/effort-models.nix) for the
-      # Antigravity and Codex accounts, for agy's Thinking Level and other
+      # Antigravity account, for agy's Thinking Level and other
       # clients with no effort setting. An alias selects the upstream model;
       # a payload rule on the alias sets its effort, replacing the client's.
       # Antigravity payload paths are relative to its `request` wrapper.

@@ -4,12 +4,16 @@
 # names, and agy (modules/common/programs/antigravity.nix) lists them.
 #
 # Names: the effort replaces a trailing effort in the upstream id, else is
-# appended, e.g. gemini-4-neon-xhigh -> gemini-4-neon-low ... -xhigh and
-# gpt-6.2-sol -> gpt-6.2-sol-low ... -max. agy groups these names into one
-# model with a Thinking Level setting, so no plain name may share a base
-# with them (the Claude account's claude-opus-5-5 stays off agy's list).
+# appended, e.g. gemini-4-neon-xhigh -> gemini-4-neon-low ... -xhigh. agy
+# groups these names into one model with a Thinking Level setting, so no
+# plain name may share a base with them (the Claude account's
+# claude-opus-5-5 stays off agy's list).
 # Upstream names stay listed for other clients. Gemini 3 models are hidden
 # on the hub (`excluded`), so they're not listed.
+#
+# Only Antigravity models get per-effort names: agy lists the Antigravity
+# account alone, and other clients list them too (/v1/models), so a
+# per-effort GPT shows up in Codex as duplicate rows of one model.
 { lib }:
 
 let
@@ -69,23 +73,6 @@ let
           default = "high";
         }
         { id = "gpt-oss-120b-medium"; }
-      ];
-    };
-    codex = {
-      param = "reasoning.effort";
-      drop = [ ];
-      models = [
-        {
-          id = "gpt-6.2-sol";
-          levels = [
-            "low"
-            "medium"
-            "high"
-            "xhigh"
-            "max"
-          ];
-          default = "high";
-        }
       ];
     };
   };
@@ -158,9 +145,6 @@ in
     );
   };
 
-  # Every per-effort and as-is name, in agy's order: antigravity, then codex.
-  names = map (v: v.alias) (
-    lib.filter (v: v.protocol == "antigravity") variants
-    ++ lib.filter (v: v.protocol == "codex") variants
-  );
+  # Every per-effort and as-is name, in agy's order.
+  names = map (v: v.alias) (lib.filter (v: v.protocol == "antigravity") variants);
 }

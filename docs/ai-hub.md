@@ -386,9 +386,10 @@ keeps a default instance), only disable it.
 The hub serves some models once per reasoning effort
 (`lib/effort-models.nix`), for every client: the Antigravity account's
 Gemini and Claude models (e.g. `gemini-4-neon-low` through
-`gemini-4-neon-xhigh`, `claude-opus-5-5-low` through `-high`) and the Codex
-account's `gpt-6.2-sol` (`gpt-6.2-sol-low` through `-max`). A
-`model-alias` picks the upstream model and a `requests.payload` rule on the
+`gemini-4-neon-xhigh`, `claude-opus-5-5-low` through `-high`). Codex
+account models get none: Codex lists every hub GPT model, so the per-effort
+names showed there as duplicate rows, and agy lists the Antigravity account
+alone. A `model-alias` picks the upstream model and a `requests.payload` rule on the
 name sets its effort, replacing any effort the client sends. Upstream names
 stay listed. The Claude account's `claude-opus-5-5` keeps its name, so it
 stays off agy's list: agy would show it as a second, effort-less Opus.

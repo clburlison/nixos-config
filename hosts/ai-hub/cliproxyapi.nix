@@ -118,7 +118,11 @@ in
       oauth.excluded-models = effortModels.excluded;
       requests.payload = effortModels.payload;
       routing = {
-        strategy = "round-robin";
+        # Spend the account whose weekly window resets first, so quota is
+        # not lost at its reset (patch in packages/cliproxyapi.nix). Only
+        # new sessions follow the ranking; Fable-only 429s still cool just
+        # Fable on that account, so Fable moves on and Opus stays.
+        strategy = "soonest-reset";
         # Keep a session on one account so its prompt cache is reused.
         session-affinity = true;
         session-affinity-ttl = "1h";

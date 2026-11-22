@@ -6,6 +6,12 @@
 # The patch limits /muse-code/models to models a Meta credential serves.
 # Upstream lists every provider's models there, so the Muse CLI's picker
 # shows GPT, Claude and Gemini too. Keep it while the hub serves Muse.
+#
+# The soonest-reset patch is upstream PR #7206, rebased onto v8.0.80. It
+# adds `routing.strategy = "soonest-reset"`: spend the account whose weekly
+# window resets first, so its quota is not lost at the reset. Rebase it on
+# each bump; drop it once upstream merges the PR.
+# https://github.com/router-for-me/CLIProxyAPI/pull/7206
 {
   cliproxyapi,
   fetchFromGitHub,
@@ -24,6 +30,9 @@ cliproxyapi.overrideAttrs (
 
     vendorHash = "sha256-89DZv8uj0rD5fgbfLZk6TuoYw2SfX1vhV88T4degwg8=";
 
-    patches = (prevAttrs.patches or [ ]) ++ [ ../patches/cliproxyapi-muse-catalog-meta-only.patch ];
+    patches = (prevAttrs.patches or [ ]) ++ [
+      ../patches/cliproxyapi-muse-catalog-meta-only.patch
+      ../patches/cliproxyapi-soonest-reset-routing.patch
+    ];
   }
 )

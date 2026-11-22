@@ -23,11 +23,7 @@
   users.users.${config.clb.host.user}.openssh.authorizedKeys.keys = import ../../lib/ssh-keys.nix;
 
   # tailscaled as a launchd daemon, up before login. MagicDNS works through
-  # /etc/resolver/ts.net, so overrideLocalDns stays off. Cutover from the
-  # standalone app, from a LAN session: `brew uninstall --cask tailscale-app`
-  # (removes its network extension and /usr/local/bin/tailscale), then
-  # `task switch`, check `command -v tailscale` is under
-  # /run/current-system/sw/bin, then `sudo tailscale up --ssh`.
+  # /etc/resolver/ts.net, so overrideLocalDns stays off.
   services.tailscale.enable = true;
 
   # Restart tailscaled if it exits; nix-darwin only sets RunAtLoad.

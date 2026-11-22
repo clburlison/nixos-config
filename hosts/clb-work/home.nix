@@ -2,6 +2,9 @@
 {
   _class = "homeManager";
 
+  # Standalone Tailscale app; clb-mini runs the nix-darwin daemon instead.
+  clb.homebrew.casks = [ "tailscale-app" ];
+
   # The local failover proxy to ai-hub (hub-proxy.nix): LAN when home,
   # else the tailnet.
   clb.cliproxyapi.url = "http://127.0.0.1:8317";

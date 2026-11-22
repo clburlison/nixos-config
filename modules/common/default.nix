@@ -129,6 +129,7 @@ in
     ".claude/CLAUDE.md".source = mkLink "${dotfiles}/claude/CLAUDE.md";
     ".claude/keybindings.json".source = mkLink "${dotfiles}/claude/keybindings.json";
     ".claude/mods".source = mkLink "${dotfiles}/claude/mods";
+    ".codex/AGENTS.md".source = mkLink "${dotfiles}/AGENTS.md";
     ".config/fish/aliases.fish".source = mkLink "${dotfiles}/config/fish/aliases.fish";
     ".config/fish/conf.d".source = mkLink "${dotfiles}/config/fish/config.d";
     ".config/fish/functions".source = mkLink "${dotfiles}/config/fish/functions";
@@ -144,6 +145,7 @@ in
     ".config/ohmyposh".source = mkLink "${dotfiles}/config/ohmyposh";
     ".editorconfig".source = ../../dotfiles/editorconfig;
     ".functions".source = ../../dotfiles/functions;
+    ".gemini/GEMINI.md".source = mkLink "${dotfiles}/gemini/GEMINI.md";
     ".git-commit-template.txt".source = ../../dotfiles/git-commit-template.txt;
     ".gitconfig".source = ../../dotfiles/gitconfig;
     ".gitignore".source = ../../dotfiles/gitignore;

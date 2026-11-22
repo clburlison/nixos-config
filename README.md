@@ -62,7 +62,7 @@ Dotfiles linked with `mkOutOfStoreSymlink` in `home.file` are live: edits show u
 | Path | Purpose |
 | --- | --- |
 | `dotfiles/` | App configs (Neovim, fish, Ghostty, git, SSH, Claude, ...) linked into `$HOME` by `modules/common` |
-| `packages/` | Custom package derivations (claude-mem, linear-cli, ntn, opencode, t3, ...) and their update scripts (`packages/Taskfile.yml`) |
+| `packages/` | Custom package derivations (claude-mem, linear-cli, ntn, t3, ...) and their update scripts (`packages/Taskfile.yml`) |
 | `patches/` | Patches applied to upstream packages |
 | `docs/` | Setup guide (`docs/README.md`), per-topic guides, and research notes |
 | `Taskfile.yml` | `task` entry points (below) |
@@ -92,7 +92,7 @@ There is no role layer. Config for one host goes in `hosts/<name>/`. If a second
 ## AI agents
 
 Claude Code and Codex route through the CLIProxyAPI hub on ai-hub, and
-Claude Code, Codex, and OpenCode share [Nix-managed claude-mem](docs/claude-mem.md)
+Claude Code and Codex share [Nix-managed claude-mem](docs/claude-mem.md)
 backed by the hosted server there. See [docs/README.md](docs/README.md).
 
 ## Other

@@ -25,8 +25,8 @@ buildNpmPackage (finalAttrs: {
   pname = "claude-mem";
   version = "16.0.1";
 
-  # Reuse published bundles (including the OpenCode adapter). This is not a
-  # from-source build. Root + plugin runtime dependencies are locked together.
+  # Reuse published bundles rather than building from source. Root + plugin
+  # runtime dependencies are locked together.
   src = fetchurl {
     url = "https://registry.npmjs.org/claude-mem/-/claude-mem-${finalAttrs.version}.tgz";
     hash = "sha256-O3UJUQB059iuPcULPjdBFCIO6SNx44Vamu0jxPUg8to=";
@@ -58,6 +58,7 @@ buildNpmPackage (finalAttrs: {
     mkdir -p "$root" "$out/bin" "$out/libexec"
     ln -s ${lib.getExe chroma} "$out/libexec/chroma-mcp"
     cp -R plugin dist package.json node_modules "$root/"
+    rm -rf "$root/dist/opencode-plugin"
     ln -s ../node_modules "$plugin/node_modules"
     # The npm install script normally downloads this binary. Supply Nix's CLI.
     ln -sf ${lib.getExe tree-sitter} "$root/node_modules/tree-sitter-cli/tree-sitter"
@@ -108,14 +109,12 @@ buildNpmPackage (finalAttrs: {
     mkdir -p "$HOME"
     test "$("$out/bin/claude-mem" --version)" = 3
     ${python3}/bin/python ${./claude-mem/check.py} "$out"
-    ${lib.getExe nodejs_24} ${./claude-mem/check-opencode.mjs} "$out"
     runHook postInstallCheck
   '';
 
   passthru = {
     inherit chroma;
     pluginRoot = "${finalAttrs.finalPackage}/share/claude-mem/plugin";
-    opencodePlugin = "${finalAttrs.finalPackage}/share/claude-mem/dist/opencode-plugin/index.js";
   };
 
   meta = {

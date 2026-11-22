@@ -81,7 +81,6 @@ in
     pkgs.nixfmt
     pkgs.nodejs_24
     pkgs.ntn
-    # pkgs.opencode
     pkgs.ripgrep
     pkgs.ripgrep-all
     pkgs.rustc

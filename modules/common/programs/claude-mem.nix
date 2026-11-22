@@ -223,29 +223,12 @@ in
       ''
     );
 
-    # xdg.configFile."opencode/plugins/claude-mem.js".source = claudeMem.opencodePlugin;
-
-    # Render the existing JSONC template, preserving comments and other settings.
-    # Do not also create opencode.json or use HM's legacy shared-MCP transformer.
-    home.file = {
-      # ".config/opencode/opencode.jsonc".text =
-      #   builtins.replaceStrings
-      #     [ "@claudeMemMcp@" ]
-      #     [
-      #       "${claudeMem}/bin/claude-mem-mcp"
-      #     ]
-      #     (builtins.readFile ../../../dotfiles/config/opencode/opencode.jsonc);
-    }
-    // lib.listToAttrs (
+    home.file = lib.listToAttrs (
       lib.concatMap (name: [
         {
           name = ".codex/skills/${name}";
           value.source = "${claudeMem.pluginRoot}/skills/${name}";
         }
-        # {
-        #   name = ".config/opencode/skills/${name}";
-        #   value.source = "${claudeMem.pluginRoot}/skills/${name}";
-        # }
       ]) memorySkills
     );
   };

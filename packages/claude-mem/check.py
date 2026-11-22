@@ -30,7 +30,6 @@ assert codex['PostToolUse'][0]['hooks'][0]['timeout'] == 5
 assert 'CLAUDE_MEM_CODEX_HOOK' in (root / 'bin/claude-mem-codex-hook').read_text()
 assert (plugin / 'node_modules/zod/package.json').is_file()
 assert (plugin / 'node_modules/better-auth/package.json').is_file()
-assert (root / 'share/claude-mem/dist/opencode-plugin/index.js').is_file()
 worker = (plugin / 'scripts/worker-service.cjs').read_text()
 assert 'static buildLauncherPrefix(e){return[]}' in worker
 assert 'if(e!=="win32")return"uvx"' not in worker

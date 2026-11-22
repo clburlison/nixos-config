@@ -28,9 +28,6 @@
         linear-cli = final.callPackage ../packages/linear-cli.nix { };
         muse-code = unstable.muse-code;
         ntn = final.callPackage ../packages/ntn.nix { };
-        # opencode = final.callPackage ../packages/opencode.nix {
-        #   opencode-v2 = inputs.opencode-v2;
-        # };
         openusage = unstable.openusage;
         t3 = final.callPackage ../packages/t3.nix { };
         tree-sitter = unstable.tree-sitter;

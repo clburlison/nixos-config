@@ -3,7 +3,7 @@
 Where this fits in the setup order: [docs/README.md](README.md).
 
 `modules/common/programs/claude-mem.nix` enables claude-mem **15.6.0** for Claude Code,
-Codex, and OpenCode V2. `packages/claude-mem.nix` packages the published npm
+and Codex. `packages/claude-mem.nix` packages the published npm
 bundles and a packaging-maintained runtime dependency lock. Nothing invokes the
 upstream installer during Home Manager activation.
 
@@ -12,17 +12,15 @@ upstream installer during Home Manager activation.
 1. Make new files known to Git before using the repository's normal flake-based
    `task switch`. Review/apply the configuration yourself; no activation is
    performed by the package tests.
-2. Restart your terminals/agents. Restart OpenCode's background service with
-   `opencode service restart` so it reloads the new plugin and MCP configuration.
-   Run `claude-mem restart` after this upgrade: an already-running SQLite-only
-   worker keeps its old environment until restarted, even at the same version.
-3. Claude Code must already be signed in. Memory compression for **all three
-   hosts** uses the pinned, unwrapped Claude CLI and consumes your Claude plan.
+2. Restart your terminals/agents. Run `claude-mem restart` after this upgrade:
+   an already-running SQLite-only worker keeps its old environment until restarted, even at the same version.
+3. Claude Code must already be signed in. Memory compression for **both
+   agents** uses the pinned, unwrapped Claude CLI and consumes your Claude plan.
    If necessary, run `claude auth login` yourself. No credentials enter Nix.
 4. In Codex, use `/hooks` to review and trust the added hook definitions. A Nix
    generation changing their commands can require fresh approval. No approval
    state is generated or bypassed.
-5. Check `claude-mem status`, OpenCode's `/mcps`, and the local viewer at
+5. Check `claude-mem status` and the local viewer at
    `http://127.0.0.1:37777`. Then verify that an ordinary session's observations
    are available in a later session; connectivity alone does not prove capture.
 
@@ -33,12 +31,8 @@ Existing file-based hooks still run. The wrapper takes precedence for the seven
 inline hook event keys it supplies; don't separately configure those same
 claude-mem hooks or install its native Codex plugin.
 
-OpenCode discovers the upstream V2 JS adapter and connects the MCP server from
-the existing JSONC template. Home Manager now renders that template into the
-store to substitute an absolute MCP executable path: edit
-`dotfiles/config/opencode/opencode.jsonc` and rebuild, not the installed file.
-Claude receives upstream plugin skills; Codex/OpenCode additionally receive
-`mem-search` and `smart-explore` without replacing their other skills.
+Claude receives upstream plugin skills; Codex additionally receives
+`mem-search` and `smart-explore` without replacing its other skills.
 
 ## Hosted server
 
@@ -98,7 +92,7 @@ worker.
 
 ## Runtime policy and limitations
 
-- One lazily started worker is shared by the three agents, not three services.
+- One lazily started worker is shared by the two agents, not two services.
   The packaged worker-script override prevents mutable marketplace caches from
   superseding the Nix runtime. No launchd/systemd service is added.
 - State remains writable in `~/.claude-mem` (or `CLAUDE_MEM_DATA_DIR`), including
@@ -142,8 +136,8 @@ python3 packages/claude-mem/runtime-smoke.py "$package"
 ```
 
 `path:.` includes new, untracked implementation files during development. The
-package build checks hook metadata, TOML overlays, grammar linking, launcher
-protocol, and OpenCode V2 plugin setup/cleanup. The smoke test uses an isolated
+package build checks hook metadata, TOML overlays, grammar linking, and launcher
+protocol. The smoke test uses an isolated
 HOME/port, preserves sample Codex files, starts/stops only its own worker, and
 checks MCP, SQLite save/recall, semantic recall with no keyword overlap, smart
 parsing, and rejection of a newer mutable cache. The Chroma package check denies

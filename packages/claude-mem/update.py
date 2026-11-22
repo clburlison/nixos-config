@@ -74,7 +74,7 @@ def validate_release(source, staging):
     required = [
         'plugin/scripts/worker-service.cjs', 'plugin/scripts/mcp-server.cjs',
         'plugin/scripts/claude-mem-launcher.cjs', 'plugin/bun.lock',
-        'dist/opencode-plugin/index.js', 'plugin/skills/mem-search/SKILL.md',
+        'plugin/skills/mem-search/SKILL.md',
         'plugin/skills/smart-explore/SKILL.md',
     ]
     for name in required:

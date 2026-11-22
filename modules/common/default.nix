@@ -56,53 +56,49 @@ in
 
   # Packages I always want installed. I'll investigate using per-project
   # flakes sourced with direnv and nix-shell in the future.
-  # Ordered after module-provided packages, as before the module split, so
-  # home-path keeps the same input order.
-  home.packages = lib.mkOrder 1050 (
-    [
-      # pkgs.python314 # switch to `uv` for python version management
-      # pkgs.terraform # this is a slow install with nix?
-      pkgs.azure-cli
-      pkgs.bun
-      pkgs.curl
-      pkgs.fzf
-      pkgs.gh
-      pkgs.git-lfs
-      pkgs.git-open
-      pkgs.go-task
-      pkgs.htop
-      pkgs.jq
-      pkgs.kubectl
-      pkgs.lazygit
-      pkgs.linear-cli
-      pkgs.mysql84
-      pkgs.neovim
-      pkgs.nerd-fonts.caskaydia-mono
-      pkgs.nerd-fonts.go-mono
-      pkgs.nerd-fonts.hack
-      pkgs.nerd-fonts.meslo-lg
-      pkgs.nixfmt
-      pkgs.nodejs_24
-      pkgs.ntn
-      # pkgs.opencode
-      pkgs.ripgrep
-      pkgs.ripgrep-all
-      pkgs.rustc
-      pkgs.rustup
-      pkgs.t3
-      pkgs.tree
-      pkgs.tree-sitter
-      pkgs.wget
-      pkgs.worktrunk
-      pkgs.zsh-history-substring-search
-      pkgs.zsh-vi-mode
-    ]
-    ++ (lib.optionals isLinux [
-      # Install on Linux only
-      pkgs.chromium
-      pkgs.firefox
-    ])
-  );
+  home.packages = [
+    # pkgs.python314 # switch to `uv` for python version management
+    # pkgs.terraform # this is a slow install with nix?
+    pkgs.azure-cli
+    pkgs.bun
+    pkgs.curl
+    pkgs.fzf
+    pkgs.gh
+    pkgs.git-lfs
+    pkgs.git-open
+    pkgs.go-task
+    pkgs.htop
+    pkgs.jq
+    pkgs.kubectl
+    pkgs.lazygit
+    pkgs.linear-cli
+    pkgs.mysql84
+    pkgs.neovim
+    pkgs.nerd-fonts.caskaydia-mono
+    pkgs.nerd-fonts.go-mono
+    pkgs.nerd-fonts.hack
+    pkgs.nerd-fonts.meslo-lg
+    pkgs.nixfmt
+    pkgs.nodejs_24
+    pkgs.ntn
+    # pkgs.opencode
+    pkgs.ripgrep
+    pkgs.ripgrep-all
+    pkgs.rustc
+    pkgs.rustup
+    pkgs.t3
+    pkgs.tree
+    pkgs.tree-sitter
+    pkgs.wget
+    pkgs.worktrunk
+    pkgs.zsh-history-substring-search
+    pkgs.zsh-vi-mode
+  ]
+  ++ (lib.optionals isLinux [
+    # Install on Linux only
+    pkgs.chromium
+    pkgs.firefox
+  ]);
 
   #---------------------------------------------------------------------
   # Env vars and dotfiles
@@ -181,8 +177,7 @@ in
       "ignoredups"
       "ignorespace"
     ];
-    # Run after Home Manager's shell integrations, as before the module split.
-    initExtra = lib.mkOrder 1050 (builtins.readFile ../../dotfiles/bashrc);
+    initExtra = builtins.readFile ../../dotfiles/bashrc;
   };
 
   programs.direnv = {

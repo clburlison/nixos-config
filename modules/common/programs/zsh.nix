@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -14,8 +13,7 @@
     syntaxHighlighting.enable = true;
     autosuggestion.enable = true;
     enableCompletion = true;
-    # Run after Home Manager's shell integrations, as before the module split.
-    initContent = lib.mkOrder 1050 ''
+    initContent = ''
       # Load the shell dotfiles, and then some:
       # * ~/.path can be used to extend `$PATH`.
       # * ~/.extra can be used for other settings you don’t want to commit.

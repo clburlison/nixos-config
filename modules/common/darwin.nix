@@ -5,8 +5,7 @@
   _class = "homeManager";
 
   config = lib.mkIf pkgs.stdenv.isDarwin {
-    # After the common list in modules/common/default.nix.
-    home.packages = lib.mkOrder 1051 [
+    home.packages = [
       # Install on macOS only
       # pkgs.ngrok
       # pkgs.yt-dlp # youtube-dl replacement

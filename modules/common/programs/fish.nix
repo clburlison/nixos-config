@@ -1,12 +1,11 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   _class = "homeManager";
 
   programs.fish = {
     enable = true;
-    # Run after Home Manager's shell integrations, as before the module split.
-    shellInit = lib.mkOrder 1050 ''
+    shellInit = ''
       set fish_greeting ""
 
       if status is-interactive

@@ -75,11 +75,11 @@
     "clb-skills": {
       "flake": false,
       "locked": {
-        "lastModified": 1795315571,
-        "narHash": "sha256-G8LSafyFZFCHQC1eRhfI8c08a2Rr39dFkhV4QiVI5hU=",
+        "lastModified": 1795371482,
+        "narHash": "sha256-+UGm3mjE0RCCNsqi0BUGzDS48EA33TSxRiLeAopYLng=",
         "ref": "refs/heads/main",
-        "rev": "24c3ae0690ac9904af17c88902a3e99588293498",
-        "revCount": 25,
+        "rev": "1474021ebc2830e2e9c1edbd1e0541bbb71af9c0",
+        "revCount": 26,
         "type": "git",
         "url": "ssh://git@github.com/clburlison/clb-skills"
       },

@@ -19,7 +19,8 @@ and each Mac, linking into the guides in `docs/`.
 | `task test-system` | `darwin-rebuild check` / `nixos-rebuild test` (sudo) |
 | `task test` | `test-system`, then `test-home` |
 
-`NIXNAME` defaults to `hostname`.
+`NIXNAME` defaults to `hostname`. On a Mac, `task system` names the Mac after
+`NIXNAME` (HostName, ComputerName, LocalHostName).
 
 ## Where to make common changes
 

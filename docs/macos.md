@@ -1,8 +1,8 @@
 # macOS host
 
 Install Nix and apply this configuration on a Mac (nix-darwin plus standalone
-Home Manager). The host must be in the host table in `flake.nix`, named after
-the Mac's hostname. Where it fits in the whole setup:
+Home Manager). The host must be in the host table in `flake.nix`. Where it
+fits in the whole setup:
 [docs/README.md](README.md).
 
 ## 1. Install
@@ -35,17 +35,14 @@ the Mac's hostname. Where it fits in the whole setup:
    ./task install
    ```
 
-6. (Optional) Set macOS computer name
+6. Configure the system, then bootstrap Home Manager. `NIXNAME` picks the
+   host table entry; nix-darwin sets the Mac's HostName, ComputerName and
+   LocalHostName to it, so later runs can drop `NIXNAME`.
 
    ```sh
-   ./task rename-mac
-   ```
-
-7. Configure the system, then bootstrap Home Manager
-
-   ```sh
+   export NIXNAME=<host>
    ./task system
-   nix run home-manager/release-26.05 -- switch --flake ".#$USER@$(hostname)"
+   nix run home-manager/release-26.05 -- switch --flake ".#$USER@$NIXNAME"
    ```
 
    The first Home Manager run installs `home-manager` into `~/.nix-profile`.

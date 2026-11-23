@@ -20,6 +20,7 @@
     vmcps = {
       personal = "vmcp1vqt8x";
       gl = "vmcp1rtvnp";
+      ls = "vmcp14xk66";
     };
   };
 }

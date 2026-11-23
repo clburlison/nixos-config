@@ -13,6 +13,14 @@
   # what our home directory is (https://github.com/LnL7/nix-darwin/issues/423).
   system.primaryUser = config.clb.host.user;
 
+  # Name the Mac after its host table entry, so `hostname` matches NIXNAME
+  # on later runs.
+  networking = {
+    hostName = config.clb.host.name;
+    computerName = config.clb.host.name;
+    localHostName = config.clb.host.name;
+  };
+
   # GUI apps (e.g. T3 Code) skip shell init, so give Node the Nix CA bundle
   # via launchd or remote MCP servers fail TLS verification.
   launchd.user.envVariables.NODE_EXTRA_CA_CERTS = config.environment.variables.NIX_SSL_CERT_FILE;

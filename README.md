@@ -19,7 +19,8 @@ and each Mac, linking into the guides in `docs/`.
 | `task test-system` | `darwin-rebuild check` / `nixos-rebuild test` (sudo) |
 | `task test` | `test-system`, then `test-home` |
 
-`NIXNAME` defaults to `hostname`.
+`NIXNAME` defaults to `hostname`. On a Mac, `task system` names the Mac after
+`NIXNAME` (HostName, ComputerName, LocalHostName).
 
 ## Where to make common changes
 
@@ -40,7 +41,7 @@ These are the files that changed most often over the past year, mapped to where 
 | Edit Neovim, fish functions, Ghostty, SSH, Claude config | `dotfiles/config/...`, `dotfiles/ssh/`, `dotfiles/claude/` | nothing (live symlink) |
 | Edit `gitconfig`, `aliases`, `path`, `functions` | `dotfiles/<name>` | `task home` (copied into the store) |
 | Something for one host only | `hosts/<name>/home.nix` or `hosts/<name>/system.nix` | `task home` / `task system` |
-| Add a host | host table in `flake.nix`, plus optional `hosts/<name>/` | `task switch` on that host |
+| Add a host | host table in `flake.nix`, plus optional `hosts/<name>/` | `NIXNAME=<name> task switch` on that host |
 
 Dotfiles linked with `mkOutOfStoreSymlink` in `home.file` are live: edits show up immediately. Dotfiles linked with a plain path are copied into the Nix store and need `task home`.
 

@@ -34,6 +34,7 @@ pct create 1002 nas02-proxmox:vztmpl/nixos-lxc.tar.xz \
   --ostype nixos \
   --unprivileged 1 \
   --features nesting=1,keyctl=1 \
+  --dev0 /dev/net/tun \
   --cores 2 \
   --memory 2048 \
   --swap 512 \
@@ -46,6 +47,9 @@ pct template 1002
 
 - `nesting=1,keyctl=1` is required for systemd and Docker inside an
   unprivileged LXC.
+- `--dev0 /dev/net/tun` exposes the TUN device needed for Tailscale (to add it
+  to an existing CT: `pct set <vmid> --dev0 /dev/net/tun` followed by
+  `pct stop <vmid> && pct start <vmid>`).
 - Convert to a template **before** starting the container so each clone gets
   its own SSH host keys, `/etc/machine-id`, and first-boot
   `register-nix-paths` run.
@@ -71,12 +75,12 @@ pct template 1002
    reads `/etc/hostname` and network settings from Proxmox by default
    (`manageHostName = false`, `manageNetwork = false`).
 
-3. Start the container and set the user password once for wheel `sudo` (from
-   the Proxmox host):
+3. Start the container from the Proxmox host (wheel `sudo` is passwordless;
+   optionally set a console password with
+   `pct exec <vmid> -- /run/wrappers/bin/passwd clburlison`):
 
    ```sh
    pct start <vmid>
-   pct exec <vmid> -- /run/wrappers/bin/passwd clburlison
    ```
 
 4. SSH in with your key from `lib/ssh-keys.nix`, clone this repo, and apply

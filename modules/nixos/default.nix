@@ -52,15 +52,15 @@ in
     };
   };
 
-  # Wheel sudo asks for the user's password. It is not stored in this repo;
-  # set it once with `passwd` when installing a host.
+  # SSH key auth only (PasswordAuthentication = false), so allow passwordless
+  # wheel sudo (needed for `nixos-rebuild --sudo` / `task system`).
   users.users.${user} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
     shell = pkgs.fish;
     openssh.authorizedKeys.keys = import ../../lib/ssh-keys.nix;
   };
-  security.sudo.wheelNeedsPassword = true;
+  security.sudo.wheelNeedsPassword = false;
 
   # Mirrors modules/darwin/shells.nix.
   programs.fish.enable = true;

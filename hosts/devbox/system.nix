@@ -23,8 +23,21 @@
   };
 
   # Enable once hosts/devbox/secrets.yaml is encrypted to this container's SSH
-  # host key (docs/op-agents.md), and set `sops.defaultSopsFile = ./secrets.yaml;`.
-  clb.opAgents.enable = false;
+  # host key (docs/op-agents.md): remove `enable = false;` and set
+  # `sops.defaultSopsFile = ./secrets.yaml;`.
+  clb.opAgents = {
+    enable = false;
+    secrets = {
+      claude-mem-api-key = {
+        reference = "op://Agents/claude-mem-rw/credential";
+        owner = config.clb.host.user;
+      };
+      cliproxyapi-api-key = {
+        reference = "op://Agents/CLIProxyAPI/cliproxyapi-api-key";
+        owner = config.clb.host.user;
+      };
+    };
+  };
 
   system.stateVersion = "26.05";
 }

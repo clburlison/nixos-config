@@ -4,8 +4,13 @@
 # Each host's secrets.yaml holds only the op-agents service account token.
 keys:
   - &ai-hub age1xcyftsx9j79jup6fg33fpf4xw9lq42kpglt4czcycd6wpwyhgdxqanvd8c
+  - &devbox age178fpggag2mv429qd8h6g9qnvmj5dcy7y3q3mwa85x0d7lwlx6u8qmgcz62
 creation_rules:
   - path_regex: ^hosts/ai-hub/secrets\.yaml$
     key_groups:
       - age:
           - *ai-hub
+  - path_regex: ^hosts/devbox/secrets\.yaml$
+    key_groups:
+      - age:
+          - *devbox

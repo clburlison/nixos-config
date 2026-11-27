@@ -17,6 +17,13 @@
 
   virtualisation.docker.enable = true;
 
+  # Requires /dev/net/tun passed into the LXC on Proxmox (e.g. `pct set <vmid> --dev0 /dev/net/tun`).
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+    extraSetFlags = [ "--operator=${config.clb.host.user}" ];
+  };
+
   users.users.${config.clb.host.user} = {
     extraGroups = [ "docker" ];
     linger = true;

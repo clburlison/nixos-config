@@ -1,5 +1,17 @@
 {
+  lib,
+  pkgs,
+  ...
+}:
+
+{
   _class = "homeManager";
+
+  programs.fish.shellInit = lib.mkAfter ''
+    if status is-interactive
+      ${pkgs.worktrunk}/bin/wt config shell init fish | source
+    end
+  '';
 
   # Ensure the worktrunk worktree root exists.
   home.file."dev/worktrees/.keep".text = "";

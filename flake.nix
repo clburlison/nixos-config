@@ -77,6 +77,8 @@
       inherit (nixpkgs) lib;
 
       # Host table: the canonical source of host identity.
+      # `profile` defaults to "workstation"; set `profile = "server"` for
+      # server hosts.
       hosts = {
         vm-clayton-mac = {
           system = "aarch64-darwin";
@@ -97,6 +99,12 @@
           system = "x86_64-linux";
           platform = "nixos";
           user = "clburlison";
+        };
+        nixos = {
+          system = "x86_64-linux";
+          platform = "nixos";
+          user = "clburlison";
+          profile = "server";
         };
       };
 

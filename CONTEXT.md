@@ -11,8 +11,12 @@ One machine this repository configures, identified by its name (e.g. `clb-work`,
 _Avoid_: Machine, box, system
 
 **Host table**:
-The single list in the flake that names every host with its platform, system architecture, and user; the canonical source of host identity.
+The single list in the flake that names every host with its platform, system architecture, user, and optional profile (default `workstation`); the canonical source of host identity.
 _Avoid_: Machine list, host registry
+
+**Profile**:
+The role of a host (`workstation` or `server`, defaulting to `workstation`), set in the Host table and exposed as `clb.host.profile`. Selects the profile module under `modules/common/<profile>.nix` and optionally `modules/<platform>/<profile>.nix`.
+_Avoid_: Host type, role, flavor
 
 ### Layers
 

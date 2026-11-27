@@ -12,5 +12,13 @@
       type = lib.types.str;
       description = "Primary user of the host.";
     };
+    profile = lib.mkOption {
+      type = lib.types.enum [
+        "workstation"
+        "server"
+      ];
+      default = "workstation";
+      description = "Host profile from the Host table.";
+    };
   };
 }

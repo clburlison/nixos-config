@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
   _class = "homeManager";
@@ -7,10 +7,6 @@
     enable = true;
     shellInit = ''
       set fish_greeting ""
-
-      if status is-interactive
-        ${pkgs.worktrunk}/bin/wt config shell init fish | source
-      end
 
       source ~/.config/fish/aliases.fish
       source ~/.config/fish/omp-vimmode.fish

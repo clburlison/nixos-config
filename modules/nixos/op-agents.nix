@@ -82,55 +82,63 @@ in
 {
   _class = "nixos";
 
-  options.clb.opAgents.secrets = lib.mkOption {
-    description = "Agents vault secrets written to ${dir}/<name>.";
-    default = { };
-    type = lib.types.attrsOf (
-      lib.types.submodule (
-        { name, ... }:
-        {
-          options = {
-            reference = lib.mkOption {
-              type = lib.types.nullOr lib.types.str;
-              default = null;
-              example = "op://Agents/CLIProxyAPI/cliproxyapi-api-key";
-              description = "1Password secret reference. Set this or template.";
+  options.clb.opAgents = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = config.clb.host.profile == "workstation" || cfg.secrets != { };
+      description = "Enable op-agents secret fetching via sops-nix and 1Password.";
+    };
+
+    secrets = lib.mkOption {
+      description = "Agents vault secrets written to ${dir}/<name>.";
+      default = { };
+      type = lib.types.attrsOf (
+        lib.types.submodule (
+          { name, ... }:
+          {
+            options = {
+              reference = lib.mkOption {
+                type = lib.types.nullOr lib.types.str;
+                default = null;
+                example = "op://Agents/CLIProxyAPI/cliproxyapi-api-key";
+                description = "1Password secret reference. Set this or template.";
+              };
+              template = lib.mkOption {
+                type = lib.types.nullOr lib.types.lines;
+                default = null;
+                example = "API_KEY={{ op://Agents/item/field }}";
+                description = "File content with {{ op://... }} references, filled in by `op inject`.";
+              };
+              owner = lib.mkOption {
+                type = lib.types.str;
+                default = "root";
+              };
+              group = lib.mkOption {
+                type = lib.types.str;
+                default = "root";
+              };
+              mode = lib.mkOption {
+                type = lib.types.str;
+                default = "0400";
+              };
+              services = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                default = [ ];
+                description = "systemd services that read it: started after it, restarted when it changes.";
+              };
+              path = lib.mkOption {
+                type = lib.types.str;
+                readOnly = true;
+                default = "${dir}/${name}";
+              };
             };
-            template = lib.mkOption {
-              type = lib.types.nullOr lib.types.lines;
-              default = null;
-              example = "API_KEY={{ op://Agents/item/field }}";
-              description = "File content with {{ op://... }} references, filled in by `op inject`.";
-            };
-            owner = lib.mkOption {
-              type = lib.types.str;
-              default = "root";
-            };
-            group = lib.mkOption {
-              type = lib.types.str;
-              default = "root";
-            };
-            mode = lib.mkOption {
-              type = lib.types.str;
-              default = "0400";
-            };
-            services = lib.mkOption {
-              type = lib.types.listOf lib.types.str;
-              default = [ ];
-              description = "systemd services that read it: started after it, restarted when it changes.";
-            };
-            path = lib.mkOption {
-              type = lib.types.str;
-              readOnly = true;
-              default = "${dir}/${name}";
-            };
-          };
-        }
-      )
-    );
+          }
+        )
+      );
+    };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     assertions = lib.mapAttrsToList (name: s: {
       assertion = (s.reference == null) != (s.template == null);
       message = "clb.opAgents.secrets.${name}: set exactly one of reference and template.";

@@ -10,6 +10,7 @@ name:
   system,
   platform,
   user,
+  profile ? "workstation",
 }:
 
 let
@@ -17,13 +18,14 @@ let
   nixpkgsSettings = import ./nixpkgs.nix { inherit inputs; };
   isDarwin = platform == "darwin";
 
+  profileSystem = ../modules/${platform}/${profile}.nix;
   hostSystem = ../hosts/${name}/system.nix;
 
   # NixOS vs nix-darwin functions
   systemFunc = if isDarwin then inputs.darwin.lib.darwinSystem else inputs.nixpkgs.lib.nixosSystem;
 
   hostIdentity = {
-    clb.host = { inherit name user; };
+    clb.host = { inherit name user profile; };
   };
 in
 systemFunc {
@@ -42,7 +44,9 @@ systemFunc {
     hostIdentity
   ]
   # Platform aggregator for the host's platform (modules/darwin or
-  # modules/nixos), then the optional host override file.
+  # modules/nixos), optional platform profile module, then the optional host
+  # override file.
   ++ [ ../modules/${platform} ]
+  ++ lib.optional (builtins.pathExists profileSystem) profileSystem
   ++ lib.optional (builtins.pathExists hostSystem) hostSystem;
 }

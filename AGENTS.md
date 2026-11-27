@@ -16,8 +16,8 @@
 - **Nix**: Follow `flake.nix` patterns; add new hosts to the host table in `flake.nix`.
 - **Structure** (terms defined in `CONTEXT.md`):
   - `lib/`: Builders (`mksystem.nix`, `mkhome.nix`) and shared data (`nixpkgs.nix`, `host-option.nix`, `ssh-keys.nix`).
-  - `modules/common/`: Home Manager configuration shared by every host; branches only on `pkgs.stdenv`.
-  - `modules/darwin/`, `modules/nixos/`: Platform aggregators.
+  - `modules/common/`: Home Manager configuration shared by every host (`default.nix`), plus per-profile modules (`workstation.nix`, `server.nix`); branches only on `pkgs.stdenv` and `clb.host.profile`.
+  - `modules/darwin/`, `modules/nixos/`: Platform aggregators, plus optional per-profile modules (`<profile>.nix`).
   - `hosts/<name>/`: Host override files (`system.nix`, `home.nix`).
   - `dotfiles/`: User-space application configs (Neovim, Fish, etc.).
 - **Changes**: When adding packages, check `overlays` in `lib/nixpkgs.nix` first. Use `unstable` only if necessary. No module compares host names; put host-specific settings in a host override file.

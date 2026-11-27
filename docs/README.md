@@ -60,6 +60,7 @@ All in [ai-hub.md](ai-hub.md):
 | Guide | Covers |
 | --- | --- |
 | [ai-hub.md](ai-hub.md) | The NixOS hub: install, Tailscale, T3 Code, CLIProxyAPI, CPA Usage Keeper, claude-mem server, Obot MCP gateway |
+| [proxmox-lxc.md](proxmox-lxc.md) | Proxmox LXC server template (`nixos`) and cloning new server hosts |
 | [macos.md](macos.md) | Installing a Mac |
 | [op-agents.md](op-agents.md) | The one secret per host, the Agents vault items, rotating secrets |
 | [agent-git.md](agent-git.md) | Commit signing and GitHub SSH while 1Password is locked |

@@ -31,7 +31,7 @@ On the Proxmox host (adjust VMID, rootfs storage, and bridge as needed):
 pct create 1002 nas02-proxmox:vztmpl/nixos-lxc.tar.xz \
   --hostname template-nixos \
   --arch amd64 \
-  --ostype unmanaged \
+  --ostype nixos \
   --unprivileged 1 \
   --features nesting=1,keyctl=1 \
   --cores 2 \
@@ -76,9 +76,7 @@ pct template 1002
 
    ```sh
    pct start <vmid>
-   pct enter <vmid>
-   passwd clburlison
-   exit
+   pct exec <vmid> -- /run/wrappers/bin/passwd clburlison
    ```
 
 4. SSH in with your key from `lib/ssh-keys.nix`, clone this repo, and apply

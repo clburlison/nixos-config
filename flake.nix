@@ -100,6 +100,11 @@
           platform = "nixos";
           user = "clburlison";
         };
+        devbox = {
+          system = "x86_64-linux";
+          platform = "nixos";
+          user = "clburlison";
+        };
         nixos = {
           system = "x86_64-linux";
           platform = "nixos";

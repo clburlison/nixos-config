@@ -17,30 +17,31 @@ nix build .#nixosConfigurations.nixos.config.system.build.tarball
 ls -lh result/tarball/
 ```
 
-Copy the resulting `.tar.xz` to Proxmox's CT template cache:
+Copy the resulting `.tar.xz` to Proxmox's CT template cache on `nas02-proxmox`:
 
 ```sh
-scp result/tarball/*.tar.xz root@<proxmox-host>:/var/lib/vz/template/cache/nixos-lxc.tar.xz
+scp result/tarball/*.tar.xz root@<proxmox-host>:/mnt/pve/nas02-proxmox/template/cache/nixos-lxc.tar.xz
 ```
 
-## 2. Create the `nixos` Proxmox template
+## 2. Create the `template-nixos` Proxmox template
 
-On the Proxmox host (adjust VMID, storage, and bridge as needed):
+On the Proxmox host (adjust VMID, rootfs storage, and bridge as needed):
 
 ```sh
-pct create 9000 local:vztmpl/nixos-lxc.tar.xz \
-  --hostname nixos \
+pct create 1002 nas02-proxmox:vztmpl/nixos-lxc.tar.xz \
+  --hostname template-nixos \
+  --arch amd64 \
   --ostype unmanaged \
   --unprivileged 1 \
   --features nesting=1,keyctl=1 \
   --cores 2 \
   --memory 2048 \
   --swap 512 \
-  --rootfs local-lvm:16 \
+  --rootfs nvme-raid:20 \
   --net0 name=eth0,bridge=vmbr0,ip=dhcp \
   --onboot 1
 
-pct template 9000
+pct template 1002
 ```
 
 - `nesting=1,keyctl=1` is required for systemd and Docker inside an
@@ -65,7 +66,7 @@ pct template 9000
    Add per-host overrides in `hosts/gitea/system.nix` and/or
    `hosts/gitea/home.nix` as needed, then commit and push.
 
-2. Clone the `nixos` template in Proxmox and set the CT hostname to the short
+2. Clone `template-nixos` in Proxmox and set the CT hostname to the short
    Host table name (`gitea`, with DNS domain `home.clb.ai`). `proxmox-lxc.nix`
    reads `/etc/hostname` and network settings from Proxmox by default
    (`manageHostName = false`, `manageNetwork = false`).

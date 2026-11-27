@@ -24,6 +24,9 @@
     extraSetFlags = [ "--operator=${config.clb.host.user}" ];
   };
 
+  # Direct access to t3-serve (home.nix) from the LAN and the tailnet.
+  networking.firewall.allowedTCPPorts = [ 3773 ];
+
   users.users.${config.clb.host.user} = {
     extraGroups = [ "docker" ];
     linger = true;

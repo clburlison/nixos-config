@@ -12,6 +12,11 @@
   clb.claudeMem.apiKeyFile = "/run/op-agents/claude-mem-api-key";
   clb.cliproxyapi.apiKeyFile = "/run/op-agents/cliproxyapi-api-key";
 
+  clb.antigravity = {
+    enable = true;
+    hubUrl = "https://ai-hub.mermaid-agama.ts.net:8443";
+  };
+
   # T3 Code server, reachable directly on port 3773 (LAN or tailnet IP, plain
   # HTTP) and over HTTPS on the tailnet through Tailscale Serve. Lingering
   # (system.nix) starts it at boot; the host user is a Tailscale operator so
